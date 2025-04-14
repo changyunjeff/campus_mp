@@ -1,0 +1,23 @@
+<script setup>
+import { onLaunch } from '@dcloudio/uni-app'
+
+onLaunch(() => {})
+</script>
+
+<style lang="scss">
+/* Global styles */
+//  {
+//   margin: 0;
+//   padding: 0;
+//   box-sizing: border-box;
+//   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+//   -webkit-font-smoothing: antialiased;
+//   -moz-osx-font-smoothing: grayscale;
+// }
+
+.app-container {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+</style>
