@@ -1,98 +1,307 @@
 <template>
-  <div class="welcome-page">
-    <div class="logo" :class="{'active': showLogo}">
-      <img src="../assets/logo.svg" alt="Campus Assistant Logo">
-    </div>
-    <div class="title" :class="{'active': showTitle}">
-      <h1>校园助手</h1>
-      <p>您的校园生活好帮手</p>
-    </div>
-    <button class="enter-btn" :class="{'active': showButton}" @click="handleEnter">
-      开始体验 
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-    </button>
-  </div>
+  <view class="welcome-container" :class="{ 'fade-in': showContent }">
+    <!-- 动画logo区域 -->
+    <view class="logo-container" :class="{ 'logo-animate': startAnimation }">
+      <image class="logo" src="@/static/logo.webp" mode="aspectFit" />
+      <view class="logo-shadow" :class="{ 'shadow-animate': startAnimation }"></view>
+    </view>
+    
+    <!-- 标题和副标题 -->
+    <view class="text-container" :class="{ 'text-animate': showContent }">
+      <text class="title">校园助手</text>
+      <text class="subtitle">您的校园生活好帮手</text>
+    </view>
+    
+    <!-- 登录按钮 -->
+    <view class="button-container" :class="{ 'button-animate': showContent }">
+      <button 
+        class="enter-button"
+        :loading="isLoading"
+        @tap="handleEnter"
+        open-type="getUserInfo"
+      >
+        {{ buttonText }}
+        <IconFont name="arrowright" size="24px" color="#fff" />
+      </button>
+    </view>
+  </view>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'uni-mini-router'
+import { sleep } from '@/utils/time'
+import { useUserStore } from '@/pinia/modules/user'
 
-const showLogo = ref(false);
-const showTitle = ref(false);
-const showButton = ref(false);
+const router = useRouter()
+const startAnimation = ref(false)
+const showContent = ref(false)
+const isLoading = ref(false)
+const buttonText = ref('开始体验')
+const userStore = useUserStore()
 
-function handleEnter() {
-  // Add your navigation logic here
-  console.log('Entering the app');
+// 处理进入应用
+async function handleEnter() {
+  if (isLoading.value) return
+
+  console.group('====================[用户登录]====================')
+  try {
+    isLoading.value = true
+    buttonText.value = '正在进入...'
+
+    await uni.getUserProfile({
+      desc: '用于登录到应用',
+      success: async ({userInfo}) => {
+        console.debug('👤 获取微信用户信息', userInfo)
+        userStore.login()
+      },
+      fail: (err) => {
+        console.error('User profile failed:', err)
+        throw new Error('用户拒绝授权')
+      }
+    })
+    
+    // 导航到社区页面
+    router.pushTab('/pages/index/community')
+  } catch (error) {
+    console.error('❌ 进入失败:', error)
+    uni.showToast({
+      title: error.message || '进入失败',
+      icon: 'none'
+    })
+  } finally {
+    isLoading.value = false
+    buttonText.value = '开始体验'
+  }
+  console.groupEnd()
 }
 
-onMounted(() => {
-  setTimeout(() => showLogo.value = true, 300);
-  setTimeout(() => showTitle.value = true, 800);
-  setTimeout(() => showButton.value = true, 1300);
-});
+onMounted(async () => {
+  // 启动动画
+  startAnimation.value = true
+  await sleep(500)
+  showContent.value = true
+})
 </script>
 
-<style scoped>
-.welcome-page {
+<style lang="scss">
+.welcome-container {
+  position: relative;
   height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
-  padding: 20px;
-}
-
-.logo, .title, .enter-btn {
   opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.8s, transform 0.8s;
+  background: linear-gradient(
+    135deg,
+    #FFB6C1 0%,    /* 浅玫瑰粉 */
+    #FFC0CB 50%,   /* 粉红色 */
+    #FFE4E1 100%   /* 浅薄雾玫瑰色 */
+  );
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  
+  // 添加动态背景效果
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle at center,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 60%
+    );
+    animation: rotateBackground 20s linear infinite;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.3) 100%
+    );
+    pointer-events: none;
+  }
+  
+  &.fade-in {
+    opacity: 1;
+  }
 }
 
-.active {
-  opacity: 1;
-  transform: translateY(0);
+.logo-container {
+  position: relative;
+  width: 220rpx;
+  height: 220rpx;
+  margin-bottom: 60rpx;
+  transform: translateY(60rpx);
+  opacity: 0;
+  z-index: 1;
+  
+  &.logo-animate {
+    animation: logoFloat 2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
 }
 
 .logo {
-  margin-bottom: 40px;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  position: relative;
+  filter: drop-shadow(0 8rpx 24rpx rgba(0, 0, 0, 0.2));
+  animation: logoPulse 2s ease-in-out infinite;
 }
 
-.logo img {
-  width: 120px;
-  height: 120px;
-  object-fit: contain;
+.logo-shadow {
+  position: absolute;
+  bottom: -20rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 160rpx;
+  height: 20rpx;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 50%;
+  opacity: 0;
+  filter: blur(8rpx);
+  
+  &.shadow-animate {
+    animation: shadowPulse 2s ease-in-out infinite;
+  }
+}
+
+.text-container {
+  text-align: center;
+  margin-bottom: 80rpx;
+  opacity: 0;
+  transform: translateY(30rpx);
+  z-index: 1;
+  
+  &.text-animate {
+    animation: fadeInUp 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
 }
 
 .title {
-  text-align: center;
-  margin-bottom: 60px;
+  display: block;
+  font-size: 48rpx;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 16rpx;
+  letter-spacing: 2rpx;
+  text-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.2);
 }
 
-.title h1 {
-  font-size: 28px;
-  color: #333;
-  margin-bottom: 8px;
+.subtitle {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 1rpx;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
 }
 
-.title p {
-  font-size: 16px;
-  color: #666;
+.button-container {
+  opacity: 0;
+  transform: translateY(30rpx);
+  z-index: 1;
+  
+  &.button-animate {
+    animation: fadeInUp 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s forwards;
+  }
 }
 
-.enter-btn {
+.enter-button {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background-color: #007aff;
+  gap: 16rpx;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
   color: white;
   border: none;
-  border-radius: 100px;
-  padding: 12px 32px;
-  font-size: 16px;
+  padding: 24rpx 80rpx;
+  border-radius: 76rpx;
+  font-size: 32rpx;
   font-weight: 500;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 122, 255, 0.4);
+  letter-spacing: 2rpx;
+  box-shadow: 
+    0 8rpx 24rpx rgba(255, 182, 193, 0.3),  /* 浅玫瑰粉阴影 */
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  
+  &:active {
+    transform: scale(0.98);
+    box-shadow: 0 4rpx 12rpx rgba(255, 182, 193, 0.2);
+  }
+}
+
+/* 动画定义 */
+@keyframes rotateBackground {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes logoFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(60rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes logoPulse {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10rpx);
+  }
+}
+
+@keyframes shadowPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateX(-50%) scale(1.1);
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

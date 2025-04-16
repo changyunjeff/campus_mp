@@ -5,6 +5,7 @@ import Components from '@uni-helper/vite-plugin-uni-components'
 import { WotResolver } from '@uni-helper/vite-plugin-uni-components/resolvers'
 import UniPages from '@uni-helper/vite-plugin-uni-pages'
 import uni from '@dcloudio/vite-plugin-uni'
+import AutoImport from 'unplugin-auto-import/vite'
 
 export default defineConfig(async () => {
   const UnoCSS = (await import('unocss/vite')).default
@@ -17,13 +18,24 @@ export default defineConfig(async () => {
     },
     plugins: [
       Components({
-      dts: true,
-      resolvers: [WotResolver()]
-    }),
+        dts: "src/types/components.d.ts",
+        resolvers: [WotResolver()]
+      }),
       // https://github.com/uni-helper/vite-plugin-uni-pages
-    UniPages(),
+      UniPages(),
       uni(),
       UnoCSS(),
+      AutoImport({
+        imports: ['vue', {
+          'uni-mini-router': ['useRouter', 'useRoute']
+        }],
+        dts: "src/types/auto-import.d.ts",
+        dirs: [
+          'src/composables',
+          'src/components',
+          'layout'
+        ]
+      }),
     ],
   }
 })

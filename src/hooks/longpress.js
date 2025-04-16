@@ -1,0 +1,62 @@
+/**
+ * 长按指令
+ * 使用方式：@longpress="callback"
+ * @example @longpress="handleLongPress"
+ */
+
+export default {
+    name: 'longpress',
+
+    mounted(el, binding) {
+      if (typeof binding.value !== 'function') {
+        console.warn('[longpress] 提供的表达式必须是一个函数');
+        return;
+      }
+      
+      // 定义变量
+      let pressTimer = null;
+      let start = false;
+      
+      // 创建计时器（ 500毫秒后执行函数 ）
+      const startFn = (e) => {
+        if (e.type === 'click') return;
+        
+        if (pressTimer === null) {
+          start = true;
+          pressTimer = setTimeout(() => {
+            // 执行函数
+            binding.value(e);
+          }, 500);
+        }
+      };
+      
+      // 取消计时器
+      const cancelFn = (e) => {
+        if (pressTimer !== null) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+        }
+        start = false;
+      };
+      
+      // 添加事件监听器
+      el.addEventListener('touchstart', startFn);
+      el.addEventListener('touchend', cancelFn);
+      el.addEventListener('touchcancel', cancelFn);
+      
+      // 在PC端也能使用
+      el.addEventListener('mousedown', startFn);
+      el.addEventListener('mouseup', cancelFn);
+      el.addEventListener('mouseleave', cancelFn);
+    },
+    
+    beforeUnmount(el) {
+      // 移除事件监听器
+      el.removeEventListener('touchstart', el._onTouchStart);
+      el.removeEventListener('touchend', el._onTouchEnd);
+      el.removeEventListener('touchcancel', el._onTouchCancel);
+      el.removeEventListener('mousedown', el._onMouseDown);
+      el.removeEventListener('mouseup', el._onMouseUp);
+      el.removeEventListener('mouseleave', el._onMouseLeave);
+    }
+  };

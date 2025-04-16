@@ -1,7 +1,7 @@
 {
   "name": "校园助手",
   "appid": "wxab48344dd2aea27a",
-  "description": "",
+  "description": "校园生活助手",
   "versionName": "1.0.0",
   "versionCode": "100",
   // "transformPx": false, // 该配置项已弃用
@@ -56,7 +56,6 @@
     },
     "usingComponents": true,
     "lazyCodeLoading": "requiredComponents",
-    "darkmode": false,
     "styleIsolation": "shared", // shared | apply-shared | apply-isolate
     "requiredPrivateInfos": [
       "getLocation"     // 定位
@@ -65,8 +64,7 @@
       "scope.userLocation": {
         "desc": "你的位置信息将用于地图定位功能"
       }
-    },
-    "themeLocation": "theme.json"
+    }
   },
   "mp-alipay": {
     "usingComponents": true
