@@ -1,7 +1,11 @@
 import {defineStore} from 'pinia'
 import {AuthApi} from '@/api/auth'
+import { useConnection } from '@/composables/connection'
 
 export const useUserStore = defineStore('user', () => {
+
+    const openid = ref('')
+
     const login = async ()=>{
         try {
             const {code} = await uni.login({
@@ -14,6 +18,9 @@ export const useUserStore = defineStore('user', () => {
 
             const res = await AuthApi.login(code)
             console.debug('📥 登录成功:', res)
+            openid.value = res.openid
+            const connection = useConnection()
+            connection.connect()
             return res
         } catch (err) {
             console.log(err) 
@@ -21,6 +28,7 @@ export const useUserStore = defineStore('user', () => {
     }
 
     return {
+        openid,
         login
     }
 })

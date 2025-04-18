@@ -17,6 +17,12 @@ export default defineUniPages({
         navigationBarTitleText: '首页',
       },
     },
+    {
+      path: 'pages/websocket-demo',
+      style: {
+        navigationBarTitleText: 'WebSocket 示例',
+      },
+    }
   ],
   subPackages: [],
   globalStyle: {

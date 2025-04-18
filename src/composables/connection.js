@@ -18,30 +18,86 @@ export function useConnection() {
   const connected = ref(false);
   const handlers = ref({});
 
+  const sendArrayBuffer = async (data) => {
+    // 如果连接未建立，先建立连接
+    if (!connected.value) {
+      await connect();
+    }
+
+    if (!data instanceof ArrayBuffer) {
+      throw new Error('data must be an ArrayBuffer')
+    }
+
+    return new Promise((resolve, reject) => {
+      uni.sendSocketMessage({
+        data: data,
+        success: (res) => {
+          console.log('发送消息成功', res);
+          resolve(res);
+        },
+        fail: (err) => {
+          console.error('发送消息失败', err);
+          reject(err);
+        }
+      });
+    })
+  }
+
+  const sendText = async (data) => {
+    // 如果连接未建立，先建立连接
+    if (!connected.value) {
+      await connect();
+    } 
+    if (typeof data !== 'string') {
+      throw new Error('data must be a string') 
+    }
+    return new Promise((resolve, reject) => {
+      uni.sendSocketMessage({
+        data: JSON.stringify(data),
+        success: (res) => {
+          console.debug('发送消息成功', res);
+          resolve(res);
+        },
+        fail: (err) => {
+          console.error('发送消息失败', err);
+          reject(err);
+        }
+      });
+    })
+  }
+
   const connect = async () => {
     if (connected.value) {
       return; 
     }
+    let timer;
     try {
         socketTask = await socket({
           onOpen: (res) => {
             console.log('WebSocket连接已打开');
             connected.value = true;
+            // 连接建立后，发送心跳包
+            timer = setInterval(sendPing, import.meta.env.VITE_PING_INTERVAL);
+
           },
           onClose: (res) => {
             console.log('WebSocket连接已关闭');
             connected.value = false;
+            // 断开连接后取消心跳包
+            clearInterval(timer)
           },
           onError: (err) => {
             console.log('WebSocket连接发生错误', err);
             connected.value = false;
           },
           onMessage: (res) => {
-            console.log('收到服务器消息：', res.data);
+            console.log('收到服务器消息：', res);
             try {
-              const data = JSON.parse(res.data);
-              const event = data.event;
-              if (handlers.value[event]) {
+              const data = typeof res.data === 'string'
+                ? JSON.parse(res.data)
+                : res.data;
+              const event = data.type;
+              if (event && handlers.value[event]) {
                 handlers.value[event](data);
               }
             } catch (error) {
@@ -53,7 +109,6 @@ export function useConnection() {
         console.error('WebSocket连接失败', error);
         return;
     }
-    console.log('WebSocket连接成功');
   }
 
   const disconnect = () => {
@@ -65,7 +120,6 @@ export function useConnection() {
       code: 1000,
       reason: '用户主动关闭连接',
       success: () => {
-        console.log('WebSocket连接已关闭');
         connected.value = false;
       },
       fail: (err) => {
@@ -89,19 +143,31 @@ export function useConnection() {
     }
   }
 
-  // 监听连接状态变化
-  watch(connected, (newValue) => {
-    if (newValue) {
-      console.log('WebSocket连接已建立');
-    } else {
-      console.log('WebSocket连接已断开');
-    }
-  })
-
   // 监听WebSocket事件
   watch(handlers, (newValue) => {
     console.log('WebSocket事件处理程序已更新', newValue);
   })
+
+  function sendPing() {
+    const pingFrame = createPingFrame()
+    sendArrayBuffer(pingFrame)
+  }
+
+  /**
+   * 创建 ping 帧
+   * @returns {ArrayBuffer} ping帧数据
+   */
+  function createPingFrame() {
+    // 创建一个 1 字节的 ArrayBuffer
+    // 1字节类型
+    const buffer = new ArrayBuffer(1)
+    const view = new DataView(buffer)
+    
+    // 设置类型标识符
+    view.setUint8(0, 0x09)
+
+    return buffer
+  }
 
   instance = {
     connected,
@@ -110,6 +176,8 @@ export function useConnection() {
     disconnect,
     registerHandler,
     unregisterHandler,
+    sendArrayBuffer,
+    sendText,
   }
   return instance;
 }

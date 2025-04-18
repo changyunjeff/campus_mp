@@ -72,9 +72,12 @@ export function useRequest() {
     const socket = (config={}) => {
         return new Promise((resolve, reject) => {
             const task = uni.connectSocket({
-                url: concat(`${import.meta.env.VITE_APP_BASE_URL}`, 'ws'),
+                url: concat(`${import.meta.env.VITE_APP_WEBSOCKET_URL}`, 'ws'),
                 timeout: config.timeout, 
-                protocols: [uni.getStorageSync('token')], // 使用子协议传递token
+                // protocols: [uni.getStorageSync('token')], // 使用子协议传递token
+                header: {
+                    'Authorization': `Bearer ${uni.getStorageSync('token')}`,
+                },
                 success: (res) => {
                     console.debug('socket res:', res)
                     resolve(task) // 返回WebSocket实例以便后续操作

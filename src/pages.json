@@ -20,6 +20,13 @@
       }
     },
     {
+      "path": "pages/websocket-demo",
+      "type": "page",
+      "style": {
+        "navigationBarTitleText": "WebSocket 示例"
+      }
+    },
+    {
       "path": "pages/index/add",
       "type": "page",
       "style": {},

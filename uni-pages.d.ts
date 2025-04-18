@@ -7,6 +7,7 @@ interface NavigateToOptions {
   url: "/pages/welcome" |
        "/pages/button-demo" |
        "/pages/iconfont-demo" |
+       "/pages/websocket-demo" |
        "/pages/index/add" |
        "/pages/index/community" |
        "/pages/index/goods" |
