@@ -1,10 +1,19 @@
 <script setup>
 import { onLaunch } from '@dcloudio/uni-app'
+import { useGlobalStore } from '@/pinia/modules/global';
 
-onLaunch(() => {})
+const globalStore = useGlobalStore();
+
+onLaunch(() => {
+  const systemInfo = uni.getSystemInfoSync();
+  globalStore.setStatusBarHeight(systemInfo.statusBarHeight);
+});
 </script>
 
 <style lang="scss">
+@import "./uni.scss";
+/* 引入iconfont CSS */
+@import "/static/iconfont/iconfont.css";
 /* Global styles */
 body {
   margin: 0;
@@ -14,9 +23,4 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
-/* 引入iconfont CSS */
-@import "@/static/iconfont/iconfont.css";
-
-
 </style>

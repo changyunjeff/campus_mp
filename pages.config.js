@@ -2,6 +2,12 @@ import { defineUniPages } from '@uni-helper/vite-plugin-uni-pages'
 import tabbar from './src/configs/tabbar'
 
 export default defineUniPages({
+  easycom: {
+    autoscan: true,
+    custom: {
+      "^wd-(.*)": "wot-design-uni/components/wd-$1/wd-$1.vue",
+    },
+  },
   pages: [
     ...tabbar,
     {
@@ -22,9 +28,45 @@ export default defineUniPages({
       style: {
         navigationBarTitleText: 'WebSocket 示例',
       },
+    },
+    {
+      path: 'pages/action-sheet-demo',
+      name: 'action-sheet-demo',
+      style: {
+        navigationBarTitleText: 'ActionSheet 示例',
+      },
     }
   ],
-  subPackages: [],
+  subPackages: [
+    {
+      root: 'subpackages/pages/message',
+      pages: [
+        {
+          path: 'private_chat',
+          style: {
+            navigationBarTitleText: '私聊',
+          },
+          meta: {
+            title: '聊天'
+          }
+        },
+        {
+          path: 'notification_chat',
+          name: 'notification_chat',
+          meta: {
+            title: '系统通知'
+          }
+        },
+        {
+          path: 'private_chat_more',
+          name: 'private_chat_more',
+          meta: {
+            title: ''
+          }
+        },
+      ]
+    }
+  ],
   globalStyle: {
     backgroundColor: '@bgColor',
     backgroundColorBottom: '@bgColorBottom',

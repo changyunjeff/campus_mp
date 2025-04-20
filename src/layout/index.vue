@@ -1,4 +1,75 @@
 <script setup>
+// 自定义状态栏组件
+import { ref, onMounted, onUnmounted, provide } from 'vue'
+import {onShow, onHide} from '@dcloudio/uni-app'
+import { useGlobalStore } from '@/pinia/modules/global';
+import events from "@/utils/events";
+
+const globalStore = useGlobalStore();
+const router = useRouter()
+const route = useRoute()
+
+// 获取当前页面标题
+const pageTitle = ref('')
+
+// 返回上一页
+const goBack = () => {
+    router.back()
+}
+
+const showActionSheet = ref(false)
+
+const actionSheet = reactive({
+  title: '',
+  actions: [{
+    name: '选项1',
+  }],
+})
+
+// 处理ActionSheet选项点击
+const handleActionClick = (item, index) => {
+  // 如果选项有回调函数，则执行
+  if (item.callback && typeof item.callback === 'function') {
+    item.callback(item, index)
+  }
+  // 关闭ActionSheet
+  closeActionSheet()
+}
+
+const closeActionSheet = () => {
+    showActionSheet.value = false
+}
+
+// 打开ActionSheet并设置内容
+const openActionSheet = (actions, title='') => {
+  actionSheet.title = title
+  actionSheet.actions = actions
+  showActionSheet.value = true
+}
+
+const action = {
+  open: openActionSheet,
+  close: closeActionSheet
+}
+
+// 获取当前页面标题
+onMounted(() => {
+  console.log(route)
+  pageTitle.value = route?.meta?.title || '未知标题'
+})
+
+onShow(()=>{
+  events.on('openActionSheet', openActionSheet)
+})
+
+onHide(()=>{
+  events.off('openActionSheet', openActionSheet)
+})
+
+const statusBarHeight = computed(() => {
+  return `${globalStore.statusBarHeight}px`;
+});
+
 </script>
 
 <template>
@@ -6,14 +77,38 @@
     <view class="status-bar" />
 
     <view class="header">
-        <slot name="header"></slot>
+        <custom-status-bar>
+            <template #left>
+                <slot name="left">
+                    <!-- 默认显示返回箭头 -->
+                    <view @click="goBack">
+                        <IconFont name="left" size="16px" color="#333" />
+                    </view>
+                </slot>
+            </template>
+            
+            <template #center>
+                <slot name="center">
+                    <!-- 默认显示页面标题 -->
+                    <text class="page-title" v-if="pageTitle">{{ pageTitle }}</text>
+                </slot>
+            </template>
+
+            <template #right>
+                <slot name="right" />
+            </template>
+        </custom-status-bar>
     </view>
     
-    <slot/>
+    <view class="content">
+      <slot></slot>
+    </view>
 
     <view class="footer">
         <slot name="footer"></slot>
     </view>
+
+    <WdActionSheet :z-index="999" v-model="showActionSheet" :title="actionSheet.title" :actions="actionSheet.actions" @select="handleActionClick" @close="closeActionSheet" cancel-text="取消" />
 </view>
 </template>
 
@@ -23,25 +118,35 @@
     height: 100vh;
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: #f5f5f5;
   }
 
 .status-bar {
     width: 100%;
-    height: var(--status-bar-height);
+    height: calc(var(--status-bar-height) + var(--status-bar-height));
     background-color: red;
 }
 
 .header {
     position: fixed;
-    top: 0;
+    top: calc(var(--status-bar-height) + var(--status-bar-height));
     left: 0;
     width: 100%;
-    background-color: green;
+    height: $uni-navigator-bar-height;
+    z-index: 100;
+}
+
+.content {
+    flex: 1;
+    overflow-y: auto;
+    padding-top: $uni-navigator-bar-height;
 }
 
 .footer {
     width: 100%;
-    min-height: 100rpx;
+    height: calc($uni-input-area-height + var(--safe-area-inset-bottom));
     background-color: blue;
 }
 </style>

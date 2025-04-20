@@ -1,42 +1,16 @@
 <script setup>
-// 自定义状态栏组件
-import { ref, onMounted } from 'vue'
-const router = useRouter()
-const route = useRoute()
-
-// 获取当前页面标题
-const pageTitle = ref('')
-
-// 返回上一页
-const goBack = () => {
-    router.back()
-}
-
-// 获取当前页面标题
-onMounted(() => {
-    console.log(route)
-    pageTitle.value = route?.meta?.title || '未知标题'
-})
 </script>
 
 <template>
   <view class="custom-status-bar">
     <!-- 左侧内容 - 左对齐 -->
     <view class="custom-status-bar-left">
-      <slot name="left">
-        <!-- 默认显示返回箭头 -->
-        <view @click="goBack">
-          <IconFont name="left" size="16px" color="#333" />
-        </view>
-      </slot>
+      <slot name="left" />
     </view>
     
     <!-- 中间内容 - 居中对齐 -->
     <view class="custom-status-bar-center">
-      <slot name="center">
-        <!-- 默认显示页面标题 -->
-        <text class="page-title" v-if="pageTitle">{{ pageTitle }}</text>
-      </slot>
+      <slot name="center" />
     </view>
     
     <!-- 右侧内容 - 右对齐 -->
@@ -49,7 +23,7 @@ onMounted(() => {
 <style lang="scss" scoped>
 .custom-status-bar {
   width: 100%;
-  height: 88rpx;
+  height: $uni-navigator-bar-height;
   display: flex;
   align-items: center;
   position: relative;

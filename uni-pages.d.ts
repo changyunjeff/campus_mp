@@ -5,6 +5,7 @@
 
 interface NavigateToOptions {
   url: "/pages/welcome" |
+       "/pages/action-sheet-demo" |
        "/pages/button-demo" |
        "/pages/iconfont-demo" |
        "/pages/websocket-demo" |
@@ -12,7 +13,10 @@ interface NavigateToOptions {
        "/pages/index/community" |
        "/pages/index/goods" |
        "/pages/index/message" |
-       "/pages/index/personal";
+       "/pages/index/personal" |
+       "/subpackages/pages/message/private_chat" |
+       "/subpackages/pages/message/notification_chat" |
+       "/subpackages/pages/message/private_chat_more";
 }
 interface RedirectToOptions extends NavigateToOptions {}
 

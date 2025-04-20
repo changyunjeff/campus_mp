@@ -37,6 +37,16 @@ export default defineConfig(async () => {
         ]
       }),
     ],
+    css: {
+      preprocessorOptions: {
+        scss: {
+          quietDeps: true,
+          logger: {
+            warn: () => {}
+          }
+        }
+      }
+    }
   }
 })
 

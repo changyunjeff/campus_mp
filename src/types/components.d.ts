@@ -7,15 +7,22 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    ActionSheetExample: typeof import('./../components/ActionSheetExample.vue')['default']
     AppFooter: typeof import('./../components/AppFooter.vue')['default']
     AppLogos: typeof import('./../components/AppLogos.vue')['default']
     Button: typeof import('./../components/Button.vue')['default']
     CustomStatusBar: typeof import('./../components/customStatusBar.vue')['default']
     CustomTabBar: typeof import('./../components/customTabBar.vue')['default']
+    Emoji: typeof import('./../components/Emoji.vue')['default']
     IconFont: typeof import('./../components/IconFont.vue')['default']
     InputEntry: typeof import('./../components/InputEntry.vue')['default']
+    InputSection: typeof import('./../components/InputSection.vue')['default']
     TabGroup: typeof import('./../components/TabGroup.vue')['default']
+    WdActionSheet: typeof import('wot-design-uni/components/wd-action-sheet/wd-action-sheet.vue')['default']
     WdButton: typeof import('wot-design-uni/components/wd-button/wd-button.vue')['default']
+    WdCell: typeof import('wot-design-uni/components/wd-cell/wd-cell.vue')['default']
+    WdCellGroup: typeof import('wot-design-uni/components/wd-cell-group/wd-cell-group.vue')['default']
     WdIcon: typeof import('wot-design-uni/components/wd-icon/wd-icon.vue')['default']
+    WdSwitch: typeof import('wot-design-uni/components/wd-switch/wd-switch.vue')['default']
   }
 }

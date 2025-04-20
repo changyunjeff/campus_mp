@@ -1,4 +1,10 @@
 {
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^wd-(.*)": "wot-design-uni/components/wd-$1/wd-$1.vue"
+    }
+  },
   "pages": [
     {
       "path": "pages/welcome",
@@ -6,6 +12,14 @@
       "style": {
         "navigationBarTitleText": "欢迎页"
       }
+    },
+    {
+      "path": "pages/action-sheet-demo",
+      "type": "page",
+      "style": {
+        "navigationBarTitleText": "ActionSheet 示例"
+      },
+      "name": "action-sheet-demo"
     },
     {
       "path": "pages/button-demo",
@@ -79,7 +93,36 @@
       }
     }
   ],
-  "subPackages": [],
+  "subPackages": [
+    {
+      "root": "subpackages/pages/message",
+      "pages": [
+        {
+          "path": "private_chat",
+          "style": {
+            "navigationBarTitleText": "私聊"
+          },
+          "meta": {
+            "title": "聊天"
+          }
+        },
+        {
+          "path": "notification_chat",
+          "name": "notification_chat",
+          "meta": {
+            "title": "系统通知"
+          }
+        },
+        {
+          "path": "private_chat_more",
+          "name": "private_chat_more",
+          "meta": {
+            "title": ""
+          }
+        }
+      ]
+    }
+  ],
   "globalStyle": {
     "backgroundColor": "@bgColor",
     "backgroundColorBottom": "@bgColorBottom",

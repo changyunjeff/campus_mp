@@ -59,7 +59,17 @@ export function useRequest() {
                     if (needRelogin) {
                        reject(ERR_TOKEN_EXPIRE)
                     }
-                    resolve(res)
+
+                    if (res.statusCode !== 200) {
+                        reject(new Error(res.errMsg))
+                    }
+
+                    const data = res.data
+                    if (data.code!==0) {
+                        reject(new Error(data.msg))
+                    }
+
+                    resolve(data.data)
                 },
                 fail: (err) => {
                     reject(err)

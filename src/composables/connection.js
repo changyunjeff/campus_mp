@@ -18,42 +18,18 @@ export function useConnection() {
   const connected = ref(false);
   const handlers = ref({});
 
-  const sendArrayBuffer = async (data) => {
+  const send = async (data) => {
     // 如果连接未建立，先建立连接
     if (!connected.value) {
       await connect();
     }
-
-    if (!data instanceof ArrayBuffer) {
-      throw new Error('data must be an ArrayBuffer')
-    }
-
-    return new Promise((resolve, reject) => {
-      uni.sendSocketMessage({
-        data: data,
-        success: (res) => {
-          console.log('发送消息成功', res);
-          resolve(res);
-        },
-        fail: (err) => {
-          console.error('发送消息失败', err);
-          reject(err);
-        }
-      });
-    })
-  }
-
-  const sendText = async (data) => {
-    // 如果连接未建立，先建立连接
-    if (!connected.value) {
-      await connect();
-    } 
-    if (typeof data !== 'string') {
-      throw new Error('data must be a string') 
+    let useBuffer = false
+    if (data instanceof ArrayBuffer) {
+      useBuffer = true;
     }
     return new Promise((resolve, reject) => {
       uni.sendSocketMessage({
-        data: JSON.stringify(data),
+        data: useBuffer ? data : JSON.stringify(data),
         success: (res) => {
           console.debug('发送消息成功', res);
           resolve(res);
@@ -107,7 +83,6 @@ export function useConnection() {
         });
     } catch (error) {
         console.error('WebSocket连接失败', error);
-        return;
     }
   }
 
@@ -148,9 +123,9 @@ export function useConnection() {
     console.log('WebSocket事件处理程序已更新', newValue);
   })
 
-  function sendPing() {
+  async function sendPing() {
     const pingFrame = createPingFrame()
-    sendArrayBuffer(pingFrame)
+    return send(pingFrame)
   }
 
   /**
@@ -176,8 +151,7 @@ export function useConnection() {
     disconnect,
     registerHandler,
     unregisterHandler,
-    sendArrayBuffer,
-    sendText,
+    send,
   }
   return instance;
 }

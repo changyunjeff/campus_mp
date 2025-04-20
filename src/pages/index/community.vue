@@ -3,6 +3,7 @@ import Layout from '@/layout/index.vue'
 const { show } = useTabbar()
 
 const activeTab = ref('recommend')
+const router = useRouter()
 
 // 社区页面的tab选项
 const communityTabs = [
@@ -18,6 +19,16 @@ const handleTabChange = (tabName) => {
   // 这里可以根据选中的tab加载不同的内容
 }
 
+const gotoPrivateChat = () => {
+    router.push('/subpackages/pages/message/private_chat')
+}
+
+const gotoActionSheetDemo = () => {
+    router.push({
+        name: 'action-sheet-demo'
+    })
+}
+
 onMounted(() => {
     show()
 })
@@ -25,18 +36,16 @@ onMounted(() => {
 
 <template>
     <layout>
-        <custom-status-bar>
-            <template #left>
-                <WdIcon name="search" size="32rpx" color="#666"/>
-            </template>
-            <template #center>
-                <tab-group 
-                    :tabs="communityTabs" 
-                    v-model:active-tab="activeTab"
-                    @change="handleTabChange"
-                />
-            </template>
-        </custom-status-bar>
+        <template #left>
+            <WdIcon name="search" size="32rpx" color="#666"/>
+        </template>
+        <template #center>
+            <tab-group 
+                :tabs="communityTabs" 
+                v-model:active-tab="activeTab"
+                @change="handleTabChange"
+            />
+        </template>
         
         <!-- 宫崎骏风格的Tab按钮组 -->
         <view class="community-container">
@@ -67,6 +76,9 @@ onMounted(() => {
         </view>
         
         <custom-tab-bar/>
+
+        <WdButton @tap="gotoPrivateChat">跳转到私聊界面</WdButton>
+        <WdButton @tap="gotoActionSheetDemo">跳转到actions sheet测试界面</WdButton>
     </layout>
 </template>
 

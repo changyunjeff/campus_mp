@@ -2,7 +2,7 @@
   <view class="welcome-container" :class="{ 'fade-in': showContent }">
     <!-- 动画logo区域 -->
     <view class="logo-container" :class="{ 'logo-animate': startAnimation }">
-      <image class="logo" src="@/static/logo.webp" mode="aspectFit" />
+      <image class="logo" src="/static/logo.webp" mode="aspectFit" />
       <view class="logo-shadow" :class="{ 'shadow-animate': startAnimation }"></view>
     </view>
     

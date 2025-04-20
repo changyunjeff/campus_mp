@@ -1,0 +1,2942 @@
+{
+  "1000": {
+    "prefix": "score",
+    "body": "💯",
+    "fitzpatrick_scale": false,
+    "category": "symbols"
+  },
+  "12340": {
+    "prefix": "numbers",
+    "body": "🔢",
+    "fitzpatrick_scale": false,
+    "category": "symbols"
+  },
+  "grinning0": {
+    "prefix": "face",
+    "body": "😀",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "grin0": {
+    "prefix": "face",
+    "body": "😁",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "joy0": {
+    "prefix": "face",
+    "body": "😂",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "rofl0": {
+    "prefix": "face",
+    "body": "🤣",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "partying0": {
+    "prefix": "face",
+    "body": "🥳",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smiley0": {
+    "prefix": "face",
+    "body": "😃",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smile0": {
+    "prefix": "face",
+    "body": "😄",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sweat_smile0": {
+    "prefix": "face",
+    "body": "😅",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "laughing0": {
+    "prefix": "happy",
+    "body": "😆",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "innocent0": {
+    "prefix": "face",
+    "body": "😇",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "wink0": {
+    "prefix": "face",
+    "body": "😉",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "blush0": {
+    "prefix": "face",
+    "body": "😊",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "slightly_smiling_face0": {
+    "prefix": "face",
+    "body": "🙂",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "upside_down_face0": {
+    "prefix": "face",
+    "body": "🙃",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "relaxed0": {
+    "prefix": "face",
+    "body": "☺️",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "yum0": {
+    "prefix": "happy",
+    "body": "😋",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "relieved0": {
+    "prefix": "face",
+    "body": "😌",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "heart_eyes0": {
+    "prefix": "face",
+    "body": "😍",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smiling_face_with_three_hearts0": {
+    "prefix": "face",
+    "body": "🥰",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "kissing_heart0": {
+    "prefix": "face",
+    "body": "😘",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "kissing0": {
+    "prefix": "love",
+    "body": "😗",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "kissing_smiling_eyes0": {
+    "prefix": "face",
+    "body": "😙",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "kissing_closed_eyes0": {
+    "prefix": "face",
+    "body": "😚",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "stuck_out_tongue_winking_eye0": {
+    "prefix": "face",
+    "body": "😜",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "zany0": {
+    "prefix": "face",
+    "body": "🤪",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "raised_eyebrow0": {
+    "prefix": "face",
+    "body": "🤨",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "monocle0": {
+    "prefix": "face",
+    "body": "🧐",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "stuck_out_tongue_closed_eyes0": {
+    "prefix": "face",
+    "body": "😝",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "stuck_out_tongue0": {
+    "prefix": "face",
+    "body": "😛",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "money_mouth_face0": {
+    "prefix": "face",
+    "body": "🤑",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "nerd_face0": {
+    "prefix": "face",
+    "body": "🤓",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sunglasses0": {
+    "prefix": "face",
+    "body": "😎",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "star_struck0": {
+    "prefix": "face",
+    "body": "🤩",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "clown_face0": {
+    "prefix": "face",
+    "body": "🤡",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "cowboy_hat_face0": {
+    "prefix": "face",
+    "body": "🤠",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "hugs0": {
+    "prefix": "face",
+    "body": "🤗",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smirk0": {
+    "prefix": "face",
+    "body": "😏",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "no_mouth0": {
+    "prefix": "face",
+    "body": "😶",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "neutral_face0": {
+    "prefix": "indifference",
+    "body": "😐",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "expressionless0": {
+    "prefix": "face",
+    "body": "😑",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "unamused0": {
+    "prefix": "indifference",
+    "body": "😒",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "roll_eyes0": {
+    "prefix": "face",
+    "body": "🙄",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "thinking0": {
+    "prefix": "face",
+    "body": "🤔",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "lying_face0": {
+    "prefix": "face",
+    "body": "🤥",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "hand_over_mouth0": {
+    "prefix": "face",
+    "body": "🤭",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "shushing0": {
+    "prefix": "face",
+    "body": "🤫",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "symbols_over_mouth0": {
+    "prefix": "face",
+    "body": "🤬",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "exploding_head0": {
+    "prefix": "face",
+    "body": "🤯",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "flushed0": {
+    "prefix": "face",
+    "body": "😳",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "disappointed0": {
+    "prefix": "face",
+    "body": "😞",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "worried0": {
+    "prefix": "face",
+    "body": "😟",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "angry0": {
+    "prefix": "mad",
+    "body": "😠",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "rage0": {
+    "prefix": "angry",
+    "body": "😡",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "pensive0": {
+    "prefix": "face",
+    "body": "😔",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "confused0": {
+    "prefix": "face",
+    "body": "😕",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "slightly_frowning_face0": {
+    "prefix": "face",
+    "body": "🙁",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "persevere0": {
+    "prefix": "face",
+    "body": "😣",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "confounded0": {
+    "prefix": "face",
+    "body": "😖",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "tired_face0": {
+    "prefix": "sick",
+    "body": "😫",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "weary0": {
+    "prefix": "face",
+    "body": "😩",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "pleading0": {
+    "prefix": "face",
+    "body": "🥺",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "triumph0": {
+    "prefix": "face",
+    "body": "😤",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "open_mouth0": {
+    "prefix": "face",
+    "body": "😮",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "scream0": {
+    "prefix": "face",
+    "body": "😱",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "fearful0": {
+    "prefix": "face",
+    "body": "😨",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "cold_sweat0": {
+    "prefix": "face",
+    "body": "😰",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "hushed0": {
+    "prefix": "face",
+    "body": "😯",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "frowning0": {
+    "prefix": "face",
+    "body": "😦",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "anguished0": {
+    "prefix": "face",
+    "body": "😧",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "cry0": {
+    "prefix": "face",
+    "body": "😢",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "disappointed_relieved0": {
+    "prefix": "face",
+    "body": "😥",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sleepy0": {
+    "prefix": "face",
+    "body": "😪",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sweat0": {
+    "prefix": "face",
+    "body": "😓",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "hot0": {
+    "prefix": "face",
+    "body": "🥵",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "cold0": {
+    "prefix": "face",
+    "body": "🥶",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sob0": {
+    "prefix": "face",
+    "body": "😭",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sob1": {
+    "prefix": "cry",
+    "body": "😭",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sob2": {
+    "prefix": "tears",
+    "body": "😭",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sob3": {
+    "prefix": "sad",
+    "body": "😭",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sob4": {
+    "prefix": "upset",
+    "body": "😭",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sob5": {
+    "prefix": "depressed",
+    "body": "😭",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "dizzy_face0": {
+    "prefix": "spent",
+    "body": "😵",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "dizzy_face1": {
+    "prefix": "unconscious",
+    "body": "😵",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "dizzy_face2": {
+    "prefix": "xox",
+    "body": "😵",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "dizzy_face3": {
+    "prefix": "dizzy",
+    "body": "😵",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "astonished0": {
+    "prefix": "face",
+    "body": "😲",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "astonished1": {
+    "prefix": "xox",
+    "body": "😲",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "astonished2": {
+    "prefix": "surprised",
+    "body": "😲",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "astonished3": {
+    "prefix": "poisoned",
+    "body": "😲",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "zipper_mouth_face0": {
+    "prefix": "face",
+    "body": "🤐",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "zipper_mouth_face1": {
+    "prefix": "sealed",
+    "body": "🤐",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "zipper_mouth_face2": {
+    "prefix": "zipper",
+    "body": "🤐",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "zipper_mouth_face3": {
+    "prefix": "secret",
+    "body": "🤐",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "nauseated_face0": {
+    "prefix": "face",
+    "body": "🤢",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "nauseated_face1": {
+    "prefix": "vomit",
+    "body": "🤢",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "nauseated_face2": {
+    "prefix": "gross",
+    "body": "🤢",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "nauseated_face3": {
+    "prefix": "green",
+    "body": "🤢",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "nauseated_face4": {
+    "prefix": "sick",
+    "body": "🤢",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "nauseated_face5": {
+    "prefix": "throw up",
+    "body": "🤢",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "nauseated_face6": {
+    "prefix": "ill",
+    "body": "🤢",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sneezing_face0": {
+    "prefix": "face",
+    "body": "🤧",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sneezing_face1": {
+    "prefix": "gesundheit",
+    "body": "🤧",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sneezing_face2": {
+    "prefix": "sneeze",
+    "body": "🤧",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sneezing_face3": {
+    "prefix": "sick",
+    "body": "🤧",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sneezing_face4": {
+    "prefix": "allergy",
+    "body": "🤧",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "vomiting0": {
+    "prefix": "face",
+    "body": "🤮",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "vomiting1": {
+    "prefix": "sick",
+    "body": "🤮",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "mask0": {
+    "prefix": "face",
+    "body": "😷",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "mask1": {
+    "prefix": "sick",
+    "body": "😷",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "mask2": {
+    "prefix": "ill",
+    "body": "😷",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "mask3": {
+    "prefix": "disease",
+    "body": "😷",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "face_with_thermometer0": {
+    "prefix": "sick",
+    "body": "🤒",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "face_with_thermometer1": {
+    "prefix": "temperature",
+    "body": "🤒",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "face_with_thermometer2": {
+    "prefix": "thermometer",
+    "body": "🤒",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "face_with_thermometer3": {
+    "prefix": "cold",
+    "body": "🤒",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "face_with_thermometer4": {
+    "prefix": "fever",
+    "body": "🤒",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "face_with_head_bandage0": {
+    "prefix": "injured",
+    "body": "🤕",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "face_with_head_bandage1": {
+    "prefix": "clumsy",
+    "body": "🤕",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "face_with_head_bandage2": {
+    "prefix": "bandage",
+    "body": "🤕",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "face_with_head_bandage3": {
+    "prefix": "hurt",
+    "body": "🤕",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "woozy0": {
+    "prefix": "face",
+    "body": "🥴",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "woozy1": {
+    "prefix": "dizzy",
+    "body": "🥴",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "woozy2": {
+    "prefix": "intoxicated",
+    "body": "🥴",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "woozy3": {
+    "prefix": "tipsy",
+    "body": "🥴",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "woozy4": {
+    "prefix": "wavy",
+    "body": "🥴",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sleeping0": {
+    "prefix": "face",
+    "body": "😴",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sleeping1": {
+    "prefix": "tired",
+    "body": "😴",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sleeping2": {
+    "prefix": "sleepy",
+    "body": "😴",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sleeping3": {
+    "prefix": "night",
+    "body": "😴",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sleeping4": {
+    "prefix": "zzz",
+    "body": "😴",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "zzz0": {
+    "prefix": "sleepy",
+    "body": "💤",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "zzz1": {
+    "prefix": "tired",
+    "body": "💤",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "zzz2": {
+    "prefix": "dream",
+    "body": "💤",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "poop0": {
+    "prefix": "hankey",
+    "body": "💩",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "poop1": {
+    "prefix": "shitface",
+    "body": "💩",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "poop2": {
+    "prefix": "fail",
+    "body": "💩",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "poop3": {
+    "prefix": "turd",
+    "body": "💩",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "poop4": {
+    "prefix": "shit",
+    "body": "💩",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smiling_imp0": {
+    "prefix": "devil",
+    "body": "😈",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smiling_imp1": {
+    "prefix": "horns",
+    "body": "😈",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "imp0": {
+    "prefix": "devil",
+    "body": "👿",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "imp1": {
+    "prefix": "angry",
+    "body": "👿",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "imp2": {
+    "prefix": "horns",
+    "body": "👿",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_ogre0": {
+    "prefix": "monster",
+    "body": "👹",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_ogre1": {
+    "prefix": "red",
+    "body": "👹",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_ogre2": {
+    "prefix": "mask",
+    "body": "👹",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_ogre3": {
+    "prefix": "halloween",
+    "body": "👹",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_ogre4": {
+    "prefix": "scary",
+    "body": "👹",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_ogre5": {
+    "prefix": "creepy",
+    "body": "👹",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_ogre6": {
+    "prefix": "devil",
+    "body": "👹",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_ogre7": {
+    "prefix": "demon",
+    "body": "👹",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_ogre8": {
+    "prefix": "japanese",
+    "body": "👹",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_ogre9": {
+    "prefix": "ogre",
+    "body": "👹",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_goblin0": {
+    "prefix": "red",
+    "body": "👺",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_goblin1": {
+    "prefix": "evil",
+    "body": "👺",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_goblin2": {
+    "prefix": "mask",
+    "body": "👺",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_goblin3": {
+    "prefix": "monster",
+    "body": "👺",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_goblin4": {
+    "prefix": "scary",
+    "body": "👺",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_goblin5": {
+    "prefix": "creepy",
+    "body": "👺",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_goblin6": {
+    "prefix": "japanese",
+    "body": "👺",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "japanese_goblin7": {
+    "prefix": "goblin",
+    "body": "👺",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "skull0": {
+    "prefix": "dead",
+    "body": "💀",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "skull1": {
+    "prefix": "skeleton",
+    "body": "💀",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "skull2": {
+    "prefix": "creepy",
+    "body": "💀",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "skull3": {
+    "prefix": "death",
+    "body": "💀",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "ghost0": {
+    "prefix": "halloween",
+    "body": "👻",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "ghost1": {
+    "prefix": "spooky",
+    "body": "👻",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "ghost2": {
+    "prefix": "scary",
+    "body": "👻",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "alien0": {
+    "prefix": "UFO",
+    "body": "👽",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "alien1": {
+    "prefix": "paul",
+    "body": "👽",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "alien2": {
+    "prefix": "weird",
+    "body": "👽",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "alien3": {
+    "prefix": "outer_space",
+    "body": "👽",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "robot0": {
+    "prefix": "computer",
+    "body": "🤖",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "robot1": {
+    "prefix": "machine",
+    "body": "🤖",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "robot2": {
+    "prefix": "bot",
+    "body": "🤖",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smiley_cat0": {
+    "prefix": "animal",
+    "body": "😺",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smiley_cat1": {
+    "prefix": "cats",
+    "body": "😺",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smiley_cat2": {
+    "prefix": "happy",
+    "body": "😺",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smiley_cat3": {
+    "prefix": "smile",
+    "body": "😺",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smile_cat0": {
+    "prefix": "animal",
+    "body": "😸",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smile_cat1": {
+    "prefix": "cats",
+    "body": "😸",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smile_cat2": {
+    "prefix": "smile",
+    "body": "😸",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "joy_cat0": {
+    "prefix": "animal",
+    "body": "😹",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "joy_cat1": {
+    "prefix": "cats",
+    "body": "😹",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "joy_cat2": {
+    "prefix": "haha",
+    "body": "😹",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "joy_cat3": {
+    "prefix": "happy",
+    "body": "😹",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "joy_cat4": {
+    "prefix": "tears",
+    "body": "😹",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "heart_eyes_cat0": {
+    "prefix": "animal",
+    "body": "😻",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "heart_eyes_cat1": {
+    "prefix": "love",
+    "body": "😻",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "heart_eyes_cat2": {
+    "prefix": "like",
+    "body": "😻",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "heart_eyes_cat3": {
+    "prefix": "affection",
+    "body": "😻",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "heart_eyes_cat4": {
+    "prefix": "cats",
+    "body": "😻",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "heart_eyes_cat5": {
+    "prefix": "valentines",
+    "body": "😻",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "heart_eyes_cat6": {
+    "prefix": "heart",
+    "body": "😻",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smirk_cat0": {
+    "prefix": "animal",
+    "body": "😼",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smirk_cat1": {
+    "prefix": "cats",
+    "body": "😼",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "smirk_cat2": {
+    "prefix": "smirk",
+    "body": "😼",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "kissing_cat0": {
+    "prefix": "animal",
+    "body": "😽",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "kissing_cat1": {
+    "prefix": "cats",
+    "body": "😽",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "kissing_cat2": {
+    "prefix": "kiss",
+    "body": "😽",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "scream_cat0": {
+    "prefix": "animal",
+    "body": "🙀",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "scream_cat1": {
+    "prefix": "cats",
+    "body": "🙀",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "scream_cat2": {
+    "prefix": "munch",
+    "body": "🙀",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "scream_cat3": {
+    "prefix": "scared",
+    "body": "🙀",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "scream_cat4": {
+    "prefix": "scream",
+    "body": "🙀",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "crying_cat_face0": {
+    "prefix": "animal",
+    "body": "😿",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "crying_cat_face1": {
+    "prefix": "tears",
+    "body": "😿",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "crying_cat_face2": {
+    "prefix": "weep",
+    "body": "😿",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "crying_cat_face3": {
+    "prefix": "sad",
+    "body": "😿",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "crying_cat_face4": {
+    "prefix": "cats",
+    "body": "😿",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "crying_cat_face5": {
+    "prefix": "upset",
+    "body": "😿",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "crying_cat_face6": {
+    "prefix": "cry",
+    "body": "😿",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "pouting_cat0": {
+    "prefix": "animal",
+    "body": "😾",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "pouting_cat1": {
+    "prefix": "cats",
+    "body": "😾",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "palms_up0": {
+    "prefix": "hands",
+    "body": "🤲",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "palms_up1": {
+    "prefix": "gesture",
+    "body": "🤲",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "palms_up2": {
+    "prefix": "cupped",
+    "body": "🤲",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "palms_up3": {
+    "prefix": "prayer",
+    "body": "🤲",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "raised_hands0": {
+    "prefix": "gesture",
+    "body": "🙌",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "raised_hands1": {
+    "prefix": "hooray",
+    "body": "🙌",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "raised_hands2": {
+    "prefix": "yea",
+    "body": "🙌",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "raised_hands3": {
+    "prefix": "celebration",
+    "body": "🙌",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "raised_hands4": {
+    "prefix": "hands",
+    "body": "🙌",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "clap0": {
+    "prefix": "hands",
+    "body": "👏",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "clap1": {
+    "prefix": "praise",
+    "body": "👏",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "clap2": {
+    "prefix": "applause",
+    "body": "👏",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "clap3": {
+    "prefix": "congrats",
+    "body": "👏",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "clap4": {
+    "prefix": "yay",
+    "body": "👏",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "wave0": {
+    "prefix": "hands",
+    "body": "👋",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "wave1": {
+    "prefix": "gesture",
+    "body": "👋",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "wave2": {
+    "prefix": "goodbye",
+    "body": "👋",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "wave3": {
+    "prefix": "solong",
+    "body": "👋",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "wave4": {
+    "prefix": "farewell",
+    "body": "👋",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "wave5": {
+    "prefix": "hello",
+    "body": "👋",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "wave6": {
+    "prefix": "hi",
+    "body": "👋",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "wave7": {
+    "prefix": "palm",
+    "body": "👋",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "call_me_hand0": {
+    "prefix": "hands",
+    "body": "🤙",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "call_me_hand1": {
+    "prefix": "gesture",
+    "body": "🤙",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "+10": {
+    "prefix": "thumbsup",
+    "body": "👍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "+11": {
+    "prefix": "yes",
+    "body": "👍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "+12": {
+    "prefix": "awesome",
+    "body": "👍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "+13": {
+    "prefix": "good",
+    "body": "👍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "+14": {
+    "prefix": "agree",
+    "body": "👍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "+15": {
+    "prefix": "accept",
+    "body": "👍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "+16": {
+    "prefix": "cool",
+    "body": "👍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "+17": {
+    "prefix": "hand",
+    "body": "👍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "+18": {
+    "prefix": "like",
+    "body": "👍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "-10": {
+    "prefix": "thumbsdown",
+    "body": "👎",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "-11": {
+    "prefix": "no",
+    "body": "👎",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "-12": {
+    "prefix": "dislike",
+    "body": "👎",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "-13": {
+    "prefix": "hand",
+    "body": "👎",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "facepunch0": {
+    "prefix": "angry",
+    "body": "👊",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "facepunch1": {
+    "prefix": "violence",
+    "body": "👊",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "facepunch2": {
+    "prefix": "fist",
+    "body": "👊",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "facepunch3": {
+    "prefix": "hit",
+    "body": "👊",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "facepunch4": {
+    "prefix": "attack",
+    "body": "👊",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "facepunch5": {
+    "prefix": "hand",
+    "body": "👊",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "fist_left0": {
+    "prefix": "hand",
+    "body": "🤛",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "fist_left1": {
+    "prefix": "fistbump",
+    "body": "🤛",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "fist_right0": {
+    "prefix": "hand",
+    "body": "🤜",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "fist_right1": {
+    "prefix": "fistbump",
+    "body": "🤜",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "ok_hand0": {
+    "prefix": "fingers",
+    "body": "👌",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "ok_hand1": {
+    "prefix": "limbs",
+    "body": "👌",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "ok_hand2": {
+    "prefix": "perfect",
+    "body": "👌",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "ok_hand3": {
+    "prefix": "ok",
+    "body": "👌",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "ok_hand4": {
+    "prefix": "okay",
+    "body": "👌",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "raised_back_of_hand0": {
+    "prefix": "fingers",
+    "body": "🤚",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "raised_back_of_hand1": {
+    "prefix": "raised",
+    "body": "🤚",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "raised_back_of_hand2": {
+    "prefix": "backhand",
+    "body": "🤚",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "open_hands0": {
+    "prefix": "fingers",
+    "body": "👐",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "open_hands1": {
+    "prefix": "butterfly",
+    "body": "👐",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "open_hands2": {
+    "prefix": "hands",
+    "body": "👐",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "open_hands3": {
+    "prefix": "open",
+    "body": "👐",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "muscle0": {
+    "prefix": "arm",
+    "body": "💪",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "muscle1": {
+    "prefix": "flex",
+    "body": "💪",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "muscle2": {
+    "prefix": "hand",
+    "body": "💪",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "muscle3": {
+    "prefix": "summer",
+    "body": "💪",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "muscle4": {
+    "prefix": "strong",
+    "body": "💪",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "muscle5": {
+    "prefix": "biceps",
+    "body": "💪",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "pray0": {
+    "prefix": "please",
+    "body": "🙏",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "pray1": {
+    "prefix": "hope",
+    "body": "🙏",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "pray2": {
+    "prefix": "wish",
+    "body": "🙏",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "pray3": {
+    "prefix": "namaste",
+    "body": "🙏",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "pray4": {
+    "prefix": "highfive",
+    "body": "🙏",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "foot0": {
+    "prefix": "kick",
+    "body": "🦶",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "foot1": {
+    "prefix": "stomp",
+    "body": "🦶",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "leg0": {
+    "prefix": "kick",
+    "body": "🦵",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "leg1": {
+    "prefix": "limb",
+    "body": "🦵",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "handshake0": {
+    "prefix": "agreement",
+    "body": "🤝",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "handshake1": {
+    "prefix": "shake",
+    "body": "🤝",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "point_up_20": {
+    "prefix": "fingers",
+    "body": "👆",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "point_up_21": {
+    "prefix": "hand",
+    "body": "👆",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "point_up_22": {
+    "prefix": "direction",
+    "body": "👆",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "point_up_23": {
+    "prefix": "up",
+    "body": "👆",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "point_down0": {
+    "prefix": "fingers",
+    "body": "👇",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "point_down1": {
+    "prefix": "hand",
+    "body": "👇",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "point_down2": {
+    "prefix": "direction",
+    "body": "👇",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "point_down3": {
+    "prefix": "down",
+    "body": "👇",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "point_left0": {
+    "prefix": "direction",
+    "body": "👈",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "point_left1": {
+    "prefix": "fingers",
+    "body": "👈",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "point_left2": {
+    "prefix": "hand",
+    "body": "👈",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "point_left3": {
+    "prefix": "left",
+    "body": "👈",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "point_right0": {
+    "prefix": "fingers",
+    "body": "👉",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "point_right1": {
+    "prefix": "hand",
+    "body": "👉",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "point_right2": {
+    "prefix": "direction",
+    "body": "👉",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "point_right3": {
+    "prefix": "right",
+    "body": "👉",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "fu0": {
+    "prefix": "hand",
+    "body": "🖕",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "fu1": {
+    "prefix": "fingers",
+    "body": "🖕",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "fu2": {
+    "prefix": "rude",
+    "body": "🖕",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "fu3": {
+    "prefix": "middle",
+    "body": "🖕",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "fu4": {
+    "prefix": "flipping",
+    "body": "🖕",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "raised_hand_with_fingers_splayed0": {
+    "prefix": "hand",
+    "body": "🖐",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "raised_hand_with_fingers_splayed1": {
+    "prefix": "fingers",
+    "body": "🖐",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "raised_hand_with_fingers_splayed2": {
+    "prefix": "palm",
+    "body": "🖐",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "love_you0": {
+    "prefix": "hand",
+    "body": "🤟",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "love_you1": {
+    "prefix": "fingers",
+    "body": "🤟",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "love_you2": {
+    "prefix": "gesture",
+    "body": "🤟",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "metal0": {
+    "prefix": "hand",
+    "body": "🤘",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "metal1": {
+    "prefix": "fingers",
+    "body": "🤘",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "metal2": {
+    "prefix": "evil_eye",
+    "body": "🤘",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "metal3": {
+    "prefix": "sign_of_horns",
+    "body": "🤘",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "metal4": {
+    "prefix": "rock_on",
+    "body": "🤘",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "crossed_fingers0": {
+    "prefix": "good",
+    "body": "🤞",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "crossed_fingers1": {
+    "prefix": "lucky",
+    "body": "🤞",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "vulcan_salute0": {
+    "prefix": "hand",
+    "body": "🖖",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "vulcan_salute1": {
+    "prefix": "fingers",
+    "body": "🖖",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "vulcan_salute2": {
+    "prefix": "spock",
+    "body": "🖖",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "vulcan_salute3": {
+    "prefix": "star trek",
+    "body": "🖖",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "selfie0": {
+    "prefix": "camera",
+    "body": "🤳",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "selfie1": {
+    "prefix": "phone",
+    "body": "🤳",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "nail_care0": {
+    "prefix": "beauty",
+    "body": "💅",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "nail_care1": {
+    "prefix": "manicure",
+    "body": "💅",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "nail_care2": {
+    "prefix": "finger",
+    "body": "💅",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "nail_care3": {
+    "prefix": "fashion",
+    "body": "💅",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "nail_care4": {
+    "prefix": "nail",
+    "body": "💅",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "lips0": {
+    "prefix": "mouth",
+    "body": "👄",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "lips1": {
+    "prefix": "kiss",
+    "body": "👄",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "tooth0": {
+    "prefix": "teeth",
+    "body": "🦷",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "tooth1": {
+    "prefix": "dentist",
+    "body": "🦷",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "tongue0": {
+    "prefix": "mouth",
+    "body": "👅",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "tongue1": {
+    "prefix": "playful",
+    "body": "👅",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "ear0": {
+    "prefix": "face",
+    "body": "👂",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "ear1": {
+    "prefix": "hear",
+    "body": "👂",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "ear2": {
+    "prefix": "sound",
+    "body": "👂",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "ear3": {
+    "prefix": "listen",
+    "body": "👂",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "nose0": {
+    "prefix": "smell",
+    "body": "👃",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "nose1": {
+    "prefix": "sniff",
+    "body": "👃",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "eye0": {
+    "prefix": "face",
+    "body": "👁",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "eye1": {
+    "prefix": "look",
+    "body": "👁",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "eye2": {
+    "prefix": "see",
+    "body": "👁",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "eye3": {
+    "prefix": "watch",
+    "body": "👁",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "eye4": {
+    "prefix": "stare",
+    "body": "👁",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "eyes0": {
+    "prefix": "look",
+    "body": "👀",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "eyes1": {
+    "prefix": "watch",
+    "body": "👀",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "eyes2": {
+    "prefix": "stalk",
+    "body": "👀",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "eyes3": {
+    "prefix": "peek",
+    "body": "👀",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "eyes4": {
+    "prefix": "see",
+    "body": "👀",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "brain0": {
+    "prefix": "smart",
+    "body": "🧠",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "brain1": {
+    "prefix": "intelligent",
+    "body": "🧠",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "bust_in_silhouette0": {
+    "prefix": "user",
+    "body": "👤",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "bust_in_silhouette1": {
+    "prefix": "person",
+    "body": "👤",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "bust_in_silhouette2": {
+    "prefix": "human",
+    "body": "👤",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "busts_in_silhouette0": {
+    "prefix": "user",
+    "body": "👥",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "busts_in_silhouette1": {
+    "prefix": "person",
+    "body": "👥",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "busts_in_silhouette2": {
+    "prefix": "human",
+    "body": "👥",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "busts_in_silhouette3": {
+    "prefix": "group",
+    "body": "👥",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "busts_in_silhouette4": {
+    "prefix": "team",
+    "body": "👥",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "speaking_head0": {
+    "prefix": "user",
+    "body": "🗣",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "speaking_head1": {
+    "prefix": "person",
+    "body": "🗣",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "speaking_head2": {
+    "prefix": "human",
+    "body": "🗣",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "speaking_head3": {
+    "prefix": "sing",
+    "body": "🗣",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "speaking_head4": {
+    "prefix": "say",
+    "body": "🗣",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "speaking_head5": {
+    "prefix": "talk",
+    "body": "🗣",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "baby0": {
+    "prefix": "child",
+    "body": "👶",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "baby1": {
+    "prefix": "boy",
+    "body": "👶",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "baby2": {
+    "prefix": "girl",
+    "body": "👶",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "baby3": {
+    "prefix": "toddler",
+    "body": "👶",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "child0": {
+    "prefix": "gender-neutral",
+    "body": "🧒",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "child1": {
+    "prefix": "young",
+    "body": "🧒",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "boy0": {
+    "prefix": "man",
+    "body": "👦",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "boy1": {
+    "prefix": "male",
+    "body": "👦",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "boy2": {
+    "prefix": "guy",
+    "body": "👦",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "boy3": {
+    "prefix": "teenager",
+    "body": "👦",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "girl0": {
+    "prefix": "female",
+    "body": "👧",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "girl1": {
+    "prefix": "woman",
+    "body": "👧",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "girl2": {
+    "prefix": "teenager",
+    "body": "👧",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "adult0": {
+    "prefix": "gender-neutral",
+    "body": "🧑",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "adult1": {
+    "prefix": "person",
+    "body": "🧑",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "man0": {
+    "prefix": "mustache",
+    "body": "👨",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "woman0": {
+    "prefix": "female",
+    "body": "👩",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "blonde_woman0": {
+    "prefix": "woman",
+    "body": "👱‍♀",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "blonde_man0": {
+    "prefix": "man",
+    "body": "👱",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "bearded_person0": {
+    "prefix": "person",
+    "body": "🧔",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "older_adult0": {
+    "prefix": "human",
+    "body": "🧓",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "older_man0": {
+    "prefix": "human",
+    "body": "👴",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "older_woman0": {
+    "prefix": "human",
+    "body": "👵",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "man_with_gua_pi_mao0": {
+    "prefix": "male",
+    "body": "👲",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "woman_with_headscarf0": {
+    "prefix": "female",
+    "body": "🧕",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "woman_with_turban0": {
+    "prefix": "female",
+    "body": "👳‍♀",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "man_with_turban0": {
+    "prefix": "male",
+    "body": "👳",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "policeman0": {
+    "prefix": "man",
+    "body": "👮",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "construction_worker_man0": {
+    "prefix": "male",
+    "body": "👷",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "guardsman0": {
+    "prefix": "uk",
+    "body": "💂",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "male_detective0": {
+    "prefix": "human",
+    "body": "🕵",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "woman_farmer0": {
+    "prefix": "rancher",
+    "body": "👩‍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "man_technologist0": {
+    "prefix": "coder",
+    "body": "👨‍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "woman_office_worker0": {
+    "prefix": "business",
+    "body": "👩‍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "man_office_worker0": {
+    "prefix": "business",
+    "body": "👨‍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "woman_mechanic0": {
+    "prefix": "plumber",
+    "body": "👩‍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "man_mechanic0": {
+    "prefix": "plumber",
+    "body": "👨‍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "woman_scientist0": {
+    "prefix": "biologist",
+    "body": "👩‍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "man_scientist0": {
+    "prefix": "biologist",
+    "body": "👨‍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "woman_artist0": {
+    "prefix": "painter",
+    "body": "👩‍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "man_artist0": {
+    "prefix": "painter",
+    "body": "👨‍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "woman_firefighter0": {
+    "prefix": "fireman",
+    "body": "👩‍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "man_firefighter0": {
+    "prefix": "fireman",
+    "body": "👨‍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "mrs_claus0": {
+    "prefix": "woman",
+    "body": "🤶",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "santa0": {
+    "prefix": "festival",
+    "body": "🎅",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "angel0": {
+    "prefix": "heaven",
+    "body": "👼",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "pregnant_woman0": {
+    "prefix": "baby",
+    "body": "🤰",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "breastfeeding0": {
+    "prefix": "nursing",
+    "body": "🤱",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "princess0": {
+    "prefix": "girl",
+    "body": "👸",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "prince0": {
+    "prefix": "boy",
+    "body": "🤴",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "bride_with_veil0": {
+    "prefix": "couple",
+    "body": "👰",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "man_in_tuxedo0": {
+    "prefix": "couple",
+    "body": "🤵",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "running_man0": {
+    "prefix": "man",
+    "body": "🏃",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "walking_man0": {
+    "prefix": "human",
+    "body": "🚶",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "dancer0": {
+    "prefix": "female",
+    "body": "💃",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "man_dancing0": {
+    "prefix": "male",
+    "body": "🕺",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "dancing_women0": {
+    "prefix": "female",
+    "body": "👯",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "couple0": {
+    "prefix": "pair",
+    "body": "👫",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "bowing_man0": {
+    "prefix": "man",
+    "body": "🙇",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "woman_shrugging0": {
+    "prefix": "woman",
+    "body": "🤷",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "tipping_hand_woman0": {
+    "prefix": "female",
+    "body": "💁",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "no_good_woman0": {
+    "prefix": "female",
+    "body": "🙅",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "ok_woman0": {
+    "prefix": "women",
+    "body": "🙆",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "raising_hand_woman0": {
+    "prefix": "female",
+    "body": "🙋",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "pouting_woman0": {
+    "prefix": "female",
+    "body": "🙎",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "pouting_man0": {
+    "prefix": "male",
+    "body": "🙎‍♂",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "frowning_woman0": {
+    "prefix": "female",
+    "body": "🙍",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "haircut_woman0": {
+    "prefix": "female",
+    "body": "💇",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "massage_woman0": {
+    "prefix": "female",
+    "body": "💆",
+    "fitzpatrick_scale": true,
+    "category": "people"
+  },
+  "couplekiss_man_woman0": {
+    "prefix": "pair",
+    "body": "💏",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "family_man_woman_boy0": {
+    "prefix": "home",
+    "body": "👪",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "family_woman_boy0": {
+    "prefix": "home",
+    "body": "👩‍",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "family_woman_girl0": {
+    "prefix": "home",
+    "body": "👩‍",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "family_man_boy0": {
+    "prefix": "home",
+    "body": "👨‍",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "family_man_girl0": {
+    "prefix": "home",
+    "body": "👨‍",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "yarn0": {
+    "prefix": "ball",
+    "body": "🧶",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "thread0": {
+    "prefix": "needle",
+    "body": "🧵",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "coat0": {
+    "prefix": "jacket",
+    "body": "🧥",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "labcoat0": {
+    "prefix": "doctor",
+    "body": "🥼",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "womans_clothes0": {
+    "prefix": "fashion",
+    "body": "👚",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "tshirt0": {
+    "prefix": "fashion",
+    "body": "👕",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "jeans0": {
+    "prefix": "fashion",
+    "body": "👖",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "necktie0": {
+    "prefix": "shirt",
+    "body": "👔",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "dress0": {
+    "prefix": "clothes",
+    "body": "👗",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "bikini0": {
+    "prefix": "swimming",
+    "body": "👙",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "kimono0": {
+    "prefix": "dress",
+    "body": "👘",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "lipstick0": {
+    "prefix": "female",
+    "body": "💄",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "kiss0": {
+    "prefix": "face",
+    "body": "💋",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "footprints0": {
+    "prefix": "feet",
+    "body": "👣",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "flat_shoe0": {
+    "prefix": "ballet",
+    "body": "🥿",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "high_heel0": {
+    "prefix": "fashion",
+    "body": "👠",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "sandal0": {
+    "prefix": "shoes",
+    "body": "👡",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "boot0": {
+    "prefix": "shoes",
+    "body": "👢",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "mans_shoe0": {
+    "prefix": "fashion",
+    "body": "👞",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "athletic_shoe0": {
+    "prefix": "shoes",
+    "body": "👟",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "hiking_boot0": {
+    "prefix": "backpacking",
+    "body": "🥾",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "socks0": {
+    "prefix": "stockings",
+    "body": "🧦",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "gloves0": {
+    "prefix": "hands",
+    "body": "🧤",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "scarf0": {
+    "prefix": "neck",
+    "body": "🧣",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "womans_hat0": {
+    "prefix": "fashion",
+    "body": "👒",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "tophat0": {
+    "prefix": "magic",
+    "body": "🎩",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "billed_hat0": {
+    "prefix": "cap",
+    "body": "🧢",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "mortar_board0": {
+    "prefix": "school",
+    "body": "🎓",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "crown0": {
+    "prefix": "king",
+    "body": "👑",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "school_satchel0": {
+    "prefix": "student",
+    "body": "🎒",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "luggage0": {
+    "prefix": "packing",
+    "body": "🧳",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "pouch0": {
+    "prefix": "bag",
+    "body": "👝",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "purse0": {
+    "prefix": "fashion",
+    "body": "👛",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "handbag0": {
+    "prefix": "fashion",
+    "body": "👜",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "briefcase0": {
+    "prefix": "business",
+    "body": "💼",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "eyeglasses0": {
+    "prefix": "fashion",
+    "body": "👓",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "dark_sunglasses0": {
+    "prefix": "face",
+    "body": "🕶",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "goggles0": {
+    "prefix": "eyes",
+    "body": "🥽",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "ring0": {
+    "prefix": "wedding",
+    "body": "💍",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  },
+  "closed_umbrella0": {
+    "prefix": "weather",
+    "body": "🌂",
+    "fitzpatrick_scale": false,
+    "category": "people"
+  }
+}

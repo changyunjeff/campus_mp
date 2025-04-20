@@ -19,8 +19,9 @@ export const useUserStore = defineStore('user', () => {
             const res = await AuthApi.login(code)
             console.debug('📥 登录成功:', res)
             openid.value = res.openid
+            console.debug('openid:', openid.value)
             const connection = useConnection()
-            connection.connect()
+            await connection.connect()
             return res
         } catch (err) {
             console.log(err) 
