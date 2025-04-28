@@ -15,7 +15,8 @@ export const useUserStore = defineStore('user', () => {
                 throw new Error('获取code失败')
             }
             console.debug('📤 获取登录code:', code)
-
+            // 在每次登录前先删除旧的access token，因为每次登录都会生成新的access token和refresh token
+            uni.removeStorageSync("token")
             const res = await AuthApi.login(code)
             console.debug('📥 登录成功:', res)
             openid.value = res.openid
@@ -24,7 +25,8 @@ export const useUserStore = defineStore('user', () => {
             await connection.connect()
             return res
         } catch (err) {
-            console.log(err) 
+            console.log(err)
+            throw err
         }
     }
 

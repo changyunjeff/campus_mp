@@ -57,7 +57,7 @@ const switchTabHandler = (index, path) => {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 52px;
+  height: 152rpx;
   background: white;
   display: flex;
   padding-bottom: env(safe-area-inset-bottom);

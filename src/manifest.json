@@ -1,10 +1,9 @@
 {
   "name": "校园助手",
-  "appid": "wxab48344dd2aea27a",
+  "appid": "wx824112a27512e25e", // wxab48344dd2aea27a
   "description": "校园生活助手",
   "versionName": "1.0.0",
   "versionCode": "100",
-  // "transformPx": false, // 该配置项已弃用
   "uniStatistics": {
     "enable": false
   },
@@ -16,7 +15,6 @@
       "alwaysShowBeforeRender": true,
       "waiting": true,
       "autoclose": true
-      // "delay": 0 // 该配置项已弃用
     },
     "modules": {},
     "distribute": {
@@ -49,7 +47,7 @@
   },
   "quickapp": {},
   "mp-weixin": {
-    "appid": "wxab48344dd2aea27a",
+    "appid": "wx824112a27512e25e",  // wxab48344dd2aea27a
     "setting": {
       "urlCheck": false,
       "minified": true

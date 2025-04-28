@@ -42,6 +42,7 @@ export function useRequest() {
      */
     const http = (options) => {
         return new Promise((resolve, reject) => {
+
             uni.request({
                 url: options.url.startsWith('http')?url:concat(`${import.meta.env.VITE_APP_BASE_URL}`, options.url),
                 method: options.method,
@@ -93,19 +94,24 @@ export function useRequest() {
                     resolve(task) // 返回WebSocket实例以便后续操作
                 },
                 fail: (err) => {
+                    console.error('建立websocket时发生错误：', err)
                     reject(err)
                 }
             })
             task.onOpen((res) => {
+                console.debug('websocket 已经成功建立了连接：', res)
                 config.onOpen && config.onOpen(res)
             })
             task.onMessage((res) => {
+                console.debug('websocket 收到了新消息', res)
                 config.onMessage && config.onMessage(res)
             })
             task.onError((err) => {
+                console.error('websocket 发生了错误：', err)
                 config.onError && config.onError(err)
             })
             task.onClose((res) => {
+                console.debug('websocket 已经关闭：', res)
                 config.onClose && config.onClose(res)
             })
         }) 

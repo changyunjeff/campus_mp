@@ -43,6 +43,7 @@ export default defineUniPages({
       pages: [
         {
           path: 'private_chat',
+          name: 'private_chat',
           style: {
             navigationBarTitleText: '私聊',
           },
@@ -65,7 +66,52 @@ export default defineUniPages({
           }
         },
       ]
-    }
+    },
+    {
+      root: 'subpackages/pages/register',
+      pages: [
+        {
+          path: 'step1',
+          name: 'validation-step1',
+          style: {
+            navigationBarTitleText: '选择身份',
+          },
+          meta: {
+            title: '选择身份'
+          }
+        },
+        {
+          path: 'step2',
+          name: 'validation-step2',
+          style: {
+            navigationBarTitleText: '身份认证',
+          },
+          meta: {
+            title: '身份认证'
+          }
+        },
+        {
+          path: 'step3',
+          name: 'validation-step3',
+          style: {
+            navigationBarTitleText: '联系方式',
+          },
+          meta: {
+            title: '联系方式'
+          }
+        },
+        {
+          path: 'finish',
+          name: 'validation-finish',
+          style: {
+            navigationBarTitleText: '完成验证',
+          },
+          meta: {
+            title: '完成验证'
+          }
+        },
+      ]
+    },
   ],
   globalStyle: {
     backgroundColor: '@bgColor',

@@ -54,6 +54,7 @@
       },
       "text": "社区",
       "icon": "home",
+      "name": "home",
       "iconActive": "home-fill",
       "meta": {
         "title": "社区中心"
@@ -65,6 +66,7 @@
       "style": {},
       "text": "闲置",
       "icon": "shopping",
+      "name": "goods",
       "iconActive": "shopping-fill",
       "meta": {
         "title": "商品闲置"
@@ -76,6 +78,7 @@
       "style": {},
       "text": "消息",
       "icon": "message",
+      "name": "message",
       "iconActive": "message-fill",
       "meta": {
         "title": "我的消息"
@@ -87,6 +90,7 @@
       "style": {},
       "text": "我的",
       "icon": "meh",
+      "name": "personal",
       "iconActive": "smile-fill",
       "meta": {
         "title": "个人中心"
@@ -99,6 +103,7 @@
       "pages": [
         {
           "path": "private_chat",
+          "name": "private_chat",
           "style": {
             "navigationBarTitleText": "私聊"
           },
@@ -118,6 +123,51 @@
           "name": "private_chat_more",
           "meta": {
             "title": ""
+          }
+        }
+      ]
+    },
+    {
+      "root": "subpackages/pages/register",
+      "pages": [
+        {
+          "path": "step1",
+          "name": "validation-step1",
+          "style": {
+            "navigationBarTitleText": "选择身份"
+          },
+          "meta": {
+            "title": "选择身份"
+          }
+        },
+        {
+          "path": "step2",
+          "name": "validation-step2",
+          "style": {
+            "navigationBarTitleText": "身份认证"
+          },
+          "meta": {
+            "title": "身份认证"
+          }
+        },
+        {
+          "path": "step3",
+          "name": "validation-step3",
+          "style": {
+            "navigationBarTitleText": "联系方式"
+          },
+          "meta": {
+            "title": "联系方式"
+          }
+        },
+        {
+          "path": "finish",
+          "name": "validation-finish",
+          "style": {
+            "navigationBarTitleText": "完成验证"
+          },
+          "meta": {
+            "title": "完成验证"
           }
         }
       ]

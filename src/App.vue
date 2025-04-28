@@ -15,7 +15,8 @@ onLaunch(() => {
 /* 引入iconfont CSS */
 @import "/static/iconfont/iconfont.css";
 /* Global styles */
-body {
+/* 全局盒模型设置 */
+view, scroll-view, input, text, button {
   margin: 0;
   padding: 0;
   box-sizing: border-box;

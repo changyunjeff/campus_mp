@@ -21,17 +21,16 @@
         open-type="getUserInfo"
       >
         {{ buttonText }}
-        <IconFont name="arrowright" size="24px" color="#fff" />
       </button>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
 import { useRouter } from 'uni-mini-router'
 import { sleep } from '@/utils/time'
 import { useUserStore } from '@/pinia/modules/user'
+import {useToast} from "@/composables/toast";
 
 const router = useRouter()
 const startAnimation = ref(false)
@@ -39,41 +38,38 @@ const showContent = ref(false)
 const isLoading = ref(false)
 const buttonText = ref('开始体验')
 const userStore = useUserStore()
+const toast = useToast()
 
 // 处理进入应用
 async function handleEnter() {
   if (isLoading.value) return
 
-  console.group('====================[用户登录]====================')
-  try {
-    isLoading.value = true
-    buttonText.value = '正在进入...'
+  isLoading.value = true
+  buttonText.value = '正在进入...'
 
-    await uni.getUserProfile({
-      desc: '用于登录到应用',
-      success: async ({userInfo}) => {
-        console.debug('👤 获取微信用户信息', userInfo)
-        userStore.login()
-      },
-      fail: (err) => {
-        console.error('User profile failed:', err)
-        throw new Error('用户拒绝授权')
+  uni.getUserProfile({
+    desc: '用于登录到应用',
+    lang: 'zh_CN',
+    success: async ({userInfo}) => {
+      console.debug('👤 获取微信用户信息', userInfo)
+      try {
+        await userStore.login()
+        // 导航到社区页面
+        router.pushTab('/pages/index/community')
+      } catch (err) {
+        toast.error(err.message)
+        console.error(err.message)
       }
-    })
-    
-    // 导航到社区页面
-    router.pushTab('/pages/index/community')
-  } catch (error) {
-    console.error('❌ 进入失败:', error)
-    uni.showToast({
-      title: error.message || '进入失败',
-      icon: 'none'
-    })
-  } finally {
-    isLoading.value = false
-    buttonText.value = '开始体验'
-  }
-  console.groupEnd()
+    },
+    fail: (err) => {
+      toast.error(err.message)
+      console.error('❌ 进入失败:', err.message)
+    },
+    complete: () => {
+      isLoading.value = false
+      buttonText.value = '开始体验'
+    }
+  })
 }
 
 onMounted(async () => {

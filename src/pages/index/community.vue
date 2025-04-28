@@ -1,16 +1,17 @@
 <script setup>
 import Layout from '@/layout/index.vue'
-const { show } = useTabbar()
+
+const {show} = useTabbar()
 
 const activeTab = ref('recommend')
 const router = useRouter()
 
 // 社区页面的tab选项
 const communityTabs = [
-  { name: 'recommend', label: '推荐' },
-  { name: 'follow', label: '关注' },
-  { name: 'nearby', label: '附近' },
-  { name: 'latest', label: '最新' }
+  {name: 'recommend', label: '推荐'},
+  {name: 'follow', label: '关注'},
+  {name: 'nearby', label: '附近'},
+  {name: 'latest', label: '最新'}
 ]
 
 // 处理tab切换
@@ -20,66 +21,73 @@ const handleTabChange = (tabName) => {
 }
 
 const gotoPrivateChat = () => {
-    router.push('/subpackages/pages/message/private_chat')
+  router.push('/subpackages/pages/message/private_chat')
 }
 
 const gotoActionSheetDemo = () => {
-    router.push({
-        name: 'action-sheet-demo'
-    })
+  router.push({
+    name: 'action-sheet-demo'
+  })
+}
+
+const gotoUploadProgress = () => {
+  router.push({
+    name: 'validation-step1'
+  })
 }
 
 onMounted(() => {
-    show()
+  show()
 })
 </script>
 
 <template>
-    <layout>
-        <template #left>
-            <WdIcon name="search" size="32rpx" color="#666"/>
-        </template>
-        <template #center>
-            <tab-group 
-                :tabs="communityTabs" 
-                v-model:active-tab="activeTab"
-                @change="handleTabChange"
-            />
-        </template>
-        
-        <!-- 宫崎骏风格的Tab按钮组 -->
-        <view class="community-container">
-            <!-- 内容区域 -->
-            <view class="tab-content-area">
-                <view v-if="activeTab === 'recommend'" class="content-item">
-                    <view class="content-placeholder">
-                        <image class="totoro-image" src="/static/totoro.svg" mode="aspectFit"></image>
-                        <text class="placeholder-text">推荐内容区域</text>
-                    </view>
-                </view>
-                <view v-else-if="activeTab === 'follow'" class="content-item">
-                    <view class="content-placeholder">
-                        <text class="placeholder-text">关注内容区域</text>
-                    </view>
-                </view>
-                <view v-else-if="activeTab === 'nearby'" class="content-item">
-                    <view class="content-placeholder">
-                        <text class="placeholder-text">附近内容区域</text>
-                    </view>
-                </view>
-                <view v-else-if="activeTab === 'latest'" class="content-item">
-                    <view class="content-placeholder">
-                        <text class="placeholder-text">最新内容区域</text>
-                    </view>
-                </view>
-            </view>
-        </view>
-        
-        <custom-tab-bar/>
+  <layout>
+    <template #left>
+      <WdIcon name="search" size="32rpx" color="#666"/>
+    </template>
+    <template #center>
+      <tab-group
+          :tabs="communityTabs"
+          v-model:active-tab="activeTab"
+          @change="handleTabChange"
+      />
+    </template>
 
-        <WdButton @tap="gotoPrivateChat">跳转到私聊界面</WdButton>
-        <WdButton @tap="gotoActionSheetDemo">跳转到actions sheet测试界面</WdButton>
-    </layout>
+    <!-- 宫崎骏风格的Tab按钮组 -->
+    <view class="community-container">
+      <!-- 内容区域 -->
+      <view class="tab-content-area">
+        <view v-if="activeTab === 'recommend'" class="content-item">
+          <view class="content-placeholder">
+            <image class="totoro-image" src="/static/totoro.svg" mode="aspectFit"></image>
+            <text class="placeholder-text">推荐内容区域</text>
+          </view>
+        </view>
+        <view v-else-if="activeTab === 'follow'" class="content-item">
+          <view class="content-placeholder">
+            <text class="placeholder-text">关注内容区域</text>
+          </view>
+        </view>
+        <view v-else-if="activeTab === 'nearby'" class="content-item">
+          <view class="content-placeholder">
+            <text class="placeholder-text">附近内容区域</text>
+          </view>
+        </view>
+        <view v-else-if="activeTab === 'latest'" class="content-item">
+          <view class="content-placeholder">
+            <text class="placeholder-text">最新内容区域</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <custom-tab-bar/>
+
+    <WdButton @tap="gotoPrivateChat">跳转到私聊界面</WdButton>
+    <WdButton @tap="gotoActionSheetDemo">跳转到actions sheet测试界面</WdButton>
+    <WdButton @tap="gotoUploadProgress">跳转到上传进度条测试界面</WdButton>
+  </layout>
 </template>
 
 <style lang="scss" scoped>

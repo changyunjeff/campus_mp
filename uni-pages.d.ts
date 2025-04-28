@@ -16,7 +16,11 @@ interface NavigateToOptions {
        "/pages/index/personal" |
        "/subpackages/pages/message/private_chat" |
        "/subpackages/pages/message/notification_chat" |
-       "/subpackages/pages/message/private_chat_more";
+       "/subpackages/pages/message/private_chat_more" |
+       "/subpackages/pages/register/step1" |
+       "/subpackages/pages/register/step2" |
+       "/subpackages/pages/register/step3" |
+       "/subpackages/pages/register/finish";
 }
 interface RedirectToOptions extends NavigateToOptions {}
 
