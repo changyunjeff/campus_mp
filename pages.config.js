@@ -39,10 +39,10 @@ export default defineUniPages({
   ],
   subPackages: [
     {
-      root: 'subpackages/pages/message',
+      root: 'subpackages',
       pages: [
         {
-          path: 'private_chat',
+          path: 'pages/message/private_chat',
           name: 'private_chat',
           style: {
             navigationBarTitleText: '私聊',
@@ -52,26 +52,21 @@ export default defineUniPages({
           }
         },
         {
-          path: 'notification_chat',
+          path: 'pages/message/notification_chat',
           name: 'notification_chat',
           meta: {
             title: '系统通知'
           }
         },
         {
-          path: 'private_chat_more',
+          path: 'pages/message/private_chat_more',
           name: 'private_chat_more',
           meta: {
             title: ''
           }
         },
-      ]
-    },
-    {
-      root: 'subpackages/pages/register',
-      pages: [
         {
-          path: 'step1',
+          path: 'pages/register/step1',
           name: 'validation-step1',
           style: {
             navigationBarTitleText: '选择身份',
@@ -81,7 +76,7 @@ export default defineUniPages({
           }
         },
         {
-          path: 'step2',
+          path: 'pages/register/step2',
           name: 'validation-step2',
           style: {
             navigationBarTitleText: '身份认证',
@@ -91,7 +86,7 @@ export default defineUniPages({
           }
         },
         {
-          path: 'step3',
+          path: 'pages/register/step3',
           name: 'validation-step3',
           style: {
             navigationBarTitleText: '联系方式',
@@ -101,7 +96,7 @@ export default defineUniPages({
           }
         },
         {
-          path: 'finish',
+          path: 'pages/register/finish',
           name: 'validation-finish',
           style: {
             navigationBarTitleText: '完成验证',

@@ -172,7 +172,7 @@ const statusBarHeight = computed(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background-color: blue;
+  background-color: #f5f5f5;
 }
 
 .status-bar {
@@ -199,6 +199,6 @@ const statusBarHeight = computed(() => {
 .footer {
   width: 100%;
   height: calc($uni-input-area-height + var(--safe-area-inset-bottom));
-  background-color: #f5f5f5;
+  background-color: blue;
 }
 </style>
