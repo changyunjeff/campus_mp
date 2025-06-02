@@ -1,4 +1,4 @@
-import { useRequest } from "./request";
+import { socket } from "@/utils/request";
 import { ref, watch } from 'vue';
 
 let instance = null;
@@ -12,8 +12,6 @@ export function useConnection() {
   if (instance) {
     return instance;
   }
-
-  const { socket } = useRequest();
 
   const connected = ref(false);
   const handlers = ref({});

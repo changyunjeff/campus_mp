@@ -20,7 +20,21 @@ interface NavigateToOptions {
        "/subpackages/pages/register/step1" |
        "/subpackages/pages/register/step2" |
        "/subpackages/pages/register/step3" |
-       "/subpackages/pages/register/finish";
+       "/subpackages/pages/register/finish" |
+       "/subpackages/pages/community/post-detail" |
+       "/subpackages/pages/community/community-search" |
+       "/subpackages/pages/community/publish-post" |
+       "/subpackages/pages/community/report" |
+       "/subpackages/pages/community/community-personal-center" |
+       "/subpackages/pages/goods/categories" |
+       "/subpackages/pages/goods/goods-details" |
+       "/subpackages/pages/goods/order-confirm" |
+       "/subpackages/pages/goods/addresses" |
+       "/subpackages/pages/goods/pay-confirm" |
+       "/subpackages/pages/goods/goods-publish-category" |
+       "/subpackages/pages/goods/goods-publish-submit" |
+       "/subpackages/pages/goods/goods-personal-center" |
+       "/subpackages/pages/profile/choose-avatar";
 }
 interface RedirectToOptions extends NavigateToOptions {}
 

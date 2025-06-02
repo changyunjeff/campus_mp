@@ -17,6 +17,8 @@ declare module 'vue' {
     IconFont: typeof import('./../components/IconFont.vue')['default']
     InputEntry: typeof import('./../components/InputEntry.vue')['default']
     InputSection: typeof import('./../components/InputSection.vue')['default']
+    PublishMenu: typeof import('./../components/publishMenu.vue')['default']
+    SharePopups: typeof import('./../components/share-popups.vue')['default']
     TabGroup: typeof import('./../components/TabGroup.vue')['default']
     UploadProgress: typeof import('./../components/upload-progress.vue')['default']
     WdActionSheet: typeof import('wot-design-uni/components/wd-action-sheet/wd-action-sheet.vue')['default']
@@ -25,6 +27,7 @@ declare module 'vue' {
     WdCellGroup: typeof import('wot-design-uni/components/wd-cell-group/wd-cell-group.vue')['default']
     WdIcon: typeof import('wot-design-uni/components/wd-icon/wd-icon.vue')['default']
     WdLoading: typeof import('wot-design-uni/components/wd-loading/wd-loading.vue')['default']
+    WdPopup: typeof import('wot-design-uni/components/wd-popup/wd-popup.vue')['default']
     WdSwitch: typeof import('wot-design-uni/components/wd-switch/wd-switch.vue')['default']
   }
 }

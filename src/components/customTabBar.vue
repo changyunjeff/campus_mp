@@ -1,24 +1,38 @@
 <script setup>
 import tabbarList from '@/configs/tabbar.js'
 import {useTabbar} from '@/composables/tabbar.js'
+import PublishMenu from '@/components/publishMenu.vue'
 
-const { selected, hiddened, setSelected } = useTabbar()
+const { selected, show, hide, hiddened, setSelected } = useTabbar()
 const router = useRouter()
+const showPublishMenu = ref(false)
 
 const switchTabHandler = (index, path) => {
   if (index === selected.value) {
     return 
   }
   if (index === 2) {
-    // 跳转到发布页面
+    // 显示发布菜单
+    handlePublishClick()
     return
   }
   setSelected(index)
   router.pushTab(`/${path}`)
 }
 
-</script>
+// 处理发布按钮点击
+const handlePublishClick = () => {
+  hide() // 隐藏底部导航栏
+  showPublishMenu.value = true
+}
 
+// 处理发布菜单关闭
+const handlePublishMenuClose = () => {
+  showPublishMenu.value = false
+  show() // 显示底部导航栏
+}
+
+</script>
 <template>
   <view>
     <view class="tab-bar" :class="{ 'tab-bar-hide': hiddened }">
@@ -48,6 +62,12 @@ const switchTabHandler = (index, path) => {
         </block>
       </view>
     </view>
+
+    <!-- 发布菜单 -->
+    <PublishMenu 
+      :visible="showPublishMenu" 
+      @close="handlePublishMenuClose" 
+    />
   </view>
 </template>
 

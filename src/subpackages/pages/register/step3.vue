@@ -202,8 +202,9 @@
 
 <script setup>
 import common from "./common.vue"
-import {useRegisterStore} from "@/subpackages/pinia/register";
-import {RegisterApi} from "@/subpackages/api/register"
+import {useRegisterStore} from "@/pinia/modules/register";
+import {RegisterApi} from "@/api/register"
+import {SMSApi} from "@/api/sms";
 import {useToast} from "@/composables/toast";
 import {useRouter} from "uni-mini-router";
 import events from "@/utils/events";
@@ -212,14 +213,28 @@ const validationStore = useRegisterStore()
 const toast = useToast()
 const router = useRouter()
 
-// 页面加载时设置当前步骤
+// 页面加载时设置当前步骤并预填充数据
 onMounted(() => {
   validationStore.setStage(2)
+  
+  // 从store中预填充表单数据
+  formData.phone = validationStore.phone || ''
+  formData.email = validationStore.email || ''
+  formData.nickname = validationStore.nickname || ''
+  
+  console.log('step3页面加载，预填充数据:', {
+    formData: formData,
+    storeData: {
+      phone: validationStore.phone,
+      email: validationStore.email,
+      nickname: validationStore.nickname
+    }
+  })
 })
 
 // 表单数据
 const formData = reactive({
-  phone: validationStore.phone || '',
+  phone: '',
   verifyCode: '',
   email: '',
   nickname: '',
@@ -253,7 +268,7 @@ const emailInputFocused = ref(false)
 const nicknameInputFocused = ref(false)
 
 // 发送验证码
-const handleSendCode = () => {
+const handleSendCode = async () => {
   if (!canSendCode.value || countdown.value > 0) return
 
   countdown.value = 60
@@ -265,18 +280,15 @@ const handleSendCode = () => {
     }
   }, 1000)
 
-  // 模拟发送验证码
-  RegisterApi.getSMSCode(formData.phone)
-    .then(() => {
-      toast.success('验证码发送成功，请注意查收')
-      // 开发环境使用固定验证码
-      formData.verifyCode = '123456'
-    })
-    .catch(err => {
-      toast.error(err.message || '验证码发送失败')
-      clearInterval(timer)
-      countdown.value = 0
-    })
+  // 发送验证码
+  try{
+    const res = await SMSApi.getSMSCode(formData.phone)
+    toast.success('验证码发送成功，请注意查收')
+  } catch(err) {
+    toast.error(err.message || '验证码发送失败')
+    clearInterval(timer)
+    countdown.value = 0
+  }
 }
 
 // 组件卸载时清除定时器
@@ -295,27 +307,23 @@ const handleSubmit = async () => {
     events.emit('showUpload', 0)
     events.emit('updateUpload', 30)
     
-    // 更新用户信息
+    // 调用真实API提交第三步
+    await RegisterApi.submitStep3({
+      phone: formData.phone,
+      sms_code: formData.verifyCode,
+      email_address: formData.email,
+      nick_name: formData.nickname
+    })
+    
+    // 更新用户信息到store
     validationStore.updateUserInfo({
       phone: formData.phone,
       email: formData.email,
       nickname: formData.nickname
     })
-    
-    // 模拟API提交
-    await RegisterApi.process({
-      contactInfo: {
-        phone: formData.phone,
-        email: formData.email,
-        nickname: formData.nickname
-      }
-    }, {
-      phone: formData.phone,
-      code: formData.verifyCode
-    })
-    
+
     // 设置注册流程进度
-    validationStore.setStage(2) // 完成第三步
+    validationStore.setStage(3) // 完成第三步
     validationStore.setVerifyStatus('pending') // 设置为等待审核状态
     
     // 模拟上传完成
@@ -330,8 +338,8 @@ const handleSubmit = async () => {
       })
     }, 500)
   } catch (err) {
-    console.error(err.message)
-    toast.error(err.message || '提交失败')
+    console.error('提交失败:', err)
+    toast.error(err.message || '提交失败，请重试')
     events.emit('hideUpload')
   } finally {
     isSubmitting.value = false

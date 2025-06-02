@@ -181,9 +181,9 @@
 
 <script setup>
 import common from "./common.vue";
-import {useRegisterStore} from "@/subpackages/pinia/register";
+import {useRegisterStore} from "@/pinia/modules/register";
 import {useRouter} from "uni-mini-router";
-import {RegisterApi} from "@/subpackages/api/register";
+import {RegisterApi} from "@/api/register";
 import {useToast} from "@/composables/toast";
 
 const validationStore = useRegisterStore()
@@ -193,18 +193,6 @@ const toast = useToast()
 // 页面加载时设置当前步骤
 onMounted(() => {
   validationStore.setStage(3)
-  
-  // 为演示目的，可以在控制台添加一个切换状态的函数
-  window._toggleStatus = (status, reason) => {
-    validationStore.setVerifyStatus(status, reason)
-    toast.success(`状态已切换为：${status}`)
-  }
-  
-  console.log('=== 演示用状态切换方法 ===')
-  console.log('可在控制台使用以下命令切换状态查看不同样式：')
-  console.log('_toggleStatus("success") - 切换为成功状态')
-  console.log('_toggleStatus("rejected", "证件照片不清晰") - 切换为驳回状态')
-  console.log('_toggleStatus("pending") - 切换为等待审核状态')
 })
 
 // 状态相关的计算属性
@@ -283,9 +271,9 @@ const handleComplete = () => {
       name: 'validation-step1',
     })
   } else {
-    // 成功提示
-    toast.success('操作成功')
-    
+    if (validationStore.verifyStatus === 'success') {
+      uni.setStorageSync('isDontShowGuide', true) // 设置不再显示引导
+    }
     // 返回首页
     setTimeout(() => {
       router.pushTab({

@@ -12,6 +12,7 @@ const route = useRoute()
 
 // 获取当前页面标题
 const pageTitle = ref('')
+const showFotter = ref(false)
 
 // 返回上一页
 const goBack = () => {
@@ -24,14 +25,16 @@ const actionSheet = reactive({
   title: '',
   actions: [{
     name: '选项1',
+    callback: null,
   }],
 })
 
 // 处理ActionSheet选项点击
-const handleActionClick = (item, index) => {
+const handleActionClick = (e) => {
+  console.debug('ActionSheet点击了选项：', e.item, e.index, '')
   // 如果选项有回调函数，则执行
-  if (item.callback && typeof item.callback === 'function') {
-    item.callback(item, index)
+  if (e.item.callback && typeof e.item.callback === 'function') {
+    e.item.callback(e.item, e.index)
   }
   // 关闭ActionSheet
   closeActionSheet()
@@ -91,6 +94,7 @@ provide('uploadControl', uploadControl)
 onMounted(() => {
   console.log(route)
   pageTitle.value = route?.meta?.title || '未知标题'
+  showFotter.value = route?.meta?.footer || false
 })
 
 onShow(() => {
@@ -126,8 +130,13 @@ const statusBarHeight = computed(() => {
         <template #left>
           <slot name="left">
             <!-- 默认显示返回箭头 -->
-            <view @click="goBack">
-              <IconFont name="left" size="16px" color="#333"/>
+            <view class="flex items-center h-full">
+              <WdIcon
+                  name="arrow-left"
+                  size="40rpx"
+                  color="#333"
+                  @tap="goBack"
+              />
             </view>
           </slot>
         </template>
@@ -149,7 +158,7 @@ const statusBarHeight = computed(() => {
       <slot></slot>
     </view>
 
-    <view class="footer">
+    <view v-if="showFotter" class="footer">
       <slot name="footer"></slot>
     </view>
 
@@ -198,7 +207,7 @@ const statusBarHeight = computed(() => {
 
 .footer {
   width: 100%;
-  height: calc($uni-input-area-height + var(--safe-area-inset-bottom));
+  min-height: calc($uni-input-area-height + var(--safe-area-inset-bottom));
   background-color: blue;
 }
 </style>

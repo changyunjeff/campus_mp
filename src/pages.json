@@ -57,7 +57,8 @@
       "name": "home",
       "iconActive": "home-fill",
       "meta": {
-        "title": "社区中心"
+        "title": "社区中心",
+        "footer": true
       }
     },
     {
@@ -69,7 +70,8 @@
       "name": "goods",
       "iconActive": "shopping-fill",
       "meta": {
-        "title": "商品闲置"
+        "title": "商品闲置",
+        "footer": true
       }
     },
     {
@@ -81,7 +83,8 @@
       "name": "message",
       "iconActive": "message-fill",
       "meta": {
-        "title": "我的消息"
+        "title": "我的消息",
+        "footer": true
       }
     },
     {
@@ -93,7 +96,8 @@
       "name": "personal",
       "iconActive": "smile-fill",
       "meta": {
-        "title": "个人中心"
+        "title": "个人中心",
+        "footer": true
       }
     }
   ],
@@ -163,6 +167,152 @@
           },
           "meta": {
             "title": "完成验证"
+          }
+        },
+        {
+          "path": "pages/community/post-detail",
+          "name": "post_detail",
+          "style": {
+            "navigationBarTitleText": "帖子详情"
+          },
+          "meta": {
+            "title": "帖子详情",
+            "footer": true,
+            "verify": true
+          }
+        },
+        {
+          "path": "pages/community/community-search",
+          "name": "community_search",
+          "style": {
+            "navigationBarTitleText": "搜索"
+          },
+          "meta": {
+            "title": "搜索"
+          }
+        },
+        {
+          "path": "pages/community/publish-post",
+          "name": "publish_post",
+          "style": {
+            "navigationBarTitleText": "发布帖子"
+          },
+          "meta": {
+            "title": "发布帖子",
+            "verify": true
+          }
+        },
+        {
+          "path": "pages/community/report",
+          "name": "report",
+          "style": {
+            "navigationBarTitleText": "举报"
+          },
+          "meta": {
+            "title": "举报"
+          }
+        },
+        {
+          "path": "pages/community/community-personal-center",
+          "name": "community_personal_center",
+          "style": {
+            "navigationBarTitleText": "个人中心"
+          },
+          "meta": {
+            "title": "个人中心"
+          }
+        },
+        {
+          "path": "pages/goods/categories",
+          "name": "categories",
+          "style": {
+            "navigationBarTitleText": "分类"
+          },
+          "meta": {
+            "title": "分类"
+          }
+        },
+        {
+          "path": "pages/goods/goods-details",
+          "name": "goods-details",
+          "style": {
+            "navigationBarTitleText": "商品详情"
+          },
+          "meta": {
+            "title": "商品详情",
+            "footer": true
+          }
+        },
+        {
+          "path": "pages/goods/order-confirm",
+          "name": "order_confirm",
+          "style": {
+            "navigationBarTitleText": "确认订单"
+          },
+          "meta": {
+            "title": "确认订单"
+          }
+        },
+        {
+          "path": "pages/goods/addresses",
+          "name": "addresses",
+          "style": {
+            "navigationBarTitleText": "地址管理"
+          },
+          "meta": {
+            "title": "地址管理"
+          }
+        },
+        {
+          "path": "pages/goods/pay-confirm",
+          "name": "pay_confirm",
+          "style": {
+            "navigationBarTitleText": "确认支付"
+          },
+          "meta": {
+            "title": "确认支付"
+          }
+        },
+        {
+          "path": "pages/goods/goods-publish-category",
+          "name": "publish_goods_category",
+          "style": {
+            "navigationBarTitleText": "发布商品-选择类别"
+          },
+          "meta": {
+            "title": "发布商品-选择类别"
+          }
+        },
+        {
+          "path": "pages/goods/goods-publish-submit",
+          "name": "publish_goods_submit",
+          "style": {
+            "navigationBarTitleText": "发布商品-填写参数"
+          },
+          "meta": {
+            "title": "发布商品-填写参数"
+          }
+        },
+        {
+          "path": "pages/goods/goods-personal-center",
+          "name": "goods_personal_center",
+          "style": {
+            "navigationBarTitleText": "个人中心"
+          },
+          "meta": {
+            "title": "个人中心",
+            "verify": true
+          }
+        },
+        {
+          "path": "pages/profile/choose-avatar",
+          "name": "choose_avatar",
+          "style": {
+            "navigationBarTitleText": "选择头像"
+          },
+          "meta": {
+            "title": "选择头像",
+            "footer": true
           }
         }
       ]

@@ -125,8 +125,8 @@
 
 <script setup>
 import common from "./common.vue"
-import {useRegisterStore} from "@/subpackages/pinia/register"
-import {RegisterApi} from "@/subpackages/api/register"
+import {useRegisterStore} from "@/pinia/modules/register"
+import {RegisterApi} from "@/api/register"
 import {useToast} from "@/composables/toast"
 import {useRouter} from "uni-mini-router";
 import {storeToRefs} from "pinia";
@@ -139,34 +139,55 @@ const isLoading = ref(true)
 const shouldRedirect = ref(false)
 
 // 在组件挂载时检查当前进度
+// 1. 查询当前的注册状态
+// 2. 如果没有查询到注册状态，就保持在注册流程的第一步
+// 3. 如果注册状态存在，且未完成注册，且处于选择角色状态，就保持在注册流程的第一步
+// 4. 如果注册状态存在，且未完成注册，且处于身份认证状态，就跳转到注册流程的第二步
+// 5. 如果注册状态存在，且未完成注册，且处于填写联系方式状态，就跳转到注册流程的第三步
+// 6. 如果注册状态存在，且完成注册，就跳转到注册流程的第四步
 onMounted(async () => {
   try {
-    // 模拟从API获取数据
+    // 从API获取数据
     const response = await RegisterApi.check()
     validationStore.updateFromCheck(response)
-    
+    console.debug('检查注册状态，收到数据:', response)
+    console.debug('更新后的store状态:', {
+      stage: validationStore.stage,
+      isCompleted: validationStore.isCompleted,
+      selectedRole: validationStore.selectedRole
+    })
+
     // 根据返回数据决定是否需要重定向
-    if (validationStore.isCompleted) {
+    if (validationStore.isCompleted || response.step >= 3) {
+      // 注册已完成，跳转到完成页
       router.replace({
         name: 'validation-finish'
       })
       shouldRedirect.value = true
-    } else if (validationStore.stage > 0) {
-      const nextStep = validationStore.stage + 1
-      const routeName = `validation-step${nextStep}`
+    } else if (response.exist && response.step > 0) {
+      // 存在进行中的注册流程，且已经完成了第一步，跳转到对应的步骤
+      const targetStep = Math.min(response.step + 1, 3) // 确保不超过第3步
+      const routeName = `validation-step${targetStep}`
+      console.log(`注册流程已存在，当前步骤:${response.step}，跳转到:${routeName}`)
       router.replace({
         name: routeName
       })
       shouldRedirect.value = true
+    } else {
+      // 没有注册流程或者在第一步，保持在当前页面
+      console.log('保持在第一步页面')
+      shouldRedirect.value = false
     }
   } catch (err) {
-    console.error(err.message)
+    console.error('检查注册状态失败:', err.message)
     toast.error(err.message || '加载失败')
+    // 发生错误时也保持在当前页面
+    shouldRedirect.value = false
   } finally {
-    // 演示用：设置短延迟以便查看加载界面
+    // 设置短延迟以便查看加载界面
     setTimeout(() => {
       isLoading.value = false
-    }, 1000)
+    }, 500)
   }
 })
 
@@ -186,15 +207,15 @@ const handleNext = async () => {
       mask: true
     })
     
-    // 模拟API提交
-    await RegisterApi.process({
-      roleFormData: {
-        role: validationStore.selectedRole.id
-      }
+    // 调用真实API提交
+    const res = await RegisterApi.submitStep1({
+      role: validationStore.selectedRole.id
     })
+
+    validationStore.setProcessId(res.id)
     
     // 更新状态
-    validationStore.setStage(0) // 完成第一步
+    validationStore.setStage(1) // 完成第一步
     
     // 隐藏加载提示
     uni.hideLoading()
@@ -203,10 +224,13 @@ const handleNext = async () => {
     router.push({
       name: 'validation-step2'
     })
+    
   } catch (err) {
-    console.error(err.message)
-    toast.error(err.message || '提交失败')
+    // 隐藏加载提示
     uni.hideLoading()
+    
+    console.error('提交失败:', err)
+    toast.error(err.message || '提交失败，请重试')
   }
 }
 </script>

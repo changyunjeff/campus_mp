@@ -7,9 +7,12 @@ const list = [
         iconActive: 'home-fill',
         style: {
             navigationBarTitleText: '社区',
+            // enablePullDownRefresh: true,
+			// onReachBottomDistance: 30,
         },
         meta: {
-            title: '社区中心'
+            title: '社区中心',
+            footer: true,
         }
     },
     {
@@ -19,7 +22,8 @@ const list = [
         name: 'goods',
         iconActive: 'shopping-fill',
         meta: {
-            title: '商品闲置' 
+            title: '商品闲置',
+            footer: true,
         }
     },
     {
@@ -33,7 +37,8 @@ const list = [
         name: 'message',
         iconActive: 'message-fill',
         meta: {
-            title: '我的消息' 
+            title: '我的消息',
+            footer: true,
         }
     },
     {
@@ -43,7 +48,8 @@ const list = [
         name: 'personal',
         iconActive: 'smile-fill',
         meta: {
-            title: '个人中心' 
+            title: '个人中心',
+            footer: true,
         }
     }
 ]

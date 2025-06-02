@@ -208,19 +208,52 @@
 
 <script setup>
 import common from "./common.vue"
-import {useRegisterStore} from "@/subpackages/pinia/register";
-import {RegisterApi} from "@/subpackages/api/register"
+import {useRegisterStore} from "@/pinia/modules/register";
+import {RegisterApi} from "@/api/register"
 import {useToast} from "@/composables/toast";
 import {useRouter} from "uni-mini-router";
 import events from "@/utils/events";
+import { nextTick } from 'vue';
 
 const validationStore = useRegisterStore()
 const toast = useToast()
 const router = useRouter()
 
-// 页面加载时设置当前步骤
+// 页面加载时设置当前步骤并预填充数据
 onMounted(() => {
   validationStore.setStage(1)
+  
+  // 从store中预填充表单数据
+  if (validationStore.idNumber) {
+    formData.idNumber = validationStore.idNumber
+  }
+  if (validationStore.realName) {
+    formData.realName = validationStore.realName
+  }
+  
+  // 从store中预填充媒体文件
+  if (validationStore.mediaFiles.frontMedia) {
+    frontImage.value.url = validationStore.mediaFiles.frontMedia.url || ''
+    frontImage.value.object_key = validationStore.mediaFiles.frontMedia.object_key || ''
+    frontImage.value.media_id = validationStore.mediaFiles.frontMedia.id || ''
+  }
+  
+  if (validationStore.mediaFiles.backMedia) {
+    backImage.value.url = validationStore.mediaFiles.backMedia.url || ''
+    backImage.value.object_key = validationStore.mediaFiles.backMedia.object_key || ''
+    backImage.value.media_id = validationStore.mediaFiles.backMedia.id || ''
+  }
+  
+  console.log('step2页面加载，预填充数据:', {
+    formData: formData,
+    frontImage: frontImage.value,
+    backImage: backImage.value,
+    storeData: {
+      idNumber: validationStore.idNumber,
+      realName: validationStore.realName,
+      mediaFiles: validationStore.mediaFiles
+    }
+  })
 })
 
 // 表单数据
@@ -233,10 +266,12 @@ const formData = reactive({
 const frontImage = ref({
   url: '',
   object_key: '',
+  media_id: '',
 })
 const backImage = ref({
   url: '',
   object_key: '',
+  media_id: '',
 })
 const isUploading = ref(false)
 const isSubmitting = ref(false)
@@ -270,23 +305,59 @@ const handleUpload = async (type) => {
     // 显示全局上传进度
     events.emit('showUpload', 0)
     
-    // 上传文件
-    const uploadRes = await RegisterApi.uploadFile(validationStore.processId, filePath, (res) => {
-      const progress = Math.round((res.loaded * 100) / res.total)
-      uploadProgress.value = progress
-      
-      // 更新全局上传进度
-      events.emit('updateUpload', progress)
+    // 确定媒体类型
+    const mediaType = type === 'front' ? 'student_card_front' : 'student_card_back'
+    
+    // 上传文件到OSS（第一步：仅上传到OSS）
+    const uploadRes = await RegisterApi.uploadMediaToOSS({
+      file: filePath,
+      procedure_id: validationStore.processId, // 使用注册流程ID
+      type: mediaType,
+      onProgress: ({progress}) => {
+        uploadProgress.value = progress
+        events.emit('updateUpload', progress)
+      }
     })
     
-    // 保存上传后的图片URL
+    // 调试：打印上传返回数据
+    console.log('上传API返回数据:', uploadRes)
+    
+    // 保存上传后的图片信息（upload函数已经返回解析后的数据）
     if (type === 'front') {
-      frontImage.value.url = uploadRes.media_url
+      frontImage.value.url = uploadRes.url
       frontImage.value.object_key = uploadRes.object_key
+      frontImage.value.media_id = '' // 第一步上传后没有media_id
     } else {
-      backImage.value.url = uploadRes.media_url
+      backImage.value.url = uploadRes.url
       backImage.value.object_key = uploadRes.object_key
+      backImage.value.media_id = '' // 第一步上传后没有media_id
     }
+    
+    // 强制触发响应式更新
+    await nextTick()
+    
+    // 调试：打印当前状态
+    console.log('上传成功，当前状态:', {
+      type: type,
+      formData: formData,
+      frontImage: frontImage.value,
+      backImage: backImage.value,
+      canSubmit: canSubmit.value,
+      formDataValues: {
+        idNumber: formData.idNumber,
+        realName: formData.realName
+      },
+      imageUrls: {
+        frontUrl: frontImage.value.url,
+        backUrl: backImage.value.url
+      },
+      canSubmitConditions: {
+        hasIdNumber: !!formData.idNumber,
+        hasRealName: !!formData.realName,
+        hasFrontUrl: !!frontImage.value.url,
+        hasBackUrl: !!backImage.value.url
+      }
+    })
     
     // 隐藏全局上传进度
     events.emit('hideUpload')
@@ -319,14 +390,38 @@ const handleDelete = (type) => {
           // 根据类型删除对应的图片
           switch (type) {
             case 'front':
-              await RegisterApi.deleteFile(frontImage.value.object_key)
+              if (frontImage.value.media_id) {
+                // 如果有media_id，说明已存储到数据库，使用媒体删除API
+                await RegisterApi.deleteMedia({
+                  media_id: frontImage.value.media_id,
+                  hard_delete: true
+                })
+              } else if (frontImage.value.object_key) {
+                // 如果只有object_key，说明只是上传到OSS，使用OSS删除API
+                await RegisterApi.deleteOSSFile({
+                  object_key: frontImage.value.object_key
+                })
+              }
               frontImage.value.url = ''
               frontImage.value.object_key = ''
+              frontImage.value.media_id = ''
               break
             case 'back':
-              await RegisterApi.deleteFile(backImage.value.object_key)
+              if (backImage.value.media_id) {
+                // 如果有media_id，说明已存储到数据库，使用媒体删除API
+                await RegisterApi.deleteMedia({
+                  media_id: backImage.value.media_id,
+                  hard_delete: true
+                })
+              } else if (backImage.value.object_key) {
+                // 如果只有object_key，说明只是上传到OSS，使用OSS删除API
+                await RegisterApi.deleteOSSFile({
+                  object_key: backImage.value.object_key
+                })
+              }
               backImage.value.url = ''
               backImage.value.object_key = ''
+              backImage.value.media_id = ''
               break
             default:
               console.warn('未知的图片类型:', type)
@@ -355,36 +450,35 @@ const handleSubmit = async () => {
     events.emit('showUpload', 0)
     events.emit('updateUpload', 30) // 初始显示30%
     
-    // 更新用户信息
+    // 准备媒体数据
+    const frontMedia = {
+      object_key: frontImage.value.object_key,
+      url: frontImage.value.url,
+      type: 'student_card_front'
+    }
+    
+    const backMedia = {
+      object_key: backImage.value.object_key,
+      url: backImage.value.url,
+      type: 'student_card_back'
+    }
+    
+    // 调用真实API提交第二步
+    await RegisterApi.submitStep2({
+      code: formData.idNumber,
+      real_name: formData.realName,
+      front_media: frontMedia,
+      back_media: backMedia
+    })
+
+    // 更新用户信息到store
     validationStore.updateUserInfo({
       idNumber: formData.idNumber,
       realName: formData.realName
     })
     
-    // 模拟API提交
-    await RegisterApi.process({
-      validationFormData: {
-        identification: formData.idNumber,
-        real_name: formData.realName,
-        medias: [
-          {
-            description: "证件照正面",
-            media_type: "image/jpeg",
-            media_url: frontImage.value.url,
-            object_key: frontImage.value.object_key
-          },
-          {
-            description: "证件照反面",
-            media_type: "image/jpeg", 
-            media_url: backImage.value.url,
-            object_key: backImage.value.object_key
-          }
-        ]
-      }
-    })
-    
     // 设置注册流程进度
-    validationStore.setStage(1) // 完成第二步
+    validationStore.setStage(2) // 完成第二步
     
     // 更新至100%
     events.emit('updateUpload', 100)
@@ -399,8 +493,10 @@ const handleSubmit = async () => {
     }, 500)
     
   } catch (err) {
-    console.error(err.message)
-    toast.error(err.message || '提交失败')
+    console.error('提交失败:', err)
+    toast.error(err.message || '提交失败，请重试')
+    
+    // 隐藏上传进度
     events.emit('hideUpload')
   } finally {
     isSubmitting.value = false

@@ -9,6 +9,7 @@ import {useMessageHisotry} from '@/composables/message_history'
 import {useToast} from "@/composables/toast"
 import {onLoad} from "@dcloudio/uni-app"
 import {generateID} from '@/utils/id'
+import GoodsPreview from '@/subpackages/components/goods/goods-preview.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -17,15 +18,63 @@ const toast = useToast()
 
 // 路由参数
 const targetId = ref('o9IBj7I0g0pwid_Xp1wPEf_oo3aE')
+const goodsId = ref(null)
 
 // 获取路由参数
 onLoad((options) => {
+  console.debug('options:', options)
+  
   if (options.id) {
     targetId.value = options.id
     fetchUserInfo()
     fetchHistoryMessages()
   }
+  
+  // 如果有商品ID，加载商品信息
+  if (options.goodsId) {
+    goodsId.value = options.goodsId
+    fetchGoodsInfo(options.goodsId)
+  }
 })
+
+// 商品信息
+const goodsInfo = ref(null)
+
+// 加载商品信息
+const fetchGoodsInfo = async (id) => {
+  // 实际应用中应该从API获取商品信息
+  // 这里使用模拟数据
+  goodsInfo.value = {
+    id: id || '1',
+    name: 'OPPO A8 石榴红 6G+128G 国行版本',
+    price: 215,
+    image: 'https://picsum.photos/600/600?random=1',
+    status: 'selling' // 'selling', 'reserved', 'sold'
+  }
+}
+
+// 处理查看商品详情
+const handleGoToDetail = (id) => {
+  router.push({
+    name: 'goods_details',
+    query: { id }
+  })
+}
+
+// 处理标记商品为已售出
+const handleMarkSold = (id) => {
+  uni.showModal({
+    title: '确认操作',
+    content: '确定要将商品标记为已售出吗？',
+    success: (res) => {
+      if (res.confirm) {
+        // 实际应用中应该调用API更新商品状态
+        goodsInfo.value.status = 'sold'
+        toast.success('操作成功')
+      }
+    }
+  })
+}
 
 // 聊天信息
 const userInfo = ref({
@@ -312,6 +361,15 @@ const handleTapOutside = () => {
             聊天窗口
         </template>
         <view class="chat-container">
+            <!-- 商品预览卡片 -->
+            <GoodsPreview 
+              v-if="goodsInfo" 
+              :goods="goodsInfo" 
+              :is-seller="false"
+              @go-to-detail="handleGoToDetail"
+              @mark-sold="handleMarkSold"
+            />
+            
             <!-- 聊天消息列表 -->
             <scroll-view class="message-list" scroll-y :scroll-with-animation="true" :show-scrollbar="false"
                 scroll-anchoring :scroll-into-view="toView">
@@ -394,7 +452,8 @@ const handleTapOutside = () => {
 .message-list {
     flex: 1;
     overflow-y: auto;
-    /* 为输入框留出空间 */
+    /* 已有商品预览时，需要调整消息列表的位置 */
+    margin-top: 0;
 }
 
 .message-list-content {

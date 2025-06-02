@@ -1,6 +1,4 @@
-import { useRequest } from '@/composables/request'
-
-const { get, post, put, del, upload, download, socket } = useRequest()
+import { post } from '@/utils/request'
 
 /**
  * AuthApi 认证接口
