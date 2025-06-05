@@ -52,6 +52,7 @@ const post = reactive({
   content: '',
   images: [],
   tags: [],
+  topics: [], // 添加话题字段
   publishTime: 0,
   stats: {
     views: 0,
@@ -94,25 +95,27 @@ onMounted(() => {
 const loadPostDetail = async () => {
   try {
     const res = await CommunityApi.getPostDetail(postId.value)
-    
+    console.debug('res:', res)
     // 更新帖子数据
+
     Object.assign(post, {
-      id: res.data.id,
+      id: res.id,
       user: {
-        id: res.data.author.id,
-        nickname: res.data.author.nickname,
-        avatar: res.data.author.avatar || User,
-        level: res.data.author.level || 1,
-        gender: res.data.author.gender || 'unknown',
-        isFollowed: res.data.is_followed || false
+        id: res.author.id,
+        nickname: res.author.nickname,
+        avatar: res.author.avatar || User,
+        level: res.author.level || 1,
+        gender: res.author.gender || 'unknown',
+        isFollowed: res.is_followed || false
       },
-      content: res.data.content,
-      images: res.data.images || [],
-      tags: res.data.tags || [],
-      publishTime: res.data.publish_time * 1000, // 转换为毫秒
-      stats: res.data.stats,
-      isLiked: res.data.is_liked,
-      isFavorited: res.data.is_favorited
+      content: res.content,
+      images: res.images || [],
+      tags: res.tags || [],
+      topics: res.topics || [], // 添加话题数据
+      publishTime: res.publish_time, // 转换为毫秒
+      stats: res.stats,
+      isLiked: res.is_liked,
+      isFavorited: res.is_favorited
     })
     
     // 加载评论
@@ -138,7 +141,7 @@ const loadComments = async (loadMore = false) => {
       page_size: commentPageSize.value
     })
     
-    const newComments = res.data.comments.map(comment => ({
+    const newComments = res.comments.map(comment => ({
       id: comment.id,
       user: {
         id: comment.author.id,
@@ -176,7 +179,7 @@ const loadComments = async (loadMore = false) => {
       commentPage.value = 1
     }
     
-    commentTotal.value = res.data.total
+    commentTotal.value = res.total
   } catch (error) {
     console.error('加载评论失败:', error)
   } finally {
@@ -254,10 +257,7 @@ const handleLike = throttle(async () => {
     post.stats.likes += post.isLiked ? 1 : -1
   } catch (error) {
     console.error('点赞失败:', error)
-    uni.showToast({
-      title: '操作失败',
-      icon: 'none'
-    })
+    toast.error('点赞失败')
   }
 }, 1000)
 
@@ -451,6 +451,17 @@ const viewUserProfile = throttle((userId) => {
   })
 }, 1000)
 
+// 查看话题详情
+const viewTopicDetail = throttle((topicName) => {
+  console.log('查看话题详情:', topicName)
+  router.push({
+    name: 'topic_detail',
+    query: {
+      name: topicName
+    }
+  })
+}, 1000)
+
 // 返回上一页
 const goBack = () => {
   uni.navigateBack()
@@ -497,12 +508,10 @@ onLoad((options) => {
     // 加载帖子详情
     loadPostDetail()
   } else {
-    uni.showToast({
-      title: '参数错误',
-      icon: 'none'
-    })
+    toast.show('参数错误，请传入帖子ID')
     setTimeout(() => {
       uni.navigateBack()
+      router.back()
     }, 1500)
   }
 })
@@ -547,6 +556,19 @@ onLoad((options) => {
         <!-- 帖子内容 -->
         <view class="mb-30rpx">
           <text class="text-32rpx text-#333" user-select>{{ post.content }}</text>
+        </view>
+        
+        <!-- 话题 -->
+        <view v-if="post.topics && post.topics.length > 0" class="flex flex-wrap mb-20rpx">
+          <view 
+            v-for="topic in post.topics" 
+            :key="topic.id" 
+            class="mr-16rpx mb-16rpx px-16rpx py-6rpx bg-orange-50 text-orange-500 text-24rpx rounded-8rpx transition-all duration-200 active:bg-orange-100"
+            @tap="viewTopicDetail(topic.name)"
+          >
+            # {{ topic.name }}
+            <text v-if="topic.is_official" class="ml-4rpx text-18rpx">🔥</text>
+          </view>
         </view>
         
         <!-- 标签 -->

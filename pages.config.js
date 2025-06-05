@@ -139,6 +139,17 @@ export default defineUniPages({
                     }
                 },
                 {
+                    path: 'pages/community/topic-detail',
+                    name: 'topic_detail',
+                    style: {
+                        navigationBarTitleText: '帖子详情'
+                    },
+                    meta: {
+                        title: '帖子详情',
+                        verify: true,
+                    }
+                },
+                {
                     path: 'pages/community/report',
                     name: 'report',
                     style: {

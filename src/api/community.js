@@ -134,10 +134,92 @@ export const CommunityApi = {
     
     /**
      * 点赞回复
-     * @param {string} replyId 回复I
+     * @param {string} replyId 回复ID
      * @returns {Promise<Object>} 操作结果
      */
     likeReply: (replyId) => {
         return post(`/replies/${replyId}/like`)
+    },
+
+    // ================== 话题相关接口 ==================
+
+    /**
+     * 获取推荐话题（发布页面使用）
+     * @returns {Promise<Object>} 推荐话题列表
+     */
+    getRecommendedTopics: () => {
+        return get('/topics/recommended')
+    },
+
+    /**
+     * 获取热门话题
+     * @param {number} limit - 数量限制，默认10，最大50
+     * @returns {Promise<Object>} 热门话题列表
+     */
+    getHotTopics: (limit = 10) => {
+        return get('/topics/hot', { limit })
+    },
+
+    /**
+     * 搜索话题
+     * @param {string} keyword - 搜索关键词
+     * @param {number} limit - 结果数量限制，默认10，最大20
+     * @returns {Promise<Object>} 搜索结果
+     */
+    searchTopics: (keyword, limit = 10) => {
+        return get('/topics/search', { keyword, limit })
+    },
+
+    /**
+     * 获取话题详情
+     * @param {string} topicName - 话题名称
+     * @returns {Promise<Object>} 话题详情
+     */
+    getTopicDetail: (topicName) => {
+        return get(`/topics/${encodeURIComponent(topicName)}`)
+    },
+
+    /**
+     * 获取话题列表
+     * @param {Object} params - 查询参数
+     * @param {number} params.page - 页码，默认1
+     * @param {number} params.page_size - 每页数量，默认10，最大50
+     * @param {string} params.category - 分类筛选
+     * @returns {Promise<Object>} 话题列表
+     */
+    getTopicList: (params = {}) => {
+        return get('/topics/list', {
+            page: params.page || 1,
+            page_size: params.page_size || 10,
+            category: params.category
+        })
+    },
+
+    /**
+     * 创建话题
+     * @param {Object} data - 话题数据
+     * @param {string} data.name - 话题名称
+     * @param {string} data.description - 话题描述
+     * @param {string} data.category - 话题分类
+     * @param {boolean} data.is_official - 是否官方话题
+     * @returns {Promise<Object>} 创建结果
+     */
+    createTopic: (data) => {
+        return post('/topics', data)
+    },
+
+    /**
+     * 获取话题的帖子列表
+     * @param {string} topicName - 话题名称
+     * @param {Object} params - 查询参数
+     * @param {number} params.page - 页码，默认1
+     * @param {number} params.page_size - 每页数量，默认20，最大50
+     * @returns {Promise<Object>} 帖子列表
+     */
+    getTopicPosts: (topicName, params = {}) => {
+        return get(`/topics/${encodeURIComponent(topicName)}/posts`, {
+            page: params.page || 1,
+            page_size: params.page_size || 20
+        })
     }
 } 

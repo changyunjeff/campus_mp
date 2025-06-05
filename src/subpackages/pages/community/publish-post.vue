@@ -9,6 +9,10 @@ import {CommunityApi} from '@/api/community'
 import {MediaApi} from '@/api/media'
 import {generateID} from '@/utils/id'
 import {useToast} from "@/composables/toast";
+// 引入地图组件 - 修复导入路径
+import Amap from '@/components/Amap.vue'
+// 导入地图API
+import {getCurrentLocation, getRegeo} from '@/api/amap/amap'
 
 const router = useRouter()
 const draftStore = useDraftStore()
@@ -25,39 +29,154 @@ const textareaFocus = ref(false)
 const cursorPosition = ref(0)
 
 // 推荐话题
-const topics = [
-  '连麦', '来立个小目标', '哼噻', '通知', '我的确定性', '自我介绍'
-]
+const topics = ref([])
+const topicsLoading = ref(false)
 
 // 热门话题
-const hotTopics = [
-  {id: 1, name: '校园生活', count: 1200},
-  {id: 2, name: '美食分享', count: 980},
-  {id: 3, name: '学习心得', count: 850},
-  {id: 4, name: '考研日记', count: 720},
-  {id: 5, name: '实习经验', count: 650},
-  {id: 6, name: '社团活动', count: 520}
-]
+const hotTopics = ref([])
+const hotTopicsLoading = ref(false)
 
-// 位置
+// 话题搜索
+const topicSearchKeyword = ref('')
+const topicSearchResults = ref([])
+const topicSearchLoading = ref(false)
+
+// 位置相关 - 优化后的位置管理
 const location = ref('')
+const locationDetail = ref(null) // 存储完整的位置信息
 const showLocationPicker = ref(false)
-const locationList = [
-  '泗阳县佛鹰气体有', '江苏仙之宝食品有', '江苏省香之派食品', '江苏好吃食品'
-]
+const isLoadingLocation = ref(false)
 
 // 可见性
 const visible = ref('public')
 const visibilityOptions = [
-  {value: 'public', label: '公开可见', icon: 'view'},
-  {value: 'friends', label: '仅好友可见', icon: 'usergroup'},
-  {value: 'private', label: '仅自己可见', icon: 'lock-on'}
+  {value: 'public', label: '公开可见', icon: 'view', desc: '所有人都可以看到'},
+  {value: 'friends', label: '仅好友可见', icon: 'usergroup', desc: '只有相互关注的好友可以看到'},
+  {value: 'private', label: '仅自己可见', icon: 'lock-on', desc: '只有自己可以看到'}
 ]
+
+// 显示可见性选择器
+const showVisibilityPicker = ref(false)
 
 // 草稿相关
 const hasDraft = ref(false)
 const showDraftTip = ref(false)
 const lastSaveTime = ref(null)
+
+// 加载推荐话题
+const loadRecommendedTopics = async () => {
+  topicsLoading.value = true
+  try {
+    const result = await CommunityApi.getRecommendedTopics()
+    if (result && result.topics) {
+      // 将话题对象转换为名称字符串数组（兼容现有的插入逻辑）
+      topics.value = result.topics.map(topic => topic.name)
+    } else {
+      // 如果没有获取到话题，使用备用话题
+      topics.value = ['校园生活', '学习心得', '美食分享', '考研日记', '实习经验', '社团活动']
+    }
+  } catch (error) {
+    console.error('获取推荐话题失败:', error)
+    // 失败时使用备用话题
+    topics.value = ['校园生活', '学习心得', '美食分享', '考研日记', '实习经验', '社团活动']
+    toast.show('获取推荐话题失败，使用默认话题')
+  } finally {
+    topicsLoading.value = false
+  }
+}
+
+// 加载热门话题
+const loadHotTopics = async () => {
+  hotTopicsLoading.value = true
+  try {
+    const result = await CommunityApi.getHotTopics(10)
+    if (result && result.topics) {
+      // 转换为符合现有UI的格式
+      hotTopics.value = result.topics.map(topic => ({
+        id: topic.id,
+        name: topic.name,
+        count: topic.post_count || 0
+      }))
+    } else {
+      // 使用备用数据
+      hotTopics.value = [
+        {id: 1, name: '校园生活', count: 1200},
+        {id: 2, name: '美食分享', count: 980},
+        {id: 3, name: '学习心得', count: 850},
+        {id: 4, name: '考研日记', count: 720},
+        {id: 5, name: '实习经验', count: 650},
+        {id: 6, name: '社团活动', count: 520}
+      ]
+    }
+  } catch (error) {
+    console.error('获取热门话题失败:', error)
+    // 使用备用数据
+    hotTopics.value = [
+      {id: 1, name: '校园生活', count: 1200},
+      {id: 2, name: '美食分享', count: 980},
+      {id: 3, name: '学习心得', count: 850},
+      {id: 4, name: '考研日记', count: 720},
+      {id: 5, name: '实习经验', count: 650},
+      {id: 6, name: '社团活动', count: 520}
+    ]
+  } finally {
+    hotTopicsLoading.value = false
+  }
+}
+
+// 搜索话题
+let searchTimeout = null
+const searchTopics = async (keyword) => {
+  // 清除之前的定时器
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+  
+  if (!keyword || keyword.trim() === '') {
+    topicSearchResults.value = []
+    return
+  }
+  
+  // 防抖处理，500ms后执行搜索
+  searchTimeout = setTimeout(async () => {
+    topicSearchLoading.value = true
+    try {
+      const result = await CommunityApi.searchTopics(keyword.trim(), 10)
+      if (result && result.topics) {
+        topicSearchResults.value = result.topics.map(topic => ({
+          id: topic.id,
+          name: topic.name,
+          count: topic.post_count || 0,
+          description: topic.description
+        }))
+      } else {
+        topicSearchResults.value = []
+      }
+    } catch (error) {
+      console.error('搜索话题失败:', error)
+      topicSearchResults.value = []
+      toast.show('搜索话题失败')
+    } finally {
+      topicSearchLoading.value = false
+    }
+  }, 500)
+}
+
+// 处理搜索输入
+const handleTopicSearch = (e) => {
+  const keyword = e.detail.value
+  topicSearchKeyword.value = keyword
+  searchTopics(keyword)
+}
+
+// 清空搜索
+const clearTopicSearch = () => {
+  topicSearchKeyword.value = ''
+  topicSearchResults.value = []
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+}
 
 // 初始化数据
 onMounted(() => {
@@ -70,6 +189,9 @@ onMounted(() => {
     showDraftTip.value = true
     lastSaveTime.value = draftStore.lastSaveTime
   }
+
+  // 加载推荐话题
+  loadRecommendedTopics()
 })
 
 // 加载草稿
@@ -133,10 +255,13 @@ const goBack = () => {
 // 图片选择与上传
 const chooseImage = () => {
   if (images.value.length >= maxImages) {
-    uni.showToast({
-      title: `最多只能上传${maxImages}张图片`,
-      icon: 'none'
-    })
+    toast.show(`最多只能上传${maxImages}张图片`)
+    return
+  }
+
+  // 如果正在上传，则不处理
+  if (isUploading.value) {
+    toast.show('正在上传图片，请稍后')
     return
   }
 
@@ -155,17 +280,17 @@ const chooseImage = () => {
         const noteID = await generateID()
         
         // 批量上传图片到OSS（两步法第一步）
-        const uploadResults = await MediaApi.batchUploadNotesMediaToOSS({
-          files: res.tempFilePaths,
-          notes_id: noteID,
-          onProgress: ({progress}) => {
+        const uploadResults = await MediaApi.batchUploadNotesMediaToOSS(res.tempFilePaths, noteID,
+          ({progress}) => {
             events.emit('updateUpload', progress)
           }
-        })
+        )
 
-        // 处理上传结果
+        console.debug('批量上传结果:', uploadResults)
+
+        // 处理上传结果 - 微信小程序循环上传版本
         if (Array.isArray(uploadResults)) {
-          // 所有文件都上传成功
+          // 所有文件上传成功的情况
           uploadResults.forEach(result => {
             images.value.push({
               url: result.url,
@@ -175,8 +300,12 @@ const chooseImage = () => {
               media_id: '' // 两步法第一步没有media_id
             })
           })
-        } else if (uploadResults.success) {
-          // 部分文件上传成功
+          
+          events.emit('hideUpload')
+          isUploading.value = false
+          toast.success(`成功上传${uploadResults.length}张图片`)
+        } else if (uploadResults && uploadResults.success && uploadResults.failed) {
+          // 部分文件上传成功的情况（有成功有失败）
           uploadResults.success.forEach(result => {
             images.value.push({
               url: result.url,
@@ -188,16 +317,20 @@ const chooseImage = () => {
           })
           
           // 显示失败信息
-          if (uploadResults.failed && uploadResults.failed.length > 0) {
+          if (uploadResults.failed.length > 0) {
             console.error('部分文件上传失败:', uploadResults.failed)
-            toast.show(`${uploadResults.failed.length}个文件上传失败`, 'warning')
+            toast.show(`${uploadResults.failed.length}个文件上传失败，${uploadResults.success.length}个文件上传成功`)
           }
+          
+          events.emit('hideUpload')
+          isUploading.value = false
+          
+          if (uploadResults.success.length > 0) {
+            toast.success(`成功上传${uploadResults.success.length}张图片`)
+          }
+        } else {
+          throw new Error('上传结果格式异常')
         }
-
-        // 上传完成
-        events.emit('hideUpload')
-        isUploading.value = false
-        toast.success(`成功上传${uploadResults.length || uploadResults.success?.length || 0}张图片`)
       } catch (error) {
         console.error('批量上传失败:', error)
         toast.error(error.message || '图片上传失败')
@@ -270,17 +403,105 @@ const insertTopic = (topic) => {
 const showTopicPicker = ref(false)
 const openTopicPicker = () => {
   showTopicPicker.value = true
+  // 加载热门话题
+  if (hotTopics.value.length === 0) {
+    loadHotTopics()
+  }
 }
 
-// 选择位置
-const selectLocation = (loc) => {
-  location.value = loc
+// 位置选择相关 - 新的优化实现
+/**
+ * 处理地图选择位置
+ * @param {Object} selectedLocation - 地图组件返回的位置信息
+ * @param {string} selectedLocation.location - 坐标字符串 "经度,纬度"
+ * @param {string} selectedLocation.address - 地址描述
+ * @param {number} selectedLocation.latitude - 纬度
+ * @param {number} selectedLocation.longitude - 经度
+ * @param {string} [selectedLocation.name] - POI名称（如果是POI选择）
+ * @param {number} [selectedLocation.distance] - 距离信息（如果是POI选择）
+ */
+const handleLocationSelect = (selectedLocation) => {
+  console.log('🗺️ 选择位置:', selectedLocation)
+  
+  // 存储完整的位置信息
+  locationDetail.value = selectedLocation
+  
+  // 显示信息优先级：POI名称 > 地址描述
+  let displayText = selectedLocation.address || '未知位置'
+  
+  // 如果是POI选择，优先显示POI名称
+  if (selectedLocation.name && selectedLocation.name !== selectedLocation.address) {
+    displayText = selectedLocation.name
+  }
+  
+  // 显示地址（如果太长，截取前30个字符）
+  location.value = displayText.length > 30 
+    ? displayText.substring(0, 30) + '...'
+    : displayText
+  
+  // 关闭位置选择器
   showLocationPicker.value = false
+  
+  // 根据选择类型显示不同的成功提示
+  if (selectedLocation.name && selectedLocation.distance !== undefined) {
+    // POI选择
+    toast.success(`已选择：${selectedLocation.name}`)
+  } else {
+    // 地图点击选择
+    toast.success('位置选择成功')
+  }
 }
 
-// 打开位置选择器
+/**
+ * 获取当前位置
+ */
+const getCurrentLocationQuick = async () => {
+  isLoadingLocation.value = true
+  
+  try {
+    // 获取当前坐标
+    const currentPos = await getCurrentLocation()
+    
+    // 获取地址信息
+    const locationStr = `${currentPos.longitude},${currentPos.latitude}`
+    const addressInfo = await getRegeo(locationStr)
+    
+    // 构造位置信息
+    const currentLocationInfo = {
+      location: locationStr,
+      address: addressInfo.address || '当前位置',
+      latitude: currentPos.latitude,
+      longitude: currentPos.longitude
+    }
+    
+    // 设置位置
+    handleLocationSelect(currentLocationInfo)
+    
+  } catch (error) {
+    console.error('❌ 获取当前位置失败:', error)
+    toast.show('获取当前位置失败，请手动选择')
+    
+    // 失败时仍然打开地图选择器
+    showLocationPicker.value = true
+  } finally {
+    isLoadingLocation.value = false
+  }
+}
+
+/**
+ * 打开位置选择器
+ */
 const openLocationPicker = () => {
   showLocationPicker.value = true
+}
+
+/**
+ * 清除位置
+ */
+const clearLocation = () => {
+  location.value = ''
+  locationDetail.value = null
+  toast.success('已清除位置')
 }
 
 // 发布笔记
@@ -314,7 +535,11 @@ const publish = async () => {
   const postData = {
     content: content.value,
     media_list: mediaList, // 使用两步法的媒体列表
-    location: location.value,
+    location: locationDetail.value ? {
+      address: locationDetail.value.address,
+      longitude: locationDetail.value.longitude,
+      latitude: locationDetail.value.latitude
+    } : null, // 使用完整位置信息
     visibility: visible.value,
     tags: tags
   }
@@ -490,45 +715,91 @@ const onTextareaInput = (e) => {
 
         <scroll-view scroll-x class="whitespace-nowrap -mx-30rpx px-30rpx pb-10rpx">
           <view class="inline-flex gap-20rpx">
-            <view
-                v-for="topic in topics"
-                :key="topic"
-                class="bg-blue-50 rounded-full px-24rpx py-12rpx text-26rpx text-blue-500 active:bg-blue-100 transition-all whitespace-nowrap"
-                @tap="insertTopic(topic)"
-            >
-              # {{ topic }}
+            <!-- 加载状态 -->
+            <view v-if="topicsLoading" class="inline-flex gap-20rpx">
+              <view v-for="i in 6" :key="i" class="bg-gray-100 rounded-full px-24rpx py-12rpx text-26rpx animate-pulse whitespace-nowrap">
+                <text class="text-transparent">加载中</text>
+              </view>
+            </view>
+            <!-- 话题列表 -->
+            <view v-else class="inline-flex gap-20rpx">
+              <view
+                  v-for="topic in topics"
+                  :key="topic"
+                  class="bg-blue-50 rounded-full px-24rpx py-12rpx text-26rpx text-blue-500 active:bg-blue-100 transition-all whitespace-nowrap"
+                  @tap="insertTopic(topic)"
+              >
+                # {{ topic }}
+              </view>
             </view>
           </view>
         </scroll-view>
       </view>
 
-      <!-- 位置选择 -->
+      <!-- 位置选择 - 优化后的版本 -->
       <view class="mb-20rpx bg-white rounded-20rpx shadow-sm overflow-hidden">
         <view
             class="flex items-center justify-between px-30rpx py-26rpx active:bg-gray-50 transition-colors"
             @tap="openLocationPicker"
         >
-          <view class="flex items-center gap-16rpx">
+          <view class="flex items-center gap-16rpx flex-1">
             <WdIcon name="location" size="36rpx" color="#f59e0b"/>
-            <text class="text-28rpx text-#333">{{ location || '添加位置' }}</text>
+            <text class="text-28rpx text-#333 flex-1">{{ location || '添加位置' }}</text>
           </view>
-          <WdIcon name="arrow-right" size="32rpx" color="#bbb"/>
+          <view class="flex items-center gap-20rpx">
+            <!-- 当前位置按钮 -->
+            <view
+                v-if="!location"
+                class="px-20rpx py-8rpx rounded-full bg-blue-50 flex items-center gap-8rpx active:bg-blue-100 transition-colors"
+                @tap.stop="getCurrentLocationQuick"
+            >
+              <WdIcon 
+                name="loading" 
+                v-if="isLoadingLocation" 
+                size="24rpx" 
+                color="#3b82f6" 
+                class="animate-spin"
+              />
+              <WdIcon v-else name="location" size="24rpx" color="#3b82f6"/>
+              <text class="text-24rpx text-blue-600">{{ isLoadingLocation ? '定位中' : '当前位置' }}</text>
+            </view>
+            
+            <!-- 清除位置按钮 -->
+            <view
+                v-if="location"
+                class="px-20rpx py-8rpx rounded-full bg-gray-50 active:bg-gray-100 transition-colors"
+                @tap.stop="clearLocation"
+            >
+              <WdIcon name="close" size="24rpx" color="#999"/>
+            </view>
+            
+            <WdIcon name="arrow-right" size="32rpx" color="#bbb"/>
+          </view>
         </view>
       </view>
 
       <!-- 可见性设置 -->
       <view class="mb-20rpx bg-white rounded-20rpx shadow-sm overflow-hidden">
-        <view class="flex items-center justify-between px-30rpx py-26rpx active:bg-gray-50 transition-colors">
-          <view class="flex items-center gap-16rpx">
+        <view 
+          class="flex items-center justify-between px-30rpx py-26rpx active:bg-gray-50 transition-colors"
+          @tap="showVisibilityPicker = true"
+        >
+          <view class="flex items-center gap-16rpx flex-1">
             <WdIcon
                 :name="visibilityOptions.find(v => v.value === visible)?.icon || 'view'"
                 size="36rpx"
                 color="#3b82f6"
             />
-            <text class="text-28rpx text-#333">{{
-                visibilityOptions.find(v => v.value === visible)?.label || '公开可见'
-              }}
-            </text>
+            <view class="flex-1">
+              <text class="text-28rpx text-#333 block">{{
+                  visibilityOptions.find(v => v.value === visible)?.label || '公开可见'
+                }}
+              </text>
+              <text class="text-24rpx text-gray-500">{{
+                  visibilityOptions.find(v => v.value === visible)?.desc || ''
+                }}
+              </text>
+            </view>
           </view>
           <WdIcon name="arrow-right" size="32rpx" color="#bbb"/>
         </view>
@@ -560,11 +831,11 @@ const onTextareaInput = (e) => {
     </view>
 
     <!-- 话题选择弹窗 -->
-    <view v-if="showTopicPicker" class="fixed inset-0 bg-black/60 z-50 flex flex-col" @tap="showTopicPicker = false">
+    <view v-if="showTopicPicker" class="fixed inset-0 bg-black/60 z-50 flex flex-col" @tap="showTopicPicker = false; clearTopicSearch()">
       <view class="mt-auto bg-white rounded-t-24rpx p-30rpx safe-area-bottom" @tap.stop>
         <view class="flex items-center justify-between mb-30rpx">
           <text class="text-32rpx font-medium text-#333">选择话题</text>
-          <view class="p-10rpx" @tap="showTopicPicker = false">
+          <view class="p-10rpx" @tap="showTopicPicker = false; clearTopicSearch()">
             <WdIcon name="close" size="36rpx" color="#999"/>
           </view>
         </view>
@@ -572,13 +843,58 @@ const onTextareaInput = (e) => {
         <view class="mb-20rpx">
           <view class="bg-gray-100 rounded-full flex items-center px-24rpx py-16rpx">
             <WdIcon name="search" size="32rpx" color="#999"/>
-            <input class="flex-1 ml-16rpx text-28rpx" placeholder="搜索话题"/>
+            <input 
+              class="flex-1 ml-16rpx text-28rpx" 
+              placeholder="搜索话题"
+              :value="topicSearchKeyword"
+              @input="handleTopicSearch"
+            />
+            <view v-if="topicSearchLoading" class="ml-16rpx">
+              <WdIcon name="loading" size="28rpx" color="#999" class="animate-spin"/>
+            </view>
           </view>
         </view>
 
-        <view class="mb-30rpx">
+        <!-- 搜索结果 -->
+        <view v-if="topicSearchKeyword && topicSearchResults.length > 0" class="mb-30rpx">
+          <text class="text-28rpx font-medium text-#333 mb-20rpx block">搜索结果</text>
+          <view class="space-y-16rpx">
+            <view
+                v-for="topic in topicSearchResults"
+                :key="topic.id"
+                class="bg-gray-50 rounded-16rpx p-20rpx active:bg-gray-100 transition-colors"
+                @tap="insertTopic(topic.name); showTopicPicker = false"
+            >
+              <text class="text-28rpx text-#333 font-medium block mb-8rpx"># {{ topic.name }}</text>
+              <text class="text-24rpx text-gray-500 block mb-4rpx">{{ topic.count }}人参与</text>
+              <text v-if="topic.description" class="text-22rpx text-gray-400">{{ topic.description }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 没有搜索结果时的提示 -->
+        <view v-else-if="topicSearchKeyword && !topicSearchLoading && topicSearchResults.length === 0" class="mb-30rpx">
+          <view class="text-center py-40rpx">
+            <WdIcon name="search" size="64rpx" color="#ccc"/>
+            <text class="text-26rpx text-gray-400 block mt-16rpx">没有找到相关话题</text>
+            <text class="text-24rpx text-gray-300 block mt-8rpx">试试其他关键词</text>
+          </view>
+        </view>
+
+        <!-- 热门话题 -->
+        <view v-if="!topicSearchKeyword" class="mb-30rpx">
           <text class="text-28rpx font-medium text-#333 mb-20rpx block">热门话题</text>
-          <view class="grid grid-cols-2 gap-20rpx">
+          
+          <!-- 热门话题加载状态 -->
+          <view v-if="hotTopicsLoading" class="grid grid-cols-2 gap-20rpx">
+            <view v-for="i in 6" :key="i" class="bg-gray-100 rounded-16rpx p-20rpx animate-pulse">
+              <view class="h-32rpx bg-gray-200 rounded mb-8rpx"></view>
+              <view class="h-24rpx bg-gray-200 rounded w-2/3"></view>
+            </view>
+          </view>
+          
+          <!-- 热门话题列表 -->
+          <view v-else class="grid grid-cols-2 gap-20rpx">
             <view
                 v-for="topic in hotTopics"
                 :key="topic.id"
@@ -593,37 +909,79 @@ const onTextareaInput = (e) => {
       </view>
     </view>
 
-    <!-- 位置选择弹窗 -->
-    <view v-if="showLocationPicker" class="fixed inset-0 bg-black/60 z-50 flex flex-col"
-          @tap="showLocationPicker = false">
+    <!-- 位置选择弹窗 - 集成地图组件 -->
+    <view v-if="showLocationPicker" class="location-picker-modal">
+      <!-- 顶部导航栏 -->
+      <view class="location-picker-header">
+        <view @tap="showLocationPicker = false" class="p-10rpx active:opacity-60 transition-opacity">
+          <WdIcon name="arrow-left" size="36rpx" color="#333"/>
+        </view>
+        <text class="text-32rpx font-medium text-#333">选择位置</text>
+        <view class="w-56rpx"></view> <!-- 占位元素保持居中 -->
+      </view>
+      
+      <!-- 地图组件区域 -->
+      <view class="location-picker-map">
+        <Amap
+            :show-search="true"
+            :show-controls="true"
+            :show-center-pin="true"
+            :show-location="true"
+            @select="handleLocationSelect"
+        />
+      </view>
+      
+      <!-- 底部提示 -->
+      <view class="location-picker-footer">
+        <text class="text-26rpx text-gray-500 text-center block">
+          点击地图任意位置或搜索地点来选择位置
+        </text>
+      </view>
+    </view>
+
+    <!-- 可见性选择弹窗 -->
+    <view v-if="showVisibilityPicker" class="fixed inset-0 bg-black/60 z-50 flex flex-col" @tap="showVisibilityPicker = false">
       <view class="mt-auto bg-white rounded-t-24rpx p-30rpx safe-area-bottom" @tap.stop>
         <view class="flex items-center justify-between mb-30rpx">
-          <text class="text-32rpx font-medium text-#333">选择位置</text>
-          <view class="p-10rpx" @tap="showLocationPicker = false">
+          <text class="text-32rpx font-medium text-#333">选择可见性</text>
+          <view class="p-10rpx" @tap="showVisibilityPicker = false">
             <WdIcon name="close" size="36rpx" color="#999"/>
           </view>
         </view>
 
-        <view class="mb-20rpx">
-          <view class="bg-gray-100 rounded-full flex items-center px-24rpx py-16rpx">
-            <WdIcon name="search" size="32rpx" color="#999"/>
-            <input class="flex-1 ml-16rpx text-28rpx" placeholder="搜索位置"/>
+        <view class="space-y-4rpx">
+          <view
+              v-for="option in visibilityOptions"
+              :key="option.value"
+              class="flex items-center p-24rpx rounded-16rpx transition-colors"
+              :class="visible === option.value ? 'bg-blue-50' : 'bg-gray-50 active:bg-gray-100'"
+              @tap="visible = option.value; showVisibilityPicker = false"
+          >
+            <view class="w-64rpx h-64rpx rounded-full flex items-center justify-center mr-24rpx"
+                  :class="visible === option.value ? 'bg-blue-100' : 'bg-white'">
+              <WdIcon 
+                :name="option.icon" 
+                size="32rpx" 
+                :color="visible === option.value ? '#3b82f6' : '#666'"
+              />
+            </view>
+            <view class="flex-1">
+              <text class="text-28rpx font-medium block mb-8rpx"
+                    :class="visible === option.value ? 'text-blue-600' : 'text-#333'">
+                {{ option.label }}
+              </text>
+              <text class="text-24rpx text-gray-500">{{ option.desc }}</text>
+            </view>
+            <view v-if="visible === option.value" class="ml-16rpx">
+              <WdIcon name="check" size="28rpx" color="#3b82f6"/>
+            </view>
           </view>
         </view>
 
-        <view class="mb-30rpx">
-          <text class="text-28rpx font-medium text-#333 mb-20rpx block">附近位置</text>
-          <view class="divide-y divide-gray-100">
-            <view
-                v-for="loc in locationList"
-                :key="loc"
-                class="py-24rpx flex items-center active:bg-gray-50 transition-colors"
-                @tap="selectLocation(loc)"
-            >
-              <WdIcon name="location" size="32rpx" color="#f59e0b" class="mr-16rpx"/>
-              <text class="text-28rpx text-#333">{{ loc }}</text>
-            </view>
-          </view>
+        <view class="mt-30rpx pt-20rpx border-t border-gray-100">
+          <text class="text-24rpx text-gray-400 leading-relaxed">
+            💡 提示：好友是指相互关注的用户。选择"仅好友可见"后，只有与你相互关注的用户才能看到这条笔记。
+          </text>
         </view>
       </view>
     </view>
@@ -632,6 +990,59 @@ const onTextareaInput = (e) => {
 
 <style scoped>
 .safe-area-bottom {
+  padding-bottom: calc(20rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+}
+
+.safe-area-top {
+  padding-top: calc(20rpx + constant(safe-area-inset-top));
+  padding-top: calc(20rpx + env(safe-area-inset-top));
+}
+
+/* 旋转动画 */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 位置选择器样式 */
+.location-picker-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+}
+
+.location-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 30rpx;
+  background: white;
+  border-bottom: 1px solid #f0f0f0;
+  padding-top: calc(20rpx + constant(safe-area-inset-top));
+  padding-top: calc(20rpx + env(safe-area-inset-top));
+}
+
+.location-picker-map {
+  flex: 1;
+  height: 0; /* 强制flex子元素使用flex高度 */
+  position: relative;
+}
+
+.location-picker-footer {
+  padding: 20rpx 30rpx;
+  background: white;
+  border-top: 1px solid #f0f0f0;
   padding-bottom: calc(20rpx + constant(safe-area-inset-bottom));
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
 }

@@ -36,19 +36,94 @@ export const MediaApi = {
 
   /**
    * 批量上传笔记媒体到OSS（两步法第一步）
-   * @param {Object} params 上传参数
-   * @param {Array<string>} params.files - 文件路径数组
-   * @param {string} params.notes_id - 笔记ID
-   * @param {Function} params.onProgress - 进度回调
+   * 微信小程序适配：使用循环调用单文件上传接口
+   * @param {Array<string>} files - 文件路径数组
+   * @param {string} notes_id - 笔记ID
+   * @param {Function} onProgress - 进度回调
    * @returns {Promise<Array>} 上传结果数组
    */
-  batchUploadNotesMediaToOSS: ({ files, notes_id, onProgress }) =>
-    batch_upload("/media/upload/notes/oss/batch", files, {
-      formData: {
-        notes_id: notes_id,
-      },
-      callback: onProgress,
-    }),
+  batchUploadNotesMediaToOSS: (files, notes_id, onProgress) => {
+    return new Promise((resolve, reject) => {
+      if (!files || files.length === 0) {
+        reject(new Error('文件列表为空'))
+        return
+      }
+
+      // 用于跟踪每个文件的上传进度
+      const progressMap = new Map()
+      // 用于存储每个文件上传的Promise
+      const uploadPromises = []
+
+      // 计算总体进度并回调
+      const updateTotalProgress = () => {
+        if (!onProgress) return
+        
+        let totalProgress = 0
+        progressMap.forEach(progress => {
+          totalProgress += progress
+        })
+        
+        // 计算平均进度
+        const averageProgress = Math.round(totalProgress / files.length)
+        onProgress({
+          progress: averageProgress,
+          detail: Object.fromEntries(progressMap)
+        })
+      }
+
+      // 为每个文件创建上传任务
+      files.forEach((file, index) => {
+        // 初始化进度为0
+        progressMap.set(index, 0)
+        
+        // 创建单个文件的上传Promise
+        const uploadPromise = upload("/media/upload/notes/oss", file, {
+          formData: {
+            notes_id: notes_id,
+          },
+          callback: (progressInfo) => {
+            // 更新此文件的进度
+            progressMap.set(index, progressInfo.progress)
+            // 计算并回调总体进度
+            updateTotalProgress()
+          }
+        })
+        .then(result => ({
+          index,
+          result,
+          success: true
+        }))
+        .catch(error => ({
+          index,
+          error,
+          success: false
+        }))
+        
+        uploadPromises.push(uploadPromise)
+      })
+
+      // 等待所有上传完成
+      Promise.all(uploadPromises)
+        .then(results => {
+          // 检查是否有失败的上传
+          const failedUploads = results.filter(r => !r.success)
+          
+          if (failedUploads.length > 0) {
+            // 有失败的上传，但仍然返回所有结果
+            resolve({
+              success: results.filter(r => r.success).map(r => r.result),
+              failed: failedUploads.map(f => ({ index: f.index, error: f.error }))
+            })
+          } else {
+            // 所有上传成功
+            resolve(results.map(r => r.result))
+          }
+        })
+        .catch(err => {
+          reject(err)
+        })
+    })
+  },
 
   /**
    * 批量上传笔记媒体（一步法：直接存储到数据库）

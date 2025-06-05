@@ -67,10 +67,11 @@ const loadPosts = async (refresh = false) => {
         gender: post.author.gender || 'unknown',
         isFollowed: post.is_followed
       },
-      publishTime: post.publish_time * 1000, // 转换为毫秒
+      publishTime: post.publish_time,
       content: post.content,
       images: post.images || [],
       tags: post.tags || [],
+      topics: post.topics || [], // 添加话题信息
       stats: {
         likes: post.stats.likes,
         comments: post.stats.comments,
@@ -159,7 +160,7 @@ const handleComment = throttle((post) => {
   // 跳转到帖子详情页，并定位到评论区
   router.push({
     name: 'post_detail',
-    query: {
+    params: {
       id: post.id,
       focus: 'comment'
     }
@@ -180,8 +181,19 @@ const viewPostDetail = throttle((postId) => {
   console.log('查看帖子详情:', postId)
   router.push({
     name: 'post_detail',
-    query: {
+    params: {
       id: postId
+    }
+  })
+}, 1000)
+
+// 查看话题详情
+const viewTopicDetail = throttle((topicName) => {
+  console.log('查看话题详情:', topicName)
+  router.push({
+    name: 'topic_detail',
+    params: {
+      name: topicName
     }
   })
 }, 1000)
@@ -324,6 +336,22 @@ onMounted(async () => {
             <!-- 帖子内容 -->
             <view class="mb-20rpx">
               <text class="text-28rpx text-#333 line-clamp-4 overflow-hidden">{{ post.content }}</text>
+            </view>
+            
+            <!-- 话题 -->
+            <view v-if="post.topics && post.topics.length > 0" class="flex flex-wrap mb-16rpx">
+              <view 
+                v-for="(topic, index) in post.topics.slice(0, 3)" 
+                :key="topic.id" 
+                class="mr-12rpx mb-8rpx px-12rpx py-4rpx bg-orange-50 text-orange-500 text-22rpx rounded-6rpx transition-all duration-200 active:bg-orange-100"
+                @tap.stop="viewTopicDetail(topic.name)"
+              >
+                # {{ topic.name }}
+                <text v-if="topic.is_official" class="ml-4rpx text-18rpx">🔥</text>
+              </view>
+              <view v-if="post.topics.length > 3" class="px-12rpx py-4rpx text-gray-400 text-22rpx">
+                +{{ post.topics.length - 3 }}
+              </view>
             </view>
             
             <!-- 标签 -->

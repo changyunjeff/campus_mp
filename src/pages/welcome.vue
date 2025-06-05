@@ -57,13 +57,13 @@ async function handleEnter() {
         // 导航到社区页面
         router.pushTab('/pages/index/community')
       } catch (err) {
-        toast.error(err.message)
-        console.error(err.message)
+        toast.error(err.message || err.errMsg)
+        console.error(err.message || err.errMsg)
       }
     },
     fail: (err) => {
-      toast.error(err.message)
-      console.error('❌ 进入失败:', err.message)
+      toast.error(err.message || err.errMsg)
+      console.error('❌ 进入失败:', err.message || err.errMsg)
     },
     complete: () => {
       isLoading.value = false

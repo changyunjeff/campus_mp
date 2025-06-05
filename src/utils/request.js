@@ -166,7 +166,8 @@ export const upload = (url, filePath, config = {}) => {
 }
 
 /**
- * batch_upload 多文件上传
+ * batch_upload 多文件上传 - 微信小程序适配版本
+ * 由于微信小程序不支持files数组方式，统一使用循环上传
  * @param {string} url - 请求地址
  * @param {Array} files - 文件列表
  * @param {Object} config - 配置

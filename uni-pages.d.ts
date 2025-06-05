@@ -24,6 +24,7 @@ interface NavigateToOptions {
        "/subpackages/pages/community/post-detail" |
        "/subpackages/pages/community/community-search" |
        "/subpackages/pages/community/publish-post" |
+       "/subpackages/pages/community/topic-detail" |
        "/subpackages/pages/community/report" |
        "/subpackages/pages/community/community-personal-center" |
        "/subpackages/pages/goods/categories" |
