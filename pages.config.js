@@ -12,7 +12,6 @@ export default defineUniPages({
         ...tabbar,
         {
             path: 'pages/welcome',
-            type: 'home',
             style: {
                 navigationBarTitleText: '欢迎页',
             },
@@ -35,6 +34,15 @@ export default defineUniPages({
             style: {
                 navigationBarTitleText: 'ActionSheet 示例',
             },
+        },
+        {
+            path: 'pages/choose-school',
+            name: 'choose-school',
+            type: 'home',
+            style: {
+                navigationBarTitleText: '选择学校',
+                navigationStyle: 'custom',
+            },
         }
     ],
     subPackages: [
@@ -48,7 +56,8 @@ export default defineUniPages({
                         navigationBarTitleText: '私聊',
                     },
                     meta: {
-                        title: '聊天'
+                        title: '聊天',
+                        footer: true,
                     }
                 },
                 {
@@ -63,6 +72,27 @@ export default defineUniPages({
                     name: 'private_chat_more',
                     meta: {
                         title: ''
+                    }
+                },
+                {
+                    path: 'pages/message/likesAndFavorite',
+                    name: 'likesAndFavorite',
+                    meta: {
+                        title: '喜欢和收藏'
+                    }
+                },
+                {
+                    path: 'pages/message/NewFans',
+                    name: 'NewFans',
+                    meta: {
+                        title: '新增关注'
+                    }
+                },
+                {
+                    path: 'pages/message/CommentAndMention',
+                    name: 'CommentAndMention',
+                    meta: {
+                        title: '评论和@'
                     }
                 },
                 {
@@ -252,15 +282,124 @@ export default defineUniPages({
                     }
                 },
                 {
-                    path: 'pages/profile/choose-avatar',
-                    name: 'choose_avatar',
+                    path: 'pages/profile/edit-profile',
+                    name: 'edit_profile',
                     style: {
-                        navigationBarTitleText: '选择头像'
+                        navigationBarTitleText: '编辑资料'
                     },
                     meta: {
-                        title: '选择头像',
-                        footer: true,
+                        title: '编辑资料'
                     }
+                },
+                {
+                    path: 'pages/profile/other-index',
+                    name: 'other_index',
+                    style: {
+                        navigationBarTitleText: '用户资料'
+                    },
+                    meta: {
+                        title: '用户资料'
+                    }
+                },
+                {
+                    path: 'pages/contact/index',
+                    name: 'Contact',
+                    style: {
+                        navigationBarTitleText: '通讯录'
+                    },
+                    meta: {
+                        title: '通讯录',
+                    }
+                },
+                {
+                    path: 'pages/settings/index',
+                    name: 'settings',
+                    style: {
+                        navigationBarTitleText: '系统设置'
+                    },
+                    meta: {
+                        title: '系统设置'
+                    }
+                },
+                {
+                    path: 'pages/settings/blocked-users',
+                    name: 'blocked_users',
+                    style: {
+                        navigationBarTitleText: '我的屏蔽'
+                    },
+                    meta: {
+                        title: '我的屏蔽'
+                    }
+                },
+                {
+                    path: 'pages/settings/user-agreement',
+                    name: 'user_agreement',
+                    style: {
+                        navigationBarTitleText: '用户协议'
+                    },
+                    meta: {
+                        title: '用户协议'
+                    }
+                },
+                {
+                    path: 'pages/settings/privacy-policy',
+                    name: 'privacy_policy',
+                    style: {
+                        navigationBarTitleText: '隐私政策'
+                    },
+                    meta: {
+                        title: '隐私政策'
+                    }
+                },
+                {
+                    path: 'pages/settings/contact-us',
+                    name: 'contact_us',
+                    style: {
+                        navigationBarTitleText: '联系我们'
+                    },
+                    meta: {
+                        title: '联系我们'
+                    }
+                },
+                {
+                    path: 'pages/activity/center',
+                    name: 'activity_center',
+                    style: {
+                        navigationBarTitleText: '活动中心'
+                    },
+                    meta: {
+                        title: '活动中心'
+                    },
+                },
+                {
+                    path: 'pages/activity/publish',
+                    name: 'activity_publish',
+                    style: {
+                        navigationBarTitleText: '发布活动'
+                    },
+                    meta: {
+                        title: '发布活动'
+                    },
+                },
+                {
+                    path: 'pages/activity/my',
+                    name: 'activity_my',
+                    style: {
+                        navigationBarTitleText: '我的活动'
+                    },
+                    meta: {
+                        title: '我的活动'
+                    },
+                },
+                {
+                    path: 'pages/activity/detail',
+                    name: 'activity_detail',
+                    style: {
+                        navigationBarTitleText: '活动详情'
+                    },
+                    meta: {
+                        title: '活动详情'
+                    },
                 }
             ]
         },

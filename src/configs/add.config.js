@@ -21,6 +21,6 @@ export default [
     subtitle: '邀请同学共同参与',
     icon: 'activity',
     bgImage: 'https://picsum.photos/40/30?random=3',
-    path: '/pages/publish/activity'
+    path: 'activity_center'
   }
 ]

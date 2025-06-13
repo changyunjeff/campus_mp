@@ -54,7 +54,7 @@ async function handleEnter() {
       console.debug('👤 获取微信用户信息', userInfo)
       try {
         await userStore.login()
-        // 导航到社区页面
+        // 登录成功后直接跳转到社区页面
         router.pushTab('/pages/index/community')
       } catch (err) {
         toast.error(err.message || err.errMsg)

@@ -49,4 +49,13 @@ emitter.has = function (type) {
   return handlersMap.has(type)
 }
 
+// 聊天设置事件
+export const CHAT_SETTINGS_UPDATED = 'chat_settings_updated'
+export const CHAT_PINNED = 'chat_pinned'
+export const CHAT_UNPINNED = 'chat_unpinned'
+export const CHAT_MUTED = 'chat_muted'
+export const CHAT_UNMUTED = 'chat_unmuted'
+export const CHAT_BLOCKED = 'chat_blocked'
+export const CHAT_UNBLOCKED = 'chat_unblocked'
+
 export default emitter

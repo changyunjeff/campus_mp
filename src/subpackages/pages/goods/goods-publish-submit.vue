@@ -4,8 +4,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { useRouter } from 'uni-mini-router'
 import UploadProgress from '@/components/upload-progress.vue'
-import { getSpecConfigByType, goodsSpecs } from '../../components/goods/goods-param.configs'
-import { getCategoryById, getSubcategoryById } from './category.config'
+import { GoodsApi } from '@/api/goods'
 
 const router = useRouter()
 
@@ -15,9 +14,9 @@ const loading = ref(true)
 // 分类信息
 const categoryId = ref('')
 const subcategoryId = ref('')
+const subcategoryName = ref('')
 const categoryInfo = ref(null)
 const subcategoryInfo = ref(null)
-const goodsType = ref('other')
 const specConfig = ref({})
 
 // 当前激活的步骤标签 (params: 参数信息, images: 图片上传)
@@ -29,6 +28,7 @@ const goodsParams = reactive({
   price: '',
   originPrice: '',
   desc: '',
+  location: '' // 新增交易地点字段
 })
 
 // 表单验证状态
@@ -63,115 +63,53 @@ const canSubmit = computed(() => {
   return hasEnoughImages.value && isFormValid.value
 })
 
+// 动态字段值
+const customFieldValues = ref({})
+
 // 加载页面数据
-onLoad((options) => {
+onLoad(async (options) => {
   // 获取分类和子分类ID
   categoryId.value = options.categoryId || ''
   subcategoryId.value = options.subcategoryId || ''
+  subcategoryName.value = options.subcategoryName || ''
   
-  // 获取分类信息
-  if (categoryId.value) {
-    categoryInfo.value = getCategoryById(categoryId.value)
-  }
-  
-  // 获取子分类信息
-  if (categoryId.value && subcategoryId.value) {
-    subcategoryInfo.value = getSubcategoryById(categoryId.value, subcategoryId.value)
-  }
-  
-  // 根据分类确定商品类型
-  determineGoodsType()
-  
-  // 初始化商品参数
-  initGoodsParams()
-  
-  // 尝试从缓存读取保存的数据
-  tryLoadFromCache()
-  
-  setTimeout(() => {
-    loading.value = false
-  }, 500)
-})
-
-// 根据分类确定商品类型
-const determineGoodsType = () => {
-  // 这里根据分类ID映射到商品类型
-  const typeMap = {
-    'digital': { 
-      'laptop': 'digital',
-      'keyboard': 'digital',
-      'mini_pc': 'digital',
-      'hard_drive': 'digital',
-      'touch_keyboard': 'digital'
-    },
-    'mobile': { 
-      'iphone': 'phone',
-      'android': 'phone',
-      'ipad': 'digital',
-      'accessories': 'digital'
-    },
-    'appliances': { 
-      'earphones': 'digital',
-      'smart_watch': 'digital',
-      'vr': 'digital',
-      'smart_glasses': 'digital',
-      'weather': 'digital',
-      'band': 'digital'
-    },
-    'fun': {
-      'camera': 'digital',
-      'sports': 'sports',
-      'games': 'game',
-      'audio': 'digital'
-    },
-    'music': {
-      'instruments': 'instrument',
-      'guitar': 'instrument',
-      'effects': 'instrument',
-      'audio': 'instrument'
-    },
-    'books': {
-      'paper_book': 'book',
-      'reading_pen': 'digital',
-      'study_machine': 'digital',
-      'translator': 'digital',
-      'tape': 'digital'
-    },
-    'sports': {
-      'fitness': 'sports',
-      'bicycles': 'transportation',
-      'balls': 'sports',
-      'outdoor': 'sports'
-    },
-    'clothes': {
-      'clothing': 'clothing',
-      'shoes': 'clothing',
-      'bags': 'clothing',
-      'watches': 'digital',
-      'jewelry': 'other'
-    },
-    'beauty': {
-      'makeup': 'beauty',
-      'skincare': 'beauty',
-      'perfume': 'beauty',
-      'tools': 'beauty'
-    },
-    'furniture': {
-      'furniture': 'appliance',
-      'kitchenware': 'appliance',
-      'textiles': 'other',
-      'cleaning': 'other'
+  try {
+    loading.value = true
+    
+    // 获取分类信息
+    if (categoryId.value) {
+      const categoryResponse = await GoodsApi.getAllCategories()
+      categoryInfo.value = categoryResponse.find(cat => cat.id === categoryId.value)
     }
+    
+    // 获取子分类信息
+    if (categoryId.value && subcategoryId.value) {
+      const subcategoriesResponse = await GoodsApi.getSubcategories(categoryId.value)
+      subcategoryInfo.value = subcategoriesResponse.find(subcat => subcat.id === subcategoryId.value)
+    }
+    
+    // 获取分类规格配置
+    if (subcategoryId.value) {
+      const specsResponse = await GoodsApi.getCategorySpecs(subcategoryId.value)
+      specConfig.value = specsResponse
+    }
+    
+    // 初始化商品参数
+    initGoodsParams()
+    
+    // 尝试从缓存读取保存的数据
+    tryLoadFromCache()
+    
+  } catch (error) {
+    console.error('加载分类数据失败', error)
+    uni.showToast({
+      title: '加载分类数据失败',
+      icon: 'none'
+    })
+  } finally {
+    loading.value = false
   }
-  
-  // 尝试从映射中获取类型
-  if (categoryId.value && subcategoryId.value && typeMap[categoryId.value]) {
-    goodsType.value = typeMap[categoryId.value][subcategoryId.value] || 'other'
-  }
-  
-  // 获取参数配置
-  specConfig.value = getSpecConfigByType(goodsType.value)
-}
+})
 
 // 初始化商品参数
 const initGoodsParams = () => {
@@ -183,7 +121,7 @@ const initGoodsParams = () => {
   
   // 初始化表单字段
   allFields.forEach(field => {
-    goodsParams[field.field] = ''
+    goodsParams[field.field_name] = ''
   })
   
   // 如果有分类名称，自动填充到标题中
@@ -225,9 +163,9 @@ const switchTab = (tab) => {
   activeTab.value = tab
 }
 
-// 设置表单字段值
-const setFieldValue = (field, value) => {
-  goodsParams[field] = value
+// 设置字段值
+const setFieldValue = (fieldName, value) => {
+  customFieldValues.value[fieldName] = value
   validateForm()
 }
 
@@ -241,8 +179,8 @@ const validateForm = () => {
   if (specConfig.value.specs) {
     // 添加规格中的必填字段
     specConfig.value.specs.forEach(spec => {
-      if (spec.required) {
-        requiredFields.push(spec.field)
+      if (spec.is_required) {
+        requiredFields.push(spec.field_name)
       }
     })
   }
@@ -268,65 +206,41 @@ const validateForm = () => {
 }
 
 // 选择图片
-const chooseImages = () => {
-  const remainCount = uploadMaxCount - imageList.value.length
-  if (remainCount <= 0) {
-    uni.showToast({
-      title: `最多上传${uploadMaxCount}张图片`,
-      icon: 'none'
-    })
-    return
-  }
-  
+const chooseImage = () => {
   uni.chooseImage({
-    count: remainCount,
-    sizeType: ['compressed'],
+    count: uploadMaxCount - imageList.value.length, // 限制剩余可选数量
+    sizeType: ['original', 'compressed'],
     sourceType: ['album', 'camera'],
     success: (res) => {
-      uploadImages(res.tempFilePaths)
+      // 直接添加图片到列表，暂不上传
+      res.tempFilePaths.forEach((filePath, index) => {
+        const imageInfo = {
+          id: Date.now().toString() + index,
+          path: filePath,
+          url: filePath, // 小程序临时地址
+          uploaded: false // 标记为未上传
+        }
+        imageList.value.push(imageInfo)
+      })
+      
+      uni.showToast({
+        title: '图片添加成功',
+        icon: 'success'
+      })
+
+      console.debug('图片选择成功', {
+        count: res.tempFilePaths.length,
+        totalImages: imageList.value.length
+      })
     },
-    fail: (err) => {
-      console.error('选择图片失败', err)
+    fail: (error) => {
+      console.error('选择图片失败', error)
+      uni.showToast({
+        title: '选择图片失败',
+        icon: 'none'
+      })
     }
   })
-}
-
-// 上传图片
-const uploadImages = (tempFilePaths) => {
-  if (!tempFilePaths || tempFilePaths.length === 0) return
-  
-  showUploadProgress.value = true
-  uploadPercentage.value = 0
-  
-  // 模拟上传过程
-  let progress = 0
-  const timer = setInterval(() => {
-    progress += Math.floor(Math.random() * 10) + 1
-    if (progress >= 100) {
-      progress = 100
-      clearInterval(timer)
-      
-      // 上传完成后添加图片到列表
-      setTimeout(() => {
-        tempFilePaths.forEach(path => {
-          imageList.value.push({
-            path: path,
-            id: Date.now() + Math.floor(Math.random() * 1000)
-          })
-        })
-        
-        // 缓存图片列表
-        try {
-          uni.setStorageSync('goodsPublishImages', JSON.stringify(imageList.value))
-        } catch (e) {
-          console.error('保存图片缓存失败', e)
-        }
-        
-        showUploadProgress.value = false
-      }, 500)
-    }
-    uploadPercentage.value = progress
-  }, 200)
 }
 
 // 预览图片
@@ -380,16 +294,16 @@ const setMainImage = (index) => {
 }
 
 // 根据字段名获取适当的输入类型
-const getInputType = (fieldName) => {
-  // 价格相关字段使用数字输入
-  if (fieldName.includes('price') || fieldName.includes('Price')) {
-    return 'digit'
+const getInputType = (fieldType) => {
+  switch (fieldType) {
+    case 'number':
+      return 'digit'
+    case 'date':
+      return 'date'
+    case 'text':
+    default:
+      return 'text'
   }
-  // 日期相关字段使用日期选择
-  if (fieldName.includes('time') || fieldName.includes('Time') || fieldName.includes('date') || fieldName.includes('Date')) {
-    return 'date'
-  }
-  return 'text'
 }
 
 // 分组显示的表单项
@@ -397,7 +311,8 @@ const basicFields = computed(() => {
   return [
     { field: 'title', label: '标题', placeholder: '请输入宝贝标题', required: true },
     { field: 'price', label: '售价', placeholder: '请输入售价', required: true, type: 'digit' },
-    { field: 'originPrice', label: '原价', placeholder: '请输入原价，不填则与售价相同', type: 'digit' }
+    { field: 'originPrice', label: '原价', placeholder: '请输入原价，不填则与售价相同', type: 'digit' },
+    { field: 'location', label: '交易地点', placeholder: '请输入交易地点，如宿舍楼下、图书馆等', required: true }
   ]
 })
 
@@ -414,8 +329,16 @@ const selectCondition = (condition) => {
   setFieldValue('condition', condition.value)
 }
 
+// 渲染表单项
+const renderFormField = (field) => {
+  if (field.field_type === 'select') {
+    return 'select'
+  }
+  return 'input'
+}
+
 // 提交商品
-const submitGoods = () => {
+const submitGoods = async () => {
   // 先验证表单
   validateForm()
   
@@ -439,55 +362,128 @@ const submitGoods = () => {
     return
   }
   
-  // 整合所有商品信息
-  const finalGoodsData = {
-    ...goodsParams,
-    images: imageList.value.map(img => img.path),
-    mainImage: imageList.value[0]?.path || '',
-    categoryId: categoryId.value,
-    subcategoryId: subcategoryId.value,
-    goodsType: goodsType.value,
-    publishTime: new Date()
-  }
-  
   // 显示提交进度
   showUploadProgress.value = true
   uploadPercentage.value = 0
   
-  // 模拟提交过程
-  let progress = 0
-  const timer = setInterval(() => {
-    progress += Math.floor(Math.random() * 15) + 5
-    if (progress >= 100) {
-      progress = 100
-      clearInterval(timer)
-      
-      // 提交完成后跳转
-      setTimeout(() => {
-        showUploadProgress.value = false
-        
-        // 清除缓存
-        uni.removeStorageSync('goodsPublishParams')
-        uni.removeStorageSync('goodsPublishImages')
-        
-        // 提示成功
-        uni.showToast({
-          title: '发布成功',
-          icon: 'success',
-          duration: 2000,
-          success: () => {
-            // 跳转到成功页面或商品列表
-            setTimeout(() => {
-              router.switchTab({
-                name: 'index_goods'
-              })
-            }, 1500)
-          }
-        })
-      }, 800)
+  try {
+    // Step 1: 先创建商品（不含媒体）
+    uni.showLoading({ title: '创建商品中...' })
+    
+    // 整合商品数据
+    const createGoodsData = {
+      title: goodsParams.title,
+      description: goodsParams.desc || '',
+      price: parseFloat(goodsParams.price) || 0,
+      original_price: parseFloat(goodsParams.originPrice) || parseFloat(goodsParams.price) || 0,
+      category_id: subcategoryId.value || categoryId.value,
+      location: goodsParams.location || '',
+      condition: '全新', // 默认为全新，后续可以让用户选择
+      is_real: true,
+      media_ids: [], // 先创建商品，后续关联媒体
     }
-    uploadPercentage.value = progress
-  }, 200)
+    
+    // 添加动态字段
+    Object.keys(customFieldValues.value).forEach(key => {
+      if (!['title', 'description', 'price', 'original_price', 'category_id', 'location', 'condition', 'is_real', 'media_ids'].includes(key)) {
+        createGoodsData[key] = customFieldValues.value[key]
+      }
+    })
+
+    console.debug('创建商品数据', { createGoodsData })
+
+    const goodsResult = await GoodsApi.createGoods(createGoodsData)
+    uploadPercentage.value = 30
+    
+    // Step 2: 上传图片到OSS
+    if (imageList.value.length > 0) {
+      uni.showLoading({ title: '上传图片中...' })
+      
+      const filePaths = imageList.value.map(img => img.path)
+      
+      // 使用批量上传
+      const uploadResults = await GoodsApi.batchUploadGoodsImages(
+        filePaths, 
+        goodsResult.id,
+        (progress) => {
+          // 更新上传进度：30% + 上传进度的40%
+          uploadPercentage.value = 30 + Math.round(progress.progress * 0.4)
+        }
+      )
+      
+      uploadPercentage.value = 70
+      
+      // Step 3: 创建媒体记录关联到商品
+      uni.showLoading({ title: '关联图片中...' })
+      
+      // 处理批量上传结果
+      const mediaInfoList = []
+      if (Array.isArray(uploadResults)) {
+        // 所有上传成功
+        uploadResults.forEach(result => {
+          mediaInfoList.push({
+            object_key: result.object_key,
+            url: result.url,
+            type: result.type || 'goods_image'
+          })
+        })
+      } else if (uploadResults.success) {
+        // 部分成功的情况
+        uploadResults.success.forEach(result => {
+          mediaInfoList.push({
+            object_key: result.object_key,
+            url: result.url,
+            type: result.type || 'goods_image'
+          })
+        })
+        
+        if (uploadResults.failed && uploadResults.failed.length > 0) {
+          console.warn('部分图片上传失败', uploadResults.failed)
+        }
+      }
+      
+      if (mediaInfoList.length > 0) {
+        await GoodsApi.createGoodsMediaRecords({
+          goods_id: goodsResult.id,
+          media_list: mediaInfoList
+        })
+      }
+    }
+    
+    uploadPercentage.value = 100
+    uni.hideLoading()
+    showUploadProgress.value = false
+    
+    // 发布成功
+    uni.showToast({
+      title: '发布成功！',
+      icon: 'success',
+      duration: 2000
+    })
+    
+    // 清除本地数据
+    clearFormData()
+    
+    // 延迟跳转到商品详情页
+    setTimeout(() => {
+      router.replace(`/subpackages/pages/goods/goods-details?id=${goodsResult.id}`)
+    }, 2000)
+
+    console.debug('商品发布成功', { goodsId: goodsResult.id, mediaCount: imageList.value.length })
+    
+  } catch (error) {
+    uploadPercentage.value = 0
+    showUploadProgress.value = false
+    uni.hideLoading()
+    
+    console.error('商品发布失败', error)
+    
+    uni.showToast({
+      title: error.message || '发布失败，请重试',
+      icon: 'none',
+      duration: 3000
+    })
+  }
 }
 
 // 返回上一步
@@ -503,6 +499,35 @@ const prevStep = () => {
   }
   
   router.back()
+}
+
+// 清除表单数据
+const clearFormData = () => {
+  // 清除基本参数
+  goodsParams.title = ''
+  goodsParams.price = ''
+  goodsParams.originPrice = ''
+  goodsParams.desc = ''
+  goodsParams.location = ''
+  
+  // 清除动态字段
+  customFieldValues.value = {}
+  
+  // 清除图片
+  imageList.value = []
+  
+  // 清除分类信息
+  categoryId.value = ''
+  subcategoryId.value = ''
+  
+  // 清除本地缓存
+  try {
+    uni.removeStorageSync('goodsPublishParams')
+    uni.removeStorageSync('goodsPublishImages')
+    uni.removeStorageSync('goodsPublishCategory')
+  } catch (e) {
+    console.error('清除缓存失败', e)
+  }
 }
 </script>
 
@@ -613,37 +638,37 @@ const prevStep = () => {
               </view>
               
               <view class="form-group">
-                <view v-for="field in specFields" :key="field.field" class="form-item">
+                <view v-for="field in specFields" :key="field.field_name" class="form-item">
                   <view class="form-label">
-                    <text class="text-28rpx text-#333">{{ field.label }}</text>
-                    <text v-if="field.required" class="text-red-500 ml-5rpx">*</text>
+                    <text class="text-28rpx text-#333">{{ field.field_label }}</text>
+                    <text v-if="field.is_required" class="text-red-500 ml-5rpx">*</text>
                   </view>
                   <view class="form-input-wrap">
-                    <!-- 成色特殊处理 -->
-                    <view v-if="field.field === 'condition'" class="condition-selector">
+                    <!-- 下拉选择 -->
+                    <view v-if="field.field_type === 'select'" class="condition-selector">
                       <picker 
                         mode="selector" 
-                        :range="conditionOptions" 
-                        range-key="label"
-                        @change="(e) => setFieldValue('condition', conditionOptions[e.detail.value].value)"
+                        :range="field.options || []"
+                        @change="(e) => setFieldValue(field.field_name, field.options[e.detail.value])"
                       >
                         <view class="picker-view">
-                          <text v-if="goodsParams.condition" class="text-28rpx text-#333">{{ goodsParams.condition }}</text>
-                          <text v-else class="text-28rpx text-gray-400">请选择成色</text>
+                          <text v-if="customFieldValues[field.field_name]" class="text-28rpx text-#333">{{ customFieldValues[field.field_name] }}</text>
+                          <text v-else class="text-28rpx text-gray-400">{{ field.placeholder || `请选择${field.field_label}` }}</text>
                           <WdIcon name="chevron-down" size="24rpx" custom-style="color:#999" class="ml-10rpx"/>
                         </view>
                       </picker>
                     </view>
+                    <!-- 输入框 -->
                     <input 
                       v-else
-                      :type="getInputType(field.field)" 
-                      v-model="goodsParams[field.field]" 
-                      :placeholder="`请输入${field.label}`" 
+                      :type="getInputType(field.field_type)" 
+                      v-model="customFieldValues[field.field_name]" 
+                      :placeholder="field.placeholder || `请输入${field.field_label}`" 
                       class="form-input"
                       @input="validateForm"
                     />
-                    <view v-if="formErrors[field.field]" class="form-error">
-                      {{ formErrors[field.field] }}
+                    <view v-if="formErrors[field.field_name]" class="form-error">
+                      {{ formErrors[field.field_name] }}
                     </view>
                   </view>
                 </view>
@@ -657,21 +682,21 @@ const prevStep = () => {
               </view>
               
               <view class="form-group">
-                <view v-for="field in detailFields" :key="field.field" class="form-item">
+                <view v-for="field in detailFields" :key="field.field_name" class="form-item">
                   <view class="form-label">
-                    <text class="text-28rpx text-#333">{{ field.label }}</text>
-                    <text v-if="field.required" class="text-red-500 ml-5rpx">*</text>
+                    <text class="text-28rpx text-#333">{{ field.field_label }}</text>
+                    <text v-if="field.is_required" class="text-red-500 ml-5rpx">*</text>
                   </view>
                   <view class="form-input-wrap">
                     <input 
-                      :type="getInputType(field.field)" 
-                      v-model="goodsParams[field.field]" 
-                      :placeholder="`请输入${field.label}`" 
+                      :type="getInputType(field.field_type)" 
+                      v-model="customFieldValues[field.field_name]" 
+                      :placeholder="field.placeholder || `请输入${field.field_label}`" 
                       class="form-input"
                       @input="validateForm"
                     />
-                    <view v-if="formErrors[field.field]" class="form-error">
-                      {{ formErrors[field.field] }}
+                    <view v-if="formErrors[field.field_name]" class="form-error">
+                      {{ formErrors[field.field_name] }}
                     </view>
                   </view>
                 </view>
@@ -766,7 +791,7 @@ const prevStep = () => {
               <view 
                 v-if="imageList.length < uploadMaxCount"
                 class="w-full aspect-square bg-gray-100 rounded-12rpx flex flex-col items-center justify-center"
-                @tap="chooseImages"
+                @tap="chooseImage"
               >
                 <WdIcon name="plus" size="40rpx" custom-style="color:#999"/>
                 <text class="text-24rpx text-gray-500 mt-10rpx">添加图片</text>

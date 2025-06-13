@@ -7,6 +7,7 @@ import { useSearchHistoryStore } from '@/subpackages/pinia/community/history-sea
 import User from '/static/images/user.png'
 import events from '@/utils/events'
 import { throttle } from 'lodash'
+import {CommunityApi} from "@/api/community";
 
 // 路由
 const router = useRouter()
@@ -33,8 +34,11 @@ onMounted(() => {
   searchHistoryStore.initHistory()
 })
 
+const page = ref(1)
+const pageSize = ref(10)
+
 // 搜索处理
-const handleSearch = () => {
+const handleSearch = async () => {
   if (!searchKeyword.value.trim()) {
     uni.showToast({
       title: '请输入搜索内容',
@@ -51,18 +55,18 @@ const handleSearch = () => {
   showResults.value = true
   noResults.value = false
   
-  // 模拟搜索请求延迟
-  setTimeout(() => {
-    // 模拟API请求返回的数据
-    if (searchKeyword.value.includes('猫') || searchKeyword.value.includes('校园')) {
-      searchResults.value = mockPosts
-      noResults.value = false
-    } else {
-      searchResults.value = []
-      noResults.value = true
-    }
+  // 搜索请求
+  try {
+    const res = await CommunityApi.searchPosts(searchKeyword.value, page.value, pageSize.value)
+    console.debug('搜索结果：', res)
+    searchResults.value = res.list
+  } catch (e) {
+    console.error(e)
+    searchResults.value = []
+    noResults.value = true
+  } finally {
     isSearching.value = false
-  }, 500)
+  }
 }
 
 // 清空搜索关键词
@@ -101,55 +105,6 @@ const goBack = () => {
   router.back()
 }
 
-// 模拟数据：社区动态
-const mockPosts = reactive([
-  {
-    id: 1,
-    user: {
-      id: 101,
-      nickname: '樱花小梦',
-      avatar: User,
-      gender: 'female'
-    },
-    publishTime: Date.now() - 15 * 60 * 1000,
-    content: '今天在校园里遇到一只可爱的小猫咪，它竟然跟着我一路到了图书馆门口，好像在说"快去学习吧"！你们有没有遇到过校园里的小动物呢？',
-    images: [
-      User,
-      User,
-    ],
-    stats: {
-      likes: 28,
-      comments: 6,
-      favorites: 3
-    },
-    isLiked: false,
-    isFavorited: false
-  },
-  {
-    id: 3,
-    user: {
-      id: 103,
-      nickname: '校园摄影师',
-      avatar: User,
-      gender: 'male'
-    },
-    publishTime: Date.now() - 1 * 24 * 60 * 60 * 1000,
-    content: '分享一组校园黄昏时的照片，夕阳把教学楼染成了金色，美得不可思议。希望大家喜欢！',
-    images: [
-      User,
-      User,
-      User,
-    ],
-    stats: {
-      likes: 156,
-      comments: 42,
-      favorites: 38
-    },
-    isLiked: false,
-    isFavorited: true
-  }
-])
-
 // 处理点赞
 const handleLike = throttle((post) => {
   if (post.isLiked) {
@@ -157,6 +112,7 @@ const handleLike = throttle((post) => {
   } else {
     post.stats.likes++
   }
+  CommunityApi.likePost(post.id)
   post.isLiked = !post.isLiked
 }, 1000)
 
@@ -167,17 +123,31 @@ const handleFavorite = throttle((post) => {
   } else {
     post.stats.favorites++
   }
+  CommunityApi.favoritePost(post.id)
   post.isFavorited = !post.isFavorited
 }, 1000)
 
 // 处理评论
 const handleComment = throttle((post) => {
-  console.log('评论帖子:', post.id)
+  console.log('评论帖子:', post)
+  router.push({
+    name: 'post_detail',
+    params: {
+      id: post.id,
+      focus: 'comment'
+    }
+  })
 }, 1000)
 
 // 查看用户信息
 const viewUserProfile = throttle((userId) => {
   console.log('查看用户资料:', userId)
+  router.push({
+    name: 'other_index',
+    params: {
+      id: userId
+    }
+  })
 }, 1000)
 
 // 查看帖子详情
@@ -186,7 +156,7 @@ const viewPostDetail = throttle((postId) => {
   // 跳转到帖子详情页
   router.push({
     name: 'post_detail',
-    query: {
+    params: {
       id: postId
     }
   })
@@ -294,20 +264,13 @@ const handleLongPress = (post) => {
           >
             <!-- 帖子头部 - 用户信息和发布时间 -->
             <view class="flex justify-between items-center mb-20rpx">
-              <view class="flex items-center" @tap.stop="viewUserProfile(post.user.id)">
-                <image class="w-80rpx h-80rpx rounded-full mr-20rpx border-2rpx border-gray-100" :src="post.user.avatar" mode="aspectFill"></image>
+              <view class="flex items-center" @tap.stop="viewUserProfile(post.author.id)">
+                <image class="w-80rpx h-80rpx rounded-full mr-20rpx border-2rpx border-gray-100" :src="post.author.avatar || User" mode="aspectFill"></image>
                 <view class="flex flex-col">
                   <view class="flex items-center">
-                    <text class="text-28rpx font-600 text-#333 mr-10rpx">{{ post.user.nickname }}</text>
-                    <view class="flex items-center justify-center w-36rpx h-36rpx" :class="post.user.gender === 'male' ? 'text-blue-500' : 'text-pink-500'">
-                      <WdIcon 
-                        :name="post.user.gender === 'male' ? 'gender-male' : 'gender-female'" 
-                        size="24" 
-                        :custom-style="post.user.gender === 'male' ? 'color:#3b82f6' : 'color:#ec4899'"
-                      />
-                    </view>
+                    <text class="text-28rpx font-600 text-#333 mr-10rpx">{{ post.author.nickname }}</text>
                   </view>
-                  <text class="text-24rpx text-gray-400 mt-4rpx">{{ formatTime(post.publishTime) }}</text>
+                  <text class="text-24rpx text-gray-400 mt-4rpx">{{ formatTime(post.publish_time) }}</text>
                 </view>
               </view>
             </view>
@@ -362,9 +325,9 @@ const handleLongPress = (post) => {
               >
                 <WdIcon 
                   custom-class="iconfont" class-prefix="icon"
-                  :name="post.isLiked ? 'heart-fill' : 'heart'" 
+                  :name="post.is_liked ? 'heart-fill' : 'heart'"
                   size="20" 
-                  :custom-style="post.isLiked ? 'color:#ef4444' : 'color:#666'"
+                  :custom-style="post.is_liked ? 'color:#ef4444' : 'color:#666'"
                 />
                 <text class="ml-8rpx text-24rpx text-#666" :class="post.isLiked ? 'font-600' : ''">{{ post.stats.likes }}</text>
               </view>
@@ -381,16 +344,16 @@ const handleLongPress = (post) => {
                 <text class="ml-8rpx text-24rpx text-#666">{{ post.stats.comments }}</text>
               </view>
               <view 
-                :class="['flex items-center px-20rpx py-10rpx rounded-30rpx transition-all duration-200 active:bg-gray-100', post.isFavorited ? 'active' : '']" 
+                :class="['flex items-center px-20rpx py-10rpx rounded-30rpx transition-all duration-200 active:bg-gray-100', post.is_favorited ? 'active' : '']"
                 @tap.stop="handleFavorite(post)"
               >
                 <WdIcon 
                   custom-class="iconfont" class-prefix="icon"
-                  :name="post.isFavorited ? 'star-fill' : 'star'" 
+                  :name="post.is_favorited ? 'star-fill' : 'star'"
                   size="20" 
-                  :custom-style="post.isFavorited ? 'color:#f59e0b' : 'color:#666'"
+                  :custom-style="post.is_favorited ? 'color:#f59e0b' : 'color:#666'"
                 />
-                <text class="ml-8rpx text-24rpx text-#666" :class="post.isFavorited ? 'font-600' : ''">{{ post.stats.favorites }}</text>
+                <text class="ml-8rpx text-24rpx text-#666" :class="post.is_favorited ? 'font-600' : ''">{{ post.stats.favorites }}</text>
               </view>
             </view>
           </view>

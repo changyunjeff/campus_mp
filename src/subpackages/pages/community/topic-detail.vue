@@ -2,7 +2,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { formatTime } from '@/utils/time'
 import User from '/static/images/user.png'
-import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
+import { onLoad } from '@dcloudio/uni-app'
 import { throttle } from 'lodash'
 import Layout from '@/layout/index.vue'
 import { useRouter } from 'uni-mini-router'
@@ -41,6 +41,11 @@ const pageSize = ref(20)
 const total = ref(0)
 const isLoading = ref(false)
 const hasMore = ref(true)
+
+// scroll-view 相关状态
+const refresherTriggered = ref(false)
+const scrollTop = ref(0)
+const refresherEnabled = ref(true)
 
 // 加载话题详情
 const loadTopicDetail = async () => {
@@ -176,7 +181,7 @@ const handleComment = throttle((post) => {
   console.log('评论帖子:', post.id)
   router.push({
     name: 'post_detail',
-    query: {
+    params: {
       id: post.id,
       focus: 'comment'
     }
@@ -197,7 +202,7 @@ const viewPostDetail = throttle((postId) => {
   console.log('查看帖子详情:', postId)
   router.push({
     name: 'post_detail',
-    query: {
+    params: {
       id: postId
     }
   })
@@ -223,24 +228,32 @@ const viewImage = throttle((post, index) => {
   })
 }, 1000)
 
-// 下拉刷新
-onPullDownRefresh(async () => {
-  console.log('下拉刷新')
+// 下拉刷新处理
+const onRefresherRefresh = async () => {
+  console.log('下拉刷新话题详情')
+  refresherTriggered.value = true
   await Promise.all([
     loadTopicDetail(),
     loadTopicPosts(true)
   ])
-  uni.stopPullDownRefresh()
-})
+  refresherTriggered.value = false
+}
 
-// 上拉加载更多
-onReachBottom(async () => {
-  console.log('上拉加载更多')
+// 触底加载处理
+const onScrollToLower = async () => {
+  console.log('触底加载更多帖子')
   if (!hasMore.value || isLoading.value) return
   
   page.value++
   await loadTopicPosts()
-})
+}
+
+// 滚动事件处理
+const onScroll = (e) => {
+  scrollTop.value = e.detail.scrollTop
+  // 当滚动位置大于50rpx时禁用下拉刷新，避免滚动冲突
+  refresherEnabled.value = scrollTop.value <= 50
+}
 
 onLoad((options) => {
   // 获取话题名称
@@ -264,7 +277,16 @@ onLoad((options) => {
 
 <template>
   <Layout>
-    <view class="bg-#f8f8f8 min-h-100vh">
+    <scroll-view 
+      scroll-y 
+      class="bg-#f8f8f8 h-full"
+      :refresher-enabled="refresherEnabled"
+      :refresher-triggered="refresherTriggered"
+      @refresherrefresh="onRefresherRefresh"
+      @scrolltolower="onScrollToLower"
+      @scroll="onScroll"
+      lower-threshold="100"
+    >
       <!-- 话题详情卡片 -->
       <view class="bg-white p-30rpx mb-20rpx">
         <!-- 话题标题 -->
@@ -359,7 +381,7 @@ onLoad((options) => {
             <view 
               v-for="topic in post.topics.slice(0, 3)" 
               :key="topic.id" 
-              class="mr-12rpx mb-8rpx px-12rpx py-4rpx bg-orange-50 text-orange-500 text-22rpx rounded-6rpx transition-all duration-200 active:bg-orange-100"
+              class="mr-12rpx mb-8rpx px-12rpx py-4rpx bg-orange-50 text-blue-500 text-22rpx rounded-6rpx transition-all duration-200 active:bg-orange-100"
               @tap.stop="viewTopicDetail(topic.name)"
             >
               # {{ topic.name }}
@@ -367,20 +389,6 @@ onLoad((options) => {
             </view>
             <view v-if="post.topics.length > 3" class="px-12rpx py-4rpx text-gray-400 text-22rpx">
               +{{ post.topics.length - 3 }}
-            </view>
-          </view>
-          
-          <!-- 标签 -->
-          <view v-if="post.tags && post.tags.length > 0" class="flex flex-wrap mb-16rpx">
-            <view 
-              v-for="(tag, index) in post.tags.slice(0, 3)" 
-              :key="index" 
-              class="mr-12rpx mb-8rpx px-12rpx py-4rpx bg-blue-50 text-blue-500 text-22rpx rounded-6rpx"
-            >
-              # {{ tag }}
-            </view>
-            <view v-if="post.tags.length > 3" class="px-12rpx py-4rpx text-gray-400 text-22rpx">
-              +{{ post.tags.length - 3 }}
             </view>
           </view>
 
@@ -472,7 +480,7 @@ onLoad((options) => {
           <text class="text-24rpx text-gray-400">没有更多了</text>
         </view>
       </view>
-    </view>
+    </scroll-view>
   </Layout>
 </template>
 

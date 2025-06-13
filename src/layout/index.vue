@@ -187,7 +187,6 @@ const statusBarHeight = computed(() => {
 .status-bar {
   width: 100%;
   height: calc(var(--status-bar-height) + var(--status-bar-height));
-  background-color: red;
 }
 
 .header {
@@ -208,6 +207,5 @@ const statusBarHeight = computed(() => {
 .footer {
   width: 100%;
   min-height: calc($uni-input-area-height + var(--safe-area-inset-bottom));
-  background-color: blue;
 }
 </style>

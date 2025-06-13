@@ -20,6 +20,7 @@ export const useUserStore = defineStore('user', () => {
             const res = await AuthApi.login(code)
             console.debug('📥 登录成功:', res)
             openid.value = res.openid
+            uni.setStorageSync('openid', openid.value)
             console.debug('openid:', openid.value)
             const connection = useConnection()
             await connection.connect()

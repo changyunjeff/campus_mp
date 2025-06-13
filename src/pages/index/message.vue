@@ -1,12 +1,16 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import Layout from '@/layout/index.vue'
 import { useTabbar } from '@/composables/tabbar'
 import { useRouter } from 'uni-mini-router'
+import { useConversations } from '@/composables/Conversations'
+import { formatTime } from '@/utils/time'
 import events from '@/utils/events'
+import User from "/static/images/user.png"
 
 const { hiddened, show, hide } = useTabbar()
 const router = useRouter()
+const conversationsManager = useConversations()
 
 const switchShow = () => {
   console.log(hiddened.value)
@@ -15,110 +19,55 @@ const switchShow = () => {
 
 onMounted(() => {
   show()
+  
+  // 延迟执行，确保所有store都已经初始化
+  setTimeout(() => {
+    console.log('开始刷新会话数据...');
+    conversationsManager.refreshConversations();
+    
+    // 调试当前状态
+    setTimeout(() => {
+      console.log('最终检查 - messageList 长度:', messageList.value.length);
+      console.log('最终检查 - messageList 内容:', messageList.value);
+      
+      // 暴露调试和管理方法到全局
+      window.$debugConversations = () => {
+        console.log('=== 全局调试信息 ===');
+        const debug = conversationsManager.debugConversations();
+        console.log('调试结果:', debug);
+        return debug;
+      };
+      
+      window.$enrichUserInfo = () => {
+        console.log('手动获取用户信息...');
+        return conversationsManager.enrichUserInfo();
+      };
+      
+      console.log('调试方法已暴露：');
+      console.log('- window.$debugConversations() - 查看调试信息');
+      console.log('- window.$enrichUserInfo() - 手动获取用户信息');
+    }, 100);
+  }, 100);
 })
 
-// 消息列表数据
-const messageList = ref([
-  {
-    id: 1,
-    type: 'group',
-    name: '程序员接单群',
-    avatar: '/static/images/user.png',
-    lastMessage: '"吃口饭"加入了群聊',
-    time: '19:11',
-    unread: 0,
-    muted: false,
-    pinned: true
-  },
-  {
-    id: 2,
-    type: 'user',
-    name: '猫猫东京留学群聊',
-    avatar: '/static/images/user.png',
-    lastMessage: '[99+]猫猫在日本、群主｜猫猫在日本｜开...',
-    time: '17:32',
-    unread: 0,
-    muted: true,
-    pinned: false
-  },
-  {
-    id: 3,
-    type: 'system',
-    name: '活动消息',
-    avatar: '',
-    lastMessage: '思路打开！投票小众有趣新职业赢周边',
-    time: '10:28',
-    unread: 1,
-    muted: false,
-    pinned: false
-  },
-  {
-    id: 4,
-    type: 'user',
-    name: '甜甜圈🍩',
-    avatar: '/static/images/user.png',
-    lastMessage: '额，我只接项目，不帮忙答疑哈',
-    time: '昨天',
-    unread: 0,
-    muted: false,
-    pinned: false
-  },
-  {
-    id: 5,
-    type: 'user',
-    name: 'IDC小白变大神进阶版',
-    avatar: '/static/images/user.png',
-    lastMessage: '还需要服务器吗',
-    time: '星期四',
-    unread: 0,
-    muted: false,
-    pinned: false
-  },
-  {
-    id: 6,
-    type: 'system',
-    name: '系统消息',
-    avatar: '',
-    lastMessage: '快来参加REDGALA活动小调研哦',
-    time: '04-12',
-    unread: 0,
-    muted: false,
-    pinned: false
-  },
-  {
-    id: 7,
-    type: 'user',
-    name: '且从容',
-    avatar: '/static/images/user.png',
-    lastMessage: '你好，是要买A100吗？',
-    time: '04-10',
-    unread: 0,
-    muted: false,
-    pinned: false
-  },
-  {
-    id: 8,
-    type: 'user',
-    name: '总有一朵云适合你',
-    avatar: '/static/images/user.png',
-    lastMessage: '不说就可以不用再说了',
-    time: '04-07',
-    unread: 0,
-    muted: false,
-    pinned: false
-  },
-  {
-    id: 9,
-    type: 'user',
-    name: '遨游云上',
-    avatar: '/static/images/user.png',
-    lastMessage: '不放心，我也可以给您🍒',
-    time: '04-07',
-    unread: 0,
-    muted: false,
-    pinned: false
-  }
-])
+// 使用统一的会话列表数据
+const messageList = computed(() => {
+  const conversations = conversationsManager.conversations?.value || [];
+  console.log('对话列表：', conversations)
+  console.log('conversationsManager.conversations 类型:', typeof conversationsManager.conversations);
+  
+  return conversations.map(conv => ({
+    id: conv.userId,
+    type: conv.type === 'private' ? 'user' : conv.type,
+    name: conv.displayName,
+    avatar: conv.displayAvatar || User,
+    lastMessage: conv.displayLastMessage,
+    time: formatTime(conv.displayTime),
+    unread: conv.unreadCount,
+    muted: conv.isMuted,
+    pinned: conv.isPinned
+  }))
+})
 
 // 跳转到聊天页面
 const goToChat = (type, id) => {
@@ -126,7 +75,7 @@ const goToChat = (type, id) => {
     case 'user':
       router.push({
         name: 'private_chat',
-        query: {
+        params: {
           id: id
         }
       })
@@ -203,27 +152,51 @@ const handleLongPress = (item) => {
           >
             <WdIcon custom-class="iconfont" class-prefix="icon" name="notification" :size="18" custom-style="color:#fff" />
           </div>
+          
+          <!-- 未读消息数 -->
           <div
               v-if="item.unread > 0"
               class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-5 h-5 flex items-center justify-center px-1"
           >
-            {{ item.unread }}
+            {{ item.unread > 99 ? '99+' : item.unread }}
           </div>
+          
+          <!-- 免打扰标识 -->
           <div
               v-if="item.muted"
-              class="absolute bottom-0 right-0 bg-gray-200 rounded-full w-4 h-4 flex items-center justify-center"
+              class="absolute bottom-0 right-0 bg-gray-400 rounded-full w-4 h-4 flex items-center justify-center"
           >
-            <i class="iconfont icon-mute text-gray-500 text-xs"></i>
+            <WdIcon custom-class="iconfont" class-prefix="icon" name="mute" :size="10" custom-style="color:#fff" />
           </div>
         </div>
 
         <!-- 消息内容 -->
         <div class="flex-1 overflow-hidden">
           <div class="flex justify-between items-center mb-1">
-            <div class="font-medium truncate mr-2">{{ item.name }}</div>
+            <div class="flex items-center">
+              <!-- 置顶标识 -->
+              <WdIcon 
+                v-if="item.pinned" 
+                custom-class="iconfont mr-1" 
+                class-prefix="icon" 
+                name="pin" 
+                :size="12" 
+                custom-style="color:#f59e0b" 
+              />
+              <div class="font-medium truncate mr-2">{{ item.name }}</div>
+            </div>
             <div class="text-xs text-gray-400 whitespace-nowrap">{{ item.time }}</div>
           </div>
-          <div class="text-sm text-gray-500 truncate">{{ item.lastMessage }}</div>
+          <div class="flex items-center">
+            <div class="text-sm text-gray-500 truncate flex-1">{{ item.lastMessage }}</div>
+            <!-- 会话状态标识 -->
+            <div class="flex items-center ml-2 space-x-1">
+              <!-- 已屏蔽标识 -->
+              <div v-if="item.isBlocked" class="text-xs text-red-400 bg-red-50 px-2 py-1 rounded">
+                已屏蔽
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -4,7 +4,7 @@ import { onLoad, onShow } from '@dcloudio/uni-app'
 import { useRouter } from "uni-mini-router"
 import { useToast } from "@/composables/toast"
 import {sleep} from '@/utils/time'
-import { getReportReasons } from '@/subpackages/configs/community/report.config'
+import { CommunityApi } from '@/api/community'
 import { inject } from 'vue'
 
 const router = useRouter()
@@ -13,9 +13,6 @@ const noteId = ref('')
 const reasons = ref([])
 const loading = ref(false)
 const submitting = ref(false)
-
-// 获取全局上传控制器
-const uploadControl = inject('uploadControl')
 
 const formData = reactive({
   reasonId: '',
@@ -56,15 +53,13 @@ onLoad((options) => {
 const fetchReportData = async () => {
   loading.value = true
   try {
-    // 使用配置文件获取举报原因
-    reasons.value = getReportReasons()
-    
-    // 如果还需要从服务器获取其他数据，保留API调用
-    // const res = await notesApi.getReportData()
-    // 合并其他数据...
+    // 从服务器获取举报原因列表
+    const res = await CommunityApi.getReportReasons()
+    console.debug('获取举报原因列表成功,res:', res)
+    reasons.value = res.reasons
   } catch (err) {
     console.error('获取举报数据失败', err)
-    toast.show(`获取举报数据失败:${err.message}`)
+    toast.show(`获取举报数据失败: ${err.message || '网络错误'}`)
   } finally {
     loading.value = false
   }
@@ -89,35 +84,30 @@ const chooseAndUploadImage = async () => {
     })
     
     if (res.tempFilePaths && res.tempFilePaths.length > 0) {
-      // 使用全局上传控制器显示上传进度
-      uploadControl.show(0)
-      const file = res.tempFilePaths[0]
+      const filePath = res.tempFilePaths[0]
+      
       try {
-        // const uploadRes = await notesApi.uploadReportMedia(file, (progress) => {
-        //   // 使用全局上传控制器更新进度
-        //   uploadControl.update(progress)
-        // })
-        const uploadRes = {
-          url: 'https://img12.360buyimg.com/n1/s240x240_jfs/t1/179999/3/12199/109989/60d9999fE9922999d/9999999999999999.jpg',
-          object_key: 'object_key',
-          media_type: 'image'
+        // 使用媒体上传API
+        const res = await CommunityApi.uploadReportMedia(filePath)
+        
+        if (res) {
+          formData.medias.push({
+            url: res.url,
+            object_key: res.object_key,
+            type: res.type
+          })
+          toast.show('图片上传成功')
+        } else {
+          throw new Error(res.message || '上传失败')
         }
-        await sleep(1000) // 模拟上传过程
-        formData.medias.push({
-          url: uploadRes.url,
-          object_key: uploadRes.object_key,
-          type: uploadRes.media_type
-        })
-        // 上传完成后隐藏进度条
-        uploadControl.hide()
       } catch (err) {
         console.error('上传图片失败', err)
-        toast.show('上传图片失败')
-        uploadControl.hide()
+        toast.show(`上传图片失败: ${err.message || '网络错误'}`)
       }
     }
   } catch (err) {
     console.error('选择图片失败', err)
+    toast.show('选择图片失败')
   }
 }
 
@@ -135,17 +125,29 @@ const submitReport = async () => {
   
   submitting.value = true
   try {
-    // await notesApi.reportNote(noteId.value, formData.reasonId, formData.medias, formData.note)
-    // 使用模拟数据
-    await sleep(1000)
-    toast.show('举报提交成功')
+    // 构建举报数据，包含媒体信息
+    const reportData = {
+      type: 'post', // 根据页面上下文，这里是举报帖子
+      target_id: noteId.value,
+      reason_id: formData.reasonId,
+      note: formData.note,
+      medias: formData.medias.map(media => ({
+        url: media.url,
+        object_key: media.object_key,
+        type: media.type
+      }))
+    }
     
+    // 一次性创建举报记录和媒体记录
+    const reportRes = await CommunityApi.createReport(reportData)
+    
+    toast.show('举报提交成功')
     setTimeout(() => {
       router.back()
     }, 1500)
   } catch (err) {
     console.error('提交举报失败', err)
-    toast.show('提交举报失败，请重试')
+    toast.show(`提交举报失败: ${err.message || '网络错误'}`)
   } finally {
     submitting.value = false
   }

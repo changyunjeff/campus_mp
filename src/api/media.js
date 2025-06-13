@@ -1,4 +1,4 @@
-import { post, del, upload, batch_upload } from "@/utils/request";
+import { get, post, del, upload, batch_upload } from "@/utils/request";
 
 /**
  * MediaApi 媒体接口
@@ -206,5 +206,37 @@ export const MediaApi = {
     post("/media/delete/avatar/wxuser", {
       media_id: mediaId,
       hard_delete: hardDelete,
+    }),
+
+  /**
+   * 获取用户头像列表
+   * @param {string} targetOpenId 目标用户OpenID，不传则获取自己的头像
+   * @returns {Promise<Array>} 头像列表
+   */
+  getUserAvatars: (targetOpenId = '') => {
+    const params = targetOpenId ? { target_open_id: targetOpenId } : {}
+    return get("/media/avatar/wxuser", params)
+  },
+
+  /**
+   * 获取用户当前头像（最新的头像）
+   * @param {string} targetOpenId 目标用户OpenID，不传则获取自己的头像
+   * @returns {Promise<Object>} 当前头像
+   */
+  getCurrentUserAvatar: (targetOpenId = '') => {
+    const params = targetOpenId ? { target_open_id: targetOpenId } : {}
+    return get("/media/avatar/wxuser/current", params)
+  },
+
+  /**
+   * 设置当前用户头像（上传新头像并设为当前头像）
+   * @param {Object} params 上传参数
+   * @param {string} params.file - 文件路径
+   * @param {Function} params.onProgress - 进度回调
+   * @returns {Promise<Object>} 上传结果
+   */
+  setCurrentUserAvatar: ({ file, onProgress }) =>
+    upload("/media/avatar/wxuser/current", file, {
+      callback: onProgress,
     }),
 };

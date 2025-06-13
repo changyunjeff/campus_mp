@@ -7,6 +7,8 @@
 export {}
 declare global {
   const EffectScope: typeof import('vue')['EffectScope']
+  const MESSAGE_STATUS: typeof import('../composables/message.js')['MESSAGE_STATUS']
+  const chatSettingsCache: typeof import('../composables/chat-settings.js')['chatSettingsCache']
   const computed: typeof import('vue')['computed']
   const createApp: typeof import('vue')['createApp']
   const customRef: typeof import('vue')['customRef']
@@ -52,7 +54,9 @@ declare global {
   const triggerRef: typeof import('vue')['triggerRef']
   const unref: typeof import('vue')['unref']
   const useAttrs: typeof import('vue')['useAttrs']
+  const useChatSettings: typeof import('../composables/chat-settings.js')['useChatSettings']
   const useConnection: typeof import('../composables/connection.js')['useConnection']
+  const useConversations: typeof import('../composables/Conversations.js')['useConversations']
   const useCssModule: typeof import('vue')['useCssModule']
   const useCssVars: typeof import('vue')['useCssVars']
   const useId: typeof import('vue')['useId']
@@ -67,6 +71,7 @@ declare global {
   const useTabbr: typeof import('../composables/tabbar.js')['useTabbr']
   const useTemplateRef: typeof import('vue')['useTemplateRef']
   const useToast: typeof import('../composables/toast.js')['useToast']
+  const useUserInfo: typeof import('../composables/user-info.js')['useUserInfo']
   const watch: typeof import('vue')['watch']
   const watchEffect: typeof import('vue')['watchEffect']
   const watchPostEffect: typeof import('vue')['watchPostEffect']

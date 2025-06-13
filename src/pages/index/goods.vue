@@ -1,149 +1,171 @@
 <script setup>
 import Layout from '@/layout/index.vue'
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'uni-mini-router'
 import { formatTime } from '@/utils/time'
 import User from '/static/images/user.png'
 import events from '@/utils/events'
 import { debounce, throttle } from 'lodash'
 import {onLoad, onPullDownRefresh, onReachBottom} from '@dcloudio/uni-app'
+import { GoodsApi } from '@/api/goods'
 
 const { show } = useTabbar()
 const router = useRouter()
 
-// 商品分类
-const categories = [
-  {id: 1, name: '手机', icon: 'phone-o', color: '#ff7043'},
-  {id: 2, name: '数码', icon: 'watch-o', color: '#26a69a'},
-  {id: 3, name: '美妆', icon: 'gift-o', color: '#ec407a'},
-  {id: 4, name: '四级', icon: 'bookmark-o', color: '#5c6bc0'},
-  {id: 5, name: '明星周边', icon: 'star-o', color: '#ffc107'},
-  {id: 6, name: '母婴', icon: 'cart-o', color: '#8d6e63'},
-  {id: 7, name: '游戏交易', icon: 'play-circle-o', color: '#7e57c2'},
-  {id: 8, name: '潮玩动漫', icon: 'smile-o', color: '#42a5f5'},
-  {id: 9, name: '交通工具', icon: 'logistics', color: '#ef5350'},
-  {id: 10, name: '家电', icon: 'bulb-o', color: '#66bb6a'}
-]
+// 数据状态
+const loading = ref(false)
+const refreshing = ref(false)
+const loadingMore = ref(false)
+const categories = ref([])
+const goods = reactive([])
 
-// 模拟商品数据
-const goods = reactive([
-  {
-    id: 1,
-    title: 'iPhone 13 红色 128G 99新',
-    price: 3899,
-    originPrice: 4599,
-    images: [User],
-    location: '东莞',
-    publishTime: Date.now() - 2 * 60 * 60 * 1000,
-    seller: {
-      id: 101,
-      nickname: '科技数码控',
-      avatar: User
-    },
-    isReal: true, // 实拍
-    isCertified: true, // 官方验证
-    views: 168,
-    likes: 36
-  },
-  {
-    id: 2,
-    title: 'JellyCAT 邦尼兔 30cm 全新正品',
-    price: 215,
-    originPrice: 329,
-    images: [User, User],
-    location: '揭阳',
-    publishTime: Date.now() - 5 * 60 * 60 * 1000,
-    seller: {
-      id: 102,
-      nickname: '玩具收藏家',
-      avatar: User
-    },
-    isReal: false,
-    isCertified: true,
-    views: 96,
-    likes: 24
-  },
-  {
-    id: 3,
-    title: 'VIVO X60 星夜蓝 256G 95新',
-    price: 1299,
-    originPrice: 2499,
-    images: [User],
-    location: '广州',
-    publishTime: Date.now() - 1 * 24 * 60 * 60 * 1000,
-    seller: {
-      id: 103,
-      nickname: '数码回收站',
-      avatar: User
-    },
-    isReal: true,
-    isCertified: false,
-    views: 78,
-    likes: 12
-  },
-  {
-    id: 4,
-    title: '行者 明星亲笔签名照片 限量版',
-    price: 46,
-    originPrice: 99,
-    images: [User],
-    location: '重庆',
-    publishTime: Date.now() - 3 * 24 * 60 * 60 * 1000,
-    seller: {
-      id: 104,
-      nickname: '明星周边铺',
-      avatar: User
-    },
-    isReal: true,
-    isCertified: false,
-    views: 256,
-    likes: 64
-  },
-  {
-    id: 5,
-    title: '2023 iPad Pro 12.9寸 M2芯片 256G WIFI',
-    price: 4500,
-    originPrice: 8999,
-    images: [User],
-    location: '东莞',
-    publishTime: Date.now() - 7 * 24 * 60 * 60 * 1000,
-    seller: {
-      id: 105,
-      nickname: '苹果数码专营',
-      avatar: User
-    },
-    isReal: true,
-    isCertified: true,
-    views: 320,
-    likes: 76
-  }
-])
+// 分页参数
+const pagination = reactive({
+  page: 1,
+  pageSize: 10,
+  hasMore: true,
+  total: 0
+})
+
+// 筛选参数
+const filters = reactive({
+  categoryId: null,
+  orderBy: 'created_at',
+  orderDirection: 'desc'
+})
 
 // 搜索关键词
 const searchKeyword = ref('')
 
-// 处理tab切换
-const handleTabChange = throttle((tabName) => {
-  console.log('切换到标签:', tabName)
-  // 这里可以根据选中的tab加载不同的内容
-}, 1000)
+// 分类图标和颜色映射（用于美化显示）
+const categoryIconMap = {
+  '手机': { icon: 'phone-o', color: '#ff7043' },
+  '数码': { icon: 'watch-o', color: '#26a69a' },
+  '美妆': { icon: 'gift-o', color: '#ec407a' },
+  '四级': { icon: 'bookmark-o', color: '#5c6bc0' },
+  '明星周边': { icon: 'star-o', color: '#ffc107' },
+  '母婴': { icon: 'cart-o', color: '#8d6e63' },
+  '游戏交易': { icon: 'play-circle-o', color: '#7e57c2' },
+  '潮玩动漫': { icon: 'smile-o', color: '#42a5f5' },
+  '交通工具': { icon: 'logistics', color: '#ef5350' },
+  '家电': { icon: 'bulb-o', color: '#66bb6a' },
+  '电脑': { icon: 'desktop-o', color: '#9c27b0' },
+  '服装': { icon: 'shirt-o', color: '#ff9800' },
+  '图书': { icon: 'book-o', color: '#795548' },
+  '运动': { icon: 'medal-o', color: '#4caf50' },
+  '其他': { icon: 'more-o', color: '#607d8b' }
+}
+
+// ==================== 数据加载函数 ====================
+
+// 加载分类数据
+const loadCategories = async () => {
+  try {
+    const response = await GoodsApi.getAllCategories()
+    const rawCategories = response || []
+    // 为分类添加图标和颜色
+    categories.value = rawCategories.map(category => {
+      const mapping = categoryIconMap[category.name] || categoryIconMap['其他']
+      return {
+        ...category,
+        icon: category.icon || mapping.icon,
+        color: category.color || mapping.color
+      }
+    })
+  } catch (error) {
+    console.error('加载分类失败:', error)
+    uni.showToast({
+      title: '加载分类失败',
+      icon: 'none'
+    })
+  }
+}
+
+// 加载商品列表
+const loadGoodsList = async (isRefresh = false) => {
+  if (loading.value && !isRefresh) return
+  
+  try {
+    if (isRefresh) {
+      refreshing.value = true
+      pagination.page = 1
+      goods.length = 0
+    } else {
+      if (pagination.page === 1) {
+        loading.value = true
+      } else {
+        loadingMore.value = true
+      }
+    }
+
+    const params = {
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      orderBy: filters.orderBy,
+      orderDirection: filters.orderDirection
+    }
+
+    if (filters.categoryId) {
+      params.categoryId = filters.categoryId
+    }
+
+    const response = await GoodsApi.getGoodsList(params)
+    
+    if (response.code === 200) {
+      const { items, total, hasMore } = response.data
+      
+      if (isRefresh || pagination.page === 1) {
+        goods.length = 0
+        goods.push(...items)
+      } else {
+        goods.push(...items)
+      }
+      
+      pagination.total = total
+      pagination.hasMore = hasMore
+      
+      if (items.length > 0) {
+        pagination.page++
+      }
+    }
+  } catch (error) {
+    console.error('加载商品列表失败:', error)
+    uni.showToast({
+      title: '加载商品失败',
+      icon: 'none'
+    })
+  } finally {
+    loading.value = false
+    refreshing.value = false
+    loadingMore.value = false
+  }
+}
+
+// ==================== 事件处理函数 ====================
 
 // 处理分类点击
-const handleCategoryClick = throttle((category) => {
+const handleCategoryClick = throttle(async (category) => {
   console.log('选择分类:', category.name)
-  // 跳转到分类详情页
-  router.push({
-    name: 'categories',
-    params: {
-      name: category.name,
-      id: category.id
-    }
-  })
+  
+  // 更新筛选条件
+  filters.categoryId = filters.categoryId === category.id ? null : category.id
+  
+  // 重新加载商品列表
+  pagination.page = 1
+  await loadGoodsList(true)
 }, 1000)
 
 // 处理商品点击
-const viewGoodsDetail = throttle((goodsId) => {
+const viewGoodsDetail = throttle(async (goodsId) => {
   console.log('查看商品详情:', goodsId)
+  
+  try {
+    // 记录浏览
+    await GoodsApi.viewGoods(goodsId)
+  } catch (error) {
+    console.error('记录浏览失败:', error)
+  }
+  
   // 跳转到商品详情页
   router.push({
     name: 'goods-details',
@@ -154,10 +176,34 @@ const viewGoodsDetail = throttle((goodsId) => {
 }, 1000)
 
 // 收藏商品
-const handleLike = throttle((goods, event) => {
+const handleLike = throttle(async (goodsItem, event) => {
   event.stopPropagation()
-  goods.likes = goods.likes ? goods.likes - 1 : 0
-  console.log('收藏商品:', goods.id)
+  
+  try {
+    if (goodsItem.is_liked) {
+      await GoodsApi.unlikeGoods(goodsItem.id)
+      goodsItem.is_liked = false
+      goodsItem.likes = Math.max(0, goodsItem.likes - 1)
+      uni.showToast({
+        title: '取消收藏成功',
+        icon: 'success'
+      })
+    } else {
+      await GoodsApi.likeGoods(goodsItem.id)
+      goodsItem.is_liked = true
+      goodsItem.likes = goodsItem.likes + 1
+      uni.showToast({
+        title: '收藏成功',
+        icon: 'success'
+      })
+    }
+  } catch (error) {
+    console.error('操作失败:', error)
+    uni.showToast({
+      title: '操作失败，请重试',
+      icon: 'none'
+    })
+  }
 }, 1000)
 
 // 跳转到搜索页
@@ -185,13 +231,33 @@ const actions = [
 
 const title = "商品操作"
 
-const handleLongPress = (goods) => {
-  console.log('长按商品:', goods.id)
+const handleLongPress = (goodsItem) => {
+  console.log('长按商品:', goodsItem.id)
   events.emit('openActionSheet', actions, title)
 }
 
-onMounted(() => {
+// ==================== 生命周期和页面事件 ====================
+
+// 页面加载
+onMounted(async () => {
   show()
+  await Promise.all([
+    loadCategories(),
+    loadGoodsList()
+  ])
+})
+
+// 下拉刷新
+onPullDownRefresh(async () => {
+  await loadGoodsList(true)
+  uni.stopPullDownRefresh()
+})
+
+// 上拉加载更多
+onReachBottom(async () => {
+  if (pagination.hasMore && !loadingMore.value) {
+    await loadGoodsList()
+  }
 })
 </script>
 
@@ -227,11 +293,15 @@ onMounted(() => {
 
       <!-- 分类导航 -->
       <view class="p-20rpx bg-white rounded-16rpx mx-20rpx mb-20rpx shadow-sm">
-        <view class="grid grid-cols-5 gap-20rpx">
+        <view v-if="categories.length === 0" class="text-center py-40rpx text-gray-400">
+          加载中...
+        </view>
+        <view v-else class="grid grid-cols-5 gap-20rpx">
           <view 
             v-for="category in categories" 
             :key="category.id" 
             class="flex flex-col items-center transition-all duration-300 active:scale-95"
+            :class="{ 'bg-blue-50 rounded-12rpx': filters.categoryId === category.id }"
             @tap="handleCategoryClick(category)"
           >
             <view class="w-80rpx h-80rpx rounded-full mb-10rpx flex items-center justify-center" :style="`background-color: ${category.color}20;`">
@@ -249,7 +319,19 @@ onMounted(() => {
 
       <!-- 商品列表 -->
       <view class="px-20rpx">
-        <view class="grid grid-cols-2 gap-20rpx">
+        <!-- 加载状态 -->
+        <view v-if="loading && goods.length === 0" class="text-center py-80rpx">
+          <view class="text-gray-400">加载中...</view>
+        </view>
+        
+        <!-- 空状态 -->
+        <view v-else-if="goods.length === 0" class="text-center py-80rpx">
+          <view class="text-gray-400 mb-20rpx">暂无商品</view>
+          <view class="text-gray-300 text-24rpx">试试切换分类或刷新页面</view>
+        </view>
+        
+        <!-- 商品网格 -->
+        <view v-else class="grid grid-cols-2 gap-20rpx">
           <view 
             v-for="item in goods" 
             :key="item.id" 
@@ -260,13 +342,14 @@ onMounted(() => {
             <!-- 商品主图 -->
             <view class="relative">
               <image 
-                :src="item.images[0]" 
+                :src="item.images && item.images.length > 0 ? item.images[0].url : User" 
                 mode="aspectFill" 
                 class="w-full h-240rpx object-cover"
+                :lazy-load="true"
               ></image>
               
               <!-- 实拍标签 -->
-              <view v-if="item.isReal" class="absolute top-10rpx left-10rpx bg-black bg-opacity-60 rounded-8rpx px-10rpx py-4rpx">
+              <view v-if="item.is_real" class="absolute top-10rpx left-10rpx bg-black bg-opacity-60 rounded-8rpx px-10rpx py-4rpx">
                 <text class="text-20rpx text-white font-medium">实拍</text>
               </view>
               
@@ -277,9 +360,9 @@ onMounted(() => {
               >
                 <WdIcon 
                   custom-class="iconfont" class-prefix="icon"
-                  name="like-o" 
+                  :name="item.is_liked ? 'like' : 'like-o'" 
                   size="32rpx" 
-                  custom-style="color:#fff"
+                  :custom-style="item.is_liked ? 'color:#f43f5e' : 'color:#fff'"
                 />
               </view>
             </view>
@@ -290,26 +373,53 @@ onMounted(() => {
               <text class="text-26rpx text-#333 line-clamp-2 h-72rpx">{{ item.title }}</text>
               <view class="flex items-center mt-10rpx">
                 <text class="text-28rpx font-600 text-#f43f5e mr-8rpx">¥{{ item.price }}</text>
-                <text class="text-22rpx text-gray-400 line-through">¥{{ item.originPrice }}</text>
+                <text v-if="item.original_price && item.original_price > item.price" class="text-22rpx text-gray-400 line-through">¥{{ item.original_price }}</text>
               </view>
               
               <!-- 卖家信息和位置 -->
               <view class="flex justify-between items-center mt-10rpx">
                 <view class="flex items-center">
-                  <image :src="item.seller.avatar" class="w-32rpx h-32rpx rounded-full mr-8rpx"></image>
-                  <text class="text-22rpx text-gray-500 truncate max-w-120rpx">{{ item.seller.nickname }}</text>
+                  <image 
+                    :src="item.seller && item.seller.avatar_url ? item.seller.avatar_url : User" 
+                    class="w-32rpx h-32rpx rounded-full mr-8rpx"
+                  ></image>
+                  <text class="text-22rpx text-gray-500 truncate max-w-120rpx">
+                    {{ item.seller && item.seller.nickname ? item.seller.nickname : '匿名用户' }}
+                  </text>
                   <!-- 官方验证标签 -->
-                  <view v-if="item.isCertified" class="ml-6rpx px-6rpx py-2rpx bg-blue-500 bg-opacity-10 rounded-4rpx">
+                  <view v-if="item.is_certified" class="ml-6rpx px-6rpx py-2rpx bg-blue-500 bg-opacity-10 rounded-4rpx">
                     <text class="text-18rpx text-blue-500">验</text>
                   </view>
                 </view>
                 <view class="flex items-center">
                   <WdIcon name="location-o" size="22rpx" custom-style="color:#999" class="mr-2rpx"/>
-                  <text class="text-22rpx text-gray-500">{{ item.location }}</text>
+                  <text class="text-22rpx text-gray-500">{{ item.location || '未知' }}</text>
+                </view>
+              </view>
+              
+              <!-- 统计信息 -->
+              <view class="flex justify-between items-center mt-8rpx text-gray-400 text-20rpx">
+                <view class="flex items-center">
+                  <WdIcon name="eye-o" size="20rpx" custom-style="color:#999" class="mr-4rpx"/>
+                  <text>{{ item.views || 0 }}</text>
+                </view>
+                <view class="flex items-center">
+                  <WdIcon name="like-o" size="20rpx" custom-style="color:#999" class="mr-4rpx"/>
+                  <text>{{ item.likes || 0 }}</text>
                 </view>
               </view>
             </view>
           </view>
+        </view>
+        
+        <!-- 加载更多 -->
+        <view v-if="loadingMore" class="text-center py-40rpx">
+          <view class="text-gray-400">加载更多...</view>
+        </view>
+        
+        <!-- 没有更多 -->
+        <view v-else-if="goods.length > 0 && !pagination.hasMore" class="text-center py-40rpx">
+          <view class="text-gray-400">没有更多了</view>
         </view>
       </view>
     </view>

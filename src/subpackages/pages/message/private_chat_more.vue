@@ -1,34 +1,248 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import Layout from '@/layout/index.vue'
 import { useMessageHisotry } from '@/composables/message_history'
 import { useToast } from '@/composables/toast'
+import { useRouter } from "uni-mini-router";
+import { UserApi } from "@/api/user";
+import { useConversations } from '@/composables/Conversations'
+import { useChatSettings } from '@/composables/chat-settings'
+import events, { 
+  CHAT_SETTINGS_UPDATED, 
+  CHAT_PINNED, 
+  CHAT_UNPINNED, 
+  CHAT_MUTED, 
+  CHAT_UNMUTED, 
+  CHAT_BLOCKED, 
+  CHAT_UNBLOCKED 
+} from '@/utils/events'
 
+const toast = useToast()
+const router = useRouter()
+const conversations = useConversations()
+const chatSettings = useChatSettings()
+
+// 用户信息
 const userInfo = ref({
-  avatar: 'https://via.placeholder.com/100', // Placeholder avatar
+  avatar: 'https://via.placeholder.com/100',
   nickname: '甜甜圈🍩',
   isFollowing: false
 })
 
 // 路由参数
 const targetId = ref(null)
+const isLoading = ref(false)
+const isSettingsLoading = ref(false)
 
-// 加载页面参数
-onLoad((options) => {
-  if (options.id) {
-    targetId.value = options.id
-  }
-})
-
+// 聊天设置
 const settings = ref({
   doNotDisturb: false,
   pinChat: false,
   blockMessages: false
 })
 
-const toggleFollow = () => {
-  userInfo.value.isFollowing = !userInfo.value.isFollowing
+// 计算属性：设置是否已更改
+const hasSettingsChanged = computed(() => {
+  return JSON.stringify(settings.value) !== JSON.stringify(originalSettings.value)
+})
+
+// 保存原始设置用于比较
+const originalSettings = ref({})
+
+// 获取用户信息
+const fetchUserInfo = async () => {
+  if (isLoading.value) return
+  
+  isLoading.value = true
+  try {
+    const res = await UserApi.getUserProfile(targetId.value)
+    console.debug('用户信息:', res)
+    userInfo.value = res
+  } catch (e) {
+    toast.error('获取用户信息失败')
+    console.error(e)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 获取聊天设置（优先使用缓存）
+const fetchChatSettings = async () => {
+  if (isSettingsLoading.value || !targetId.value) return
+  
+  isSettingsLoading.value = true
+  try {
+    // 使用新的聊天设置缓存系统
+    const loadedSettings = await chatSettings.getSettings(targetId.value)
+    console.debug('获取到的聊天设置:', loadedSettings)
+    
+    // 更新设置
+    settings.value = {
+      doNotDisturb: loadedSettings.isMuted,
+      pinChat: loadedSettings.isPinned,
+      blockMessages: loadedSettings.isBlocked
+    }
+    
+    // 保存原始设置
+    originalSettings.value = {...settings.value}
+    
+  } catch (e) {
+    toast.error('获取聊天设置失败')
+    console.error(e)
+    
+    // 使用默认设置
+    const defaultSettings = chatSettings.getDefaultSettings()
+    settings.value = {
+      doNotDisturb: defaultSettings.isMuted,
+      pinChat: defaultSettings.isPinned,
+      blockMessages: defaultSettings.isBlocked
+    }
+    originalSettings.value = {...settings.value}
+  } finally {
+    isSettingsLoading.value = false
+  }
+}
+
+// 更新聊天设置
+const updateSettings = async (settingKey, value) => {
+  if (!targetId.value || isUpdating.value) return
+  
+  isUpdating.value = true
+  
+  try {
+    // 构建更新数据
+    const updateData = {
+      set_top: settings.value.pinChat,
+      blocking: settings.value.blockMessages,
+      do_not_disturb: settings.value.doNotDisturb
+    }
+    
+    await UserApi.updateChatSettings(targetId.value, updateData)
+    
+    // 更新原始设置
+    originalSettings.value = {...settings.value}
+    
+    // 更新聊天设置缓存
+    chatSettings.updateSettings(targetId.value, {
+      isPinned: settings.value.pinChat,
+      isMuted: settings.value.doNotDisturb,
+      isBlocked: settings.value.blockMessages
+    })
+    
+    // 同时更新会话列表中的聊天设置缓存
+    conversations.updateChatSettings(targetId.value, {
+      isPinned: settings.value.pinChat,
+      isMuted: settings.value.doNotDisturb,
+      isBlocked: settings.value.blockMessages
+    })
+    
+    // 触发相应的事件
+    const eventData = {
+      userId: targetId.value,
+      settings: settings.value
+    }
+    
+    events.emit(CHAT_SETTINGS_UPDATED, eventData)
+    
+    // 触发具体的设置事件
+    switch (settingKey) {
+      case 'doNotDisturb':
+        events.emit(value ? CHAT_MUTED : CHAT_UNMUTED, eventData)
+        break
+      case 'pinChat':
+        events.emit(value ? CHAT_PINNED : CHAT_UNPINNED, eventData)
+        break
+      case 'blockMessages':
+        events.emit(value ? CHAT_BLOCKED : CHAT_UNBLOCKED, eventData)
+        break
+    }
+    
+    // 根据不同设置显示不同提示
+    const messages = {
+      doNotDisturb: value ? '已开启消息免打扰' : '已关闭消息免打扰',
+      pinChat: value ? '已置顶聊天' : '已取消置顶',
+      blockMessages: value ? '已屏蔽该用户消息' : '已取消屏蔽'
+    }
+    
+    toast.show(messages[settingKey] || '设置已更新')
+    
+  } catch (e) {
+    // 恢复原来的值，避免触发watch监听器
+    settings.value[settingKey] = !value
+    toast.error('设置更新失败')
+    console.error(e)
+  } finally {
+    isUpdating.value = false
+  }
+}
+
+// 标记是否正在更新设置，避免死循环
+const isUpdating = ref(false)
+
+// 监听设置变化
+watch(
+  () => settings.value.doNotDisturb,
+  (newVal, oldVal) => {
+    if (oldVal !== undefined && newVal !== oldVal && !isUpdating.value) {
+      updateSettings('doNotDisturb', newVal)
+    }
+  }
+)
+
+watch(
+  () => settings.value.pinChat,
+  (newVal, oldVal) => {
+    if (oldVal !== undefined && newVal !== oldVal && !isUpdating.value) {
+      updateSettings('pinChat', newVal)
+    }
+  }
+)
+
+watch(
+  () => settings.value.blockMessages,
+  (newVal, oldVal) => {
+    if (oldVal !== undefined && newVal !== oldVal && !isUpdating.value) {
+      updateSettings('blockMessages', newVal)
+    }
+  }
+)
+
+// 加载页面参数
+onLoad((options) => {
+  if (options.id) {
+    targetId.value = options.id
+    // 并行获取用户信息和聊天设置
+    Promise.all([
+      fetchUserInfo(),
+      fetchChatSettings()
+    ])
+  } else {
+    toast.error('缺少参数id')
+    setTimeout(()=>{
+      router.back()
+    }, 1500)
+  }
+})
+
+// 关注/取消关注
+const toggleFollow = async () => {
+  if (!targetId.value) return
+  
+  try {
+    if (userInfo.value.isFollowing) {
+      await UserApi.unfollowUser(targetId.value)
+      userInfo.value.isFollowing = false
+      toast.show('已取消关注')
+    } else {
+      await UserApi.followUser(targetId.value)
+      userInfo.value.isFollowing = true
+      toast.show('关注成功')
+    }
+  } catch (e) {
+    toast.error('操作失败')
+    console.error(e)
+  }
 }
 
 const searchChatHistory = () => {
@@ -50,7 +264,6 @@ const clearChatHistory = () => {
         history.clear(targetId.value)
         
         // 显示成功提示
-        const toast = useToast()
         toast.show('聊天记录已清空')
       }
     }

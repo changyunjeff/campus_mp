@@ -66,9 +66,9 @@
             <text class="qrcode-tip">扫描二维码查看详情</text>
           </view>
         </view>
-        <view class="qrcode-footer">
-          <wd-button type="primary" size="small" @tap="onSaveQrcode">保存到相册</wd-button>
-        </view>
+<!--        <view class="qrcode-footer">-->
+<!--          <wd-button type="primary" size="small" @tap="onSaveQrcode">保存到相册</wd-button>-->
+<!--        </view>-->
       </view>
     </wd-popup>
   </template>

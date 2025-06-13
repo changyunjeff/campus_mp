@@ -3,6 +3,7 @@ import Layout from '@/layout/index.vue'
 import { ref, onMounted, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useRouter } from 'uni-mini-router'
+import { GoodsApi } from '@/api/goods'
 
 const router = useRouter()
 
@@ -24,23 +25,55 @@ const pageSize = 10
 const showFilterPanel = ref(false)
 const activeSubCategory = ref('全部')
 
-// 子分类列表 - 根据主分类动态生成
-const subCategories = computed(() => {
-  const categoryMap = {
-    '手机': ['全部', 'iPhone', '华为', '小米', 'OPPO', 'vivo', '三星', '荣耀'],
-    '数码': ['全部', '平板电脑', '笔记本', '智能手表', '耳机', '相机'],
-    '美妆': ['全部', '护肤', '彩妆', '香水', '美容工具'],
-    '四级': ['全部', '考试资料', '练习册', '真题集', '词汇书'],
-    '明星周边': ['全部', '签名照', '专辑', '海报', '手办'],
-    '母婴': ['全部', '奶粉', '尿不湿', '玩具', '童装'],
-    '游戏交易': ['全部', '账号', '装备', '点卡', '游戏本体'],
-    '潮玩动漫': ['全部', '手办', '盲盒', '漫画', '周边'],
-    '交通工具': ['全部', '自行车', '电动车', '平衡车', '滑板'],
-    '家电': ['全部', '厨房电器', '生活电器', '大家电', '智能设备']
-  }
+// 子分类数据
+const subCategories = ref([])
+const loadingSubCategories = ref(false)
+
+// 获取子分类数据
+const loadSubCategories = async () => {
+  if (!categoryId.value) return
   
-  return categoryMap[categoryName.value] || ['全部']
-})
+  try {
+    loadingSubCategories.value = true
+    const response = await GoodsApi.getSubcategories(categoryId.value)
+    if (response && response.data) {
+      subCategories.value = ['全部', ...response.data.map(sub => sub.name)]
+    } else {
+      // 如果没有子分类，使用后备数据
+      const categoryMap = {
+        '手机数码': ['全部', 'iPhone', '华为', '小米', 'OPPO', 'vivo', '三星', '荣耀'],
+        '电脑办公': ['全部', '平板电脑', '笔记本', '智能手表', '耳机', '相机'],
+        '美妆护肤': ['全部', '护肤', '彩妆', '香水', '美容工具'],
+        '图书教材': ['全部', '考试资料', '练习册', '真题集', '词汇书'],
+        '明星周边': ['全部', '签名照', '专辑', '海报', '手办'],
+        '母婴': ['全部', '奶粉', '尿不湿', '玩具', '童装'],
+        '游戏装备': ['全部', '账号', '装备', '点卡', '游戏本体'],
+        '潮玩手办': ['全部', '手办', '盲盒', '漫画', '周边'],
+        '交通工具': ['全部', '自行车', '电动车', '平衡车', '滑板'],
+        '家用电器': ['全部', '厨房电器', '生活电器', '大家电', '智能设备']
+      }
+      subCategories.value = categoryMap[categoryName.value] || ['全部']
+    }
+  } catch (error) {
+    console.error('获取子分类失败:', error)
+    // 使用后备数据
+    const categoryMap = {
+      '手机数码': ['全部', 'iPhone', '华为', '小米', 'OPPO', 'vivo', '三星', '荣耀'],
+      '电脑办公': ['全部', '平板电脑', '笔记本', '智能手表', '耳机', '相机'],
+      '美妆护肤': ['全部', '护肤', '彩妆', '香水', '美容工具'],
+      '图书教材': ['全部', '考试资料', '练习册', '真题集', '词汇书'],
+      '明星周边': ['全部', '签名照', '专辑', '海报', '手办'],
+      '母婴': ['全部', '奶粉', '尿不湿', '玩具', '童装'],
+      '游戏装备': ['全部', '账号', '装备', '点卡', '游戏本体'],
+      '潮玩手办': ['全部', '手办', '盲盒', '漫画', '周边'],
+      '交通工具': ['全部', '自行车', '电动车', '平衡车', '滑板'],
+      '家用电器': ['全部', '厨房电器', '生活电器', '大家电', '智能设备']
+    }
+    subCategories.value = categoryMap[categoryName.value] || ['全部']
+  } finally {
+    loadingSubCategories.value = false
+  }
+}
 
 // 价格区间选项
 const priceRanges = ref([
@@ -300,6 +333,10 @@ const toggleFilterPanel = () => {
 onLoad((options) => {
   categoryName.value = options.name || '商品分类'
   categoryId.value = options.id
+  
+  // 加载子分类数据
+  loadSubCategories()
+  
   loadGoods()
 })
 

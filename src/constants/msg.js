@@ -1,5 +1,8 @@
 const MSG_TYPE = {
     Chat : 1,   // 聊天类消息
+    Notification : 2,   // 通知类消息
+    System : 3,   // 系统类消息
+    CheckOnline : 4,   // 在线状态类消息
 }
 
 const MSG_METHOD = {

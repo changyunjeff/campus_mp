@@ -6,20 +6,20 @@ import { formatTime, sleep } from '@/utils/time'
 import User from '/static/images/user.png'
 import events from '@/utils/events'
 import { debounce, throttle } from 'lodash'
-import {onLoad, onPullDownRefresh, onReachBottom} from '@dcloudio/uni-app'
+import {onLoad} from '@dcloudio/uni-app'
 import { CommunityApi } from '@/api/community'
 import { UserApi } from '@/api/user'
 
 const {show} = useTabbar()
 
-const activeTab = ref('recommend')
+const activeTab = ref('latest')
 const router = useRouter()
 
 // 社区页面的tab选项
 const communityTabs = [
+  {name: 'latest', label: '最新'},
   {name: 'recommend', label: '推荐'},
   {name: 'follow', label: '关注'},
-  {name: 'latest', label: '最新'}
 ]
 
 // 帖子列表数据
@@ -30,6 +30,11 @@ const total = ref(0)
 const isLoading = ref(false)
 const isRefreshing = ref(false)
 const hasMore = ref(true)
+
+// scroll-view 相关状态
+const refresherTriggered = ref(false)
+const scrollTop = ref(0)
+const refresherEnabled = ref(true)
 
 // 加载帖子列表
 const loadPosts = async (refresh = false) => {
@@ -52,7 +57,7 @@ const loadPosts = async (refresh = false) => {
     }
     
     const res = await CommunityApi.getPostList({
-      tab: tabMap[activeTab.value] || 'recommend',
+      tab: tabMap[activeTab.value] || 'latest',
       page: page.value,
       page_size: pageSize.value
     })
@@ -171,8 +176,8 @@ const handleComment = throttle((post) => {
 const viewUserProfile = throttle((userId) => {
   console.log('查看用户资料:', userId)
   router.push({
-    name: 'user-profile',
-    params: { userId }
+    name: 'other_index',
+    params: { id:userId }
   })
 }, 1000)
 
@@ -250,22 +255,30 @@ const viewImage = throttle((post, index) => {
   })
 }, 1000)
 
-// 下拉刷新
-onPullDownRefresh(async () => {
+// 下拉刷新处理
+const onRefresherRefresh = async () => {
   console.log('下拉刷新')
+  refresherTriggered.value = true
   isRefreshing.value = true
   await loadPosts(true)
-  uni.stopPullDownRefresh()
-})
+  refresherTriggered.value = false
+}
 
-// 上拉加载更多
-onReachBottom(async () => {
-  console.log('上拉加载更多')
+// 触底加载处理
+const onScrollToLower = async () => {
+  console.log('触底加载')
   if (!hasMore.value || isLoading.value) return
   
   page.value++
   await loadPosts()
-})
+}
+
+// 滚动事件处理
+const onScroll = (e) => {
+  scrollTop.value = e.detail.scrollTop
+  // 当滚动位置大于50rpx时禁用下拉刷新，避免滚动冲突
+  refresherEnabled.value = scrollTop.value <= 50
+}
 
 onMounted(async () => {
   show()
@@ -289,30 +302,40 @@ onMounted(async () => {
       />
     </template>
 
-    <view class="bg-#f8f8f8">
+    <view class="bg-#f8f8f8 h-full">
       <!-- 内容区域 -->
-      <view class="pb-30rpx">
-        <!-- 社区动态列表 -->
-        <view class="p-20rpx">
-          <!-- 加载中提示 -->
-          <view v-if="isLoading && posts.length === 0" class="flex justify-center items-center py-100rpx">
-            <text class="text-28rpx text-gray-400">加载中...</text>
-          </view>
-          
-          <!-- 空数据提示 -->
-          <view v-else-if="!isLoading && posts.length === 0" class="flex flex-col items-center justify-center py-100rpx">
-            <WdIcon name="inbox" size="80rpx" color="#ddd" />
-            <text class="mt-20rpx text-28rpx text-gray-400">暂无内容</text>
-          </view>
-          
-          <!-- 帖子列表 -->
-          <view 
-            v-for="post in posts" 
-            :key="post.id" 
-            class="relative mb-20rpx p-30rpx bg-white rounded-16rpx shadow-sm transition-all duration-300 active:scale-98 active:bg-gray-50"
-            @tap="viewPostDetail(post.id)"
-            @longpress="handleLongPress(post)"
-          >
+      <scroll-view 
+        scroll-y 
+        class="h-full"
+        :refresher-enabled="refresherEnabled"
+        :refresher-triggered="refresherTriggered"
+        @refresherrefresh="onRefresherRefresh"
+        @scrolltolower="onScrollToLower"
+        @scroll="onScroll"
+        lower-threshold="100"
+      >
+        <view class="pb-30rpx">
+          <!-- 社区动态列表 -->
+          <view class="p-20rpx">
+            <!-- 加载中提示 -->
+            <view v-if="isLoading && posts.length === 0" class="flex justify-center items-center py-100rpx">
+              <text class="text-28rpx text-gray-400">加载中...</text>
+            </view>
+            
+            <!-- 空数据提示 -->
+            <view v-else-if="!isLoading && posts.length === 0" class="flex flex-col items-center justify-center py-100rpx">
+              <WdIcon name="inbox" size="80rpx" color="#ddd" />
+              <text class="mt-20rpx text-28rpx text-gray-400">暂无内容</text>
+            </view>
+            
+            <!-- 帖子列表 -->
+            <view 
+              v-for="post in posts" 
+              :key="post.id" 
+              class="relative mb-20rpx p-30rpx bg-white rounded-16rpx shadow-sm transition-all duration-300 active:scale-98 active:bg-gray-50"
+              @tap="viewPostDetail(post.id)"
+              @longpress="handleLongPress(post)"
+            >
             <!-- 帖子头部 - 用户信息和发布时间 -->
             <view class="flex justify-between items-center mb-20rpx">
               <view class="flex items-center" @tap.stop="viewUserProfile(post.user.id)">
@@ -320,13 +343,6 @@ onMounted(async () => {
                 <view class="flex flex-col">
                   <view class="flex items-center">
                     <text class="text-28rpx font-600 text-#333 mr-10rpx">{{ post.user.nickname }}</text>
-                    <view v-if="post.user.gender !== 'unknown'" class="flex items-center justify-center w-36rpx h-36rpx" :class="post.user.gender === 'male' ? 'text-blue-500' : 'text-pink-500'">
-                      <WdIcon 
-                        :name="post.user.gender === 'male' ? 'gender-male' : 'gender-female'" 
-                        size="24" 
-                        :custom-style="post.user.gender === 'male' ? 'color:#3b82f6' : 'color:#ec4899'"
-                      />
-                    </view>
                   </view>
                   <text class="text-24rpx text-gray-400 mt-4rpx">{{ formatTime(post.publishTime) }}</text>
                 </view>
@@ -343,7 +359,7 @@ onMounted(async () => {
               <view 
                 v-for="(topic, index) in post.topics.slice(0, 3)" 
                 :key="topic.id" 
-                class="mr-12rpx mb-8rpx px-12rpx py-4rpx bg-orange-50 text-orange-500 text-22rpx rounded-6rpx transition-all duration-200 active:bg-orange-100"
+                class="mr-12rpx mb-8rpx px-12rpx py-4rpx bg-orange-50 text-blue-500 text-22rpx rounded-6rpx transition-all duration-200 active:bg-orange-100"
                 @tap.stop="viewTopicDetail(topic.name)"
               >
                 # {{ topic.name }}
@@ -353,20 +369,8 @@ onMounted(async () => {
                 +{{ post.topics.length - 3 }}
               </view>
             </view>
-            
-            <!-- 标签 -->
-            <view v-if="post.tags && post.tags.length > 0" class="flex flex-wrap mb-16rpx">
-              <view 
-                v-for="(tag, index) in post.tags.slice(0, 3)" 
-                :key="index" 
-                class="mr-12rpx mb-8rpx px-12rpx py-4rpx bg-blue-50 text-blue-500 text-22rpx rounded-6rpx"
-              >
-                # {{ tag }}
-              </view>
-              <view v-if="post.tags.length > 3" class="px-12rpx py-4rpx text-gray-400 text-22rpx">
-                +{{ post.tags.length - 3 }}
-              </view>
-            </view>
+
+
 
             <!-- 帖子图片 -->
             <view v-if="post.images && post.images.length > 0" class="flex flex-wrap mb-20rpx gap-10rpx">
@@ -457,7 +461,8 @@ onMounted(async () => {
           </view>
         </view>
       </view>
-    </view>
+    </scroll-view>
+  </view>
 
     <custom-tab-bar/>
   </layout>

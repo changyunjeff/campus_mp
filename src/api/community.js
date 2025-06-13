@@ -1,4 +1,4 @@
-import { get, post, put, del } from '@/utils/request'
+import { get, post, put, del, upload, batch_upload } from '@/utils/request'
 
 /**
  * CommunityApi 社区接口
@@ -28,6 +28,19 @@ export const CommunityApi = {
     getPostDetail: (postId) => {
         return get(`/posts/${postId}`)
     },
+
+    /**
+     * searchPosts 搜索帖子
+     * @param {string} keyword - 搜索关键字
+     * @param {number} page - 页码
+     * @param {number} page_size - 每页数量
+     * @returns {Promise<Object>} 帖子列表
+     * */
+    searchPosts: (keyword, page, page_size) => get('/posts/search', {
+        keyword: keyword,
+        page: page,
+        page_size: page_size
+    }),
     
     /**
      * 创建帖子
@@ -221,5 +234,149 @@ export const CommunityApi = {
             page: params.page || 1,
             page_size: params.page_size || 20
         })
-    }
+    },
+
+    // ================== 举报相关接口 ==================
+
+    /**
+     * 获取举报原因列表
+     * @returns {Promise<Object>} 举报原因列表
+     */
+    getReportReasons: () => {
+        return get('/reports/reasons')
+    },
+
+    /**
+     * 创建举报
+     * @param {Object} data - 举报数据
+     * @param {string} data.type - 举报类型 (post/comment/reply)
+     * @param {string} data.target_id - 被举报对象ID
+     * @param {string} data.reason_id - 举报原因ID
+     * @param {string} data.note - 举报备注 (可选，最多500字)
+     * @param {Array<Object>} data.medias - 举报证据媒体 (可选，最多3张)
+     * @param {string} data.medias[].url - 媒体URL
+     * @param {string} data.medias[].object_key - OSS对象键
+     * @param {string} data.medias[].type - 媒体类型 (image/video)
+     * @returns {Promise<Object>} 创建结果
+     */
+    createReport: (data) => {
+        return post('/reports', data)
+    },
+
+    /**
+     * 举报帖子
+     * @param {string} postId - 帖子ID
+     * @param {Object} data - 举报数据
+     * @param {string} data.reason_id - 举报原因ID
+     * @param {string} data.note - 举报备注 (可选)
+     * @param {Array<Object>} data.medias - 举报证据媒体 (可选)
+     * @returns {Promise<Object>} 创建结果
+     */
+    reportPost: (postId, data) => {
+        return post('/reports', {
+            type: 'post',
+            target_id: postId,
+            ...data
+        })
+    },
+
+    /**
+     * 举报评论
+     * @param {string} commentId - 评论ID
+     * @param {Object} data - 举报数据
+     * @param {string} data.reason_id - 举报原因ID
+     * @param {string} data.note - 举报备注 (可选)
+     * @param {Array<Object>} data.medias - 举报证据媒体 (可选)
+     * @returns {Promise<Object>} 创建结果
+     */
+    reportComment: (commentId, data) => {
+        return post('/reports', {
+            type: 'comment',
+            target_id: commentId,
+            ...data
+        })
+    },
+
+    /**
+     * 举报回复
+     * @param {string} replyId - 回复ID
+     * @param {Object} data - 举报数据
+     * @param {string} data.reason_id - 举报原因ID
+     * @param {string} data.note - 举报备注 (可选)
+     * @param {Array<Object>} data.medias - 举报证据媒体 (可选)
+     * @returns {Promise<Object>} 创建结果
+     */
+    reportReply: (replyId, data) => {
+        return post('/reports', {
+            type: 'reply',
+            target_id: replyId,
+            ...data
+        })
+    },
+
+    /**
+     * 上传举报媒体文件
+     * @param {File} file - 媒体文件
+     * @param {Function} callback - 上传进度回调
+     * @returns {Promise<Object>} 上传结果
+     */
+    uploadReportMedia: (file, callback) => {
+        return upload('/media/upload/report/oss', file, {
+            callback: callback
+        })
+    },
+
+    // ================== 用户帖子相关接口 ==================
+
+    /**
+     * 获取用户帖子列表
+     * @param {string} userId - 用户ID
+     * @param {Object} params - 查询参数
+     * @param {number} params.page - 页码，默认1
+     * @param {number} params.page_size - 每页数量，默认20，最大50
+     * @returns {Promise<Object>} 用户帖子列表
+     */
+    getUserPosts: (userId, params = {}) => {
+        return get(`/users/${userId}/posts`, {
+            page: params.page || 1,
+            page_size: params.page_size || 20
+        })
+    },
+
+    /**
+     * 获取当前用户收藏的帖子列表
+     * @param {Object} params - 查询参数
+     * @param {number} params.page - 页码，默认1
+     * @param {number} params.page_size - 每页数量，默认20
+     * @returns {Promise<Object>} 收藏帖子列表
+     */
+    getUserFavoritePosts: (params = {}) => {
+        return get('/users/me/favorite-posts', {
+            page: params.page || 1,
+            page_size: params.page_size || 20
+        })
+    },
+
+    /**
+     * 获取当前用户点赞的帖子列表
+     * @param {Object} params - 查询参数
+     * @param {number} params.page - 页码，默认1
+     * @param {number} params.page_size - 每页数量，默认20
+     * @returns {Promise<Object>} 点赞帖子列表
+     */
+    getUserLikedPosts: (params = {}) => {
+        return get('/users/me/liked-posts', {
+            page: params.page || 1,
+            page_size: params.page_size || 20
+        })
+    },
+
+    /**
+     * 删除帖子
+     * @param {string} postId 帖子ID
+     * @returns {Promise<Object>} 删除结果
+     */
+    deletePost: (postId) => {
+        return del(`/posts/${postId}`)
+    },
 } 

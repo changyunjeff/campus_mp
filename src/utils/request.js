@@ -37,12 +37,26 @@ const handleExpire = (res) => {
 const http = (options) => {
     return new Promise((resolve, reject) => {
 
+        // 获取学校编码
+        let schoolCode = 'suda' // 默认值
+        try {
+            const schoolData = uni.getStorageSync('school_selection')
+            if (schoolData) {
+                const { useSchoolStore } = require('@/pinia/modules/school')
+                const schoolStore = useSchoolStore()
+                schoolCode = schoolStore.currentSchoolCode || 'suda'
+            }
+        } catch (error) {
+            console.warn('获取学校编码失败，使用默认值:', error)
+        }
+
         uni.request({
             url: options.url.startsWith('http') ? url : concat(`${import.meta.env.VITE_APP_BASE_URL}`, options.url),
             method: options.method,
             header: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${uni.getStorageSync('token')}`,
+                'X-School': schoolCode,
                 ...options.header,
             },
             data: options.data,
@@ -77,12 +91,26 @@ const http = (options) => {
 
 export const socket = (config = {}) => {
     return new Promise((resolve, reject) => {
+        // 获取学校编码
+        let schoolCode = 'suda' // 默认值
+        try {
+            const schoolData = uni.getStorageSync('school_selection')
+            if (schoolData) {
+                const { useSchoolStore } = require('@/pinia/modules/school')
+                const schoolStore = useSchoolStore()
+                schoolCode = schoolStore.currentSchoolCode || 'suda'
+            }
+        } catch (error) {
+            console.warn('获取学校编码失败，使用默认值:', error)
+        }
+
         const task = uni.connectSocket({
             url: concat(`${import.meta.env.VITE_APP_WEBSOCKET_URL}`, 'ws'),
             timeout: config.timeout,
             // protocols: [uni.getStorageSync('token')], // 使用子协议传递token
             header: {
                 'Authorization': `Bearer ${uni.getStorageSync('token')}`,
+                'X-School': schoolCode,
             },
             success: (res) => {
                 console.debug('socket res:', res)
@@ -119,6 +147,19 @@ export const socket = (config = {}) => {
  * */
 export const upload = (url, filePath, config = {}) => {
     return new Promise((resolve, reject) => {
+        // 获取学校编码
+        let schoolCode = 'suda' // 默认值
+        try {
+            const schoolData = uni.getStorageSync('school_selection')
+            if (schoolData) {
+                const { useSchoolStore } = require('@/pinia/modules/school')
+                const schoolStore = useSchoolStore()
+                schoolCode = schoolStore.currentSchoolCode || 'suda'
+            }
+        } catch (error) {
+            console.warn('获取学校编码失败，使用默认值:', error)
+        }
+
         const task = uni.uploadFile({
             url: url.startsWith('http') ? url : concat(`${import.meta.env.VITE_APP_BASE_URL}`, url),
             filePath: filePath,
@@ -127,6 +168,7 @@ export const upload = (url, filePath, config = {}) => {
             formData: config.formData,
             header: {
                 'Authorization': `Bearer ${uni.getStorageSync('token')}`,
+                'X-School': schoolCode,
                 ...config.header,
             },
             success: (res) => {
