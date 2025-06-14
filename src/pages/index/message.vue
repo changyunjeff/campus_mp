@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import Layout from '@/layout/index.vue'
 import { useTabbar } from '@/composables/tabbar'
 import { useRouter } from 'uni-mini-router'
@@ -12,42 +12,8 @@ const { hiddened, show, hide } = useTabbar()
 const router = useRouter()
 const conversationsManager = useConversations()
 
-const switchShow = () => {
-  console.log(hiddened.value)
-  hiddened.value ? show() : hide()
-}
-
 onMounted(() => {
   show()
-  
-  // 延迟执行，确保所有store都已经初始化
-  setTimeout(() => {
-    console.log('开始刷新会话数据...');
-    conversationsManager.refreshConversations();
-    
-    // 调试当前状态
-    setTimeout(() => {
-      console.log('最终检查 - messageList 长度:', messageList.value.length);
-      console.log('最终检查 - messageList 内容:', messageList.value);
-      
-      // 暴露调试和管理方法到全局
-      window.$debugConversations = () => {
-        console.log('=== 全局调试信息 ===');
-        const debug = conversationsManager.debugConversations();
-        console.log('调试结果:', debug);
-        return debug;
-      };
-      
-      window.$enrichUserInfo = () => {
-        console.log('手动获取用户信息...');
-        return conversationsManager.enrichUserInfo();
-      };
-      
-      console.log('调试方法已暴露：');
-      console.log('- window.$debugConversations() - 查看调试信息');
-      console.log('- window.$enrichUserInfo() - 手动获取用户信息');
-    }, 100);
-  }, 100);
 })
 
 // 使用统一的会话列表数据

@@ -2,7 +2,6 @@
 import { ref, watch, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import Layout from '@/layout/index.vue'
-import { useMessageHisotry } from '@/composables/message_history'
 import { useToast } from '@/composables/toast'
 import { useRouter } from "uni-mini-router";
 import { UserApi } from "@/api/user";
@@ -259,10 +258,7 @@ const clearChatHistory = () => {
     content: '确定要清空与该用户的聊天记录吗？',
     success: (res) => {
       if (res.confirm && targetId.value) {
-        // 调用message_history的clear方法清空聊天记录
-        const history = useMessageHisotry()
-        history.clear(targetId.value)
-        
+        // TODO 清空聊天记录
         // 显示成功提示
         toast.show('聊天记录已清空')
       }

@@ -61,7 +61,6 @@ declare global {
   const useCssVars: typeof import('vue')['useCssVars']
   const useId: typeof import('vue')['useId']
   const useMessage: typeof import('../composables/message.js')['useMessage']
-  const useMessageHisotry: typeof import('../composables/message_history.js')['useMessageHisotry']
   const useModel: typeof import('vue')['useModel']
   const useRoute: typeof import('uni-mini-router')['useRoute']
   const useRouter: typeof import('uni-mini-router')['useRouter']

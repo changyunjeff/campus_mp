@@ -1,6 +1,5 @@
 import { useConnection } from "./connection";
 import { useUserStore } from "@/pinia/modules/user";
-import { useMessageHisotry } from "./message_history";
 import { usePrivateChat } from "@/pinia/modules/PrivateChat";
 import { useUserInfo } from "./user-info";
 import { MSG_TYPE, MSG_METHOD } from "@/constants/msg";
@@ -36,99 +35,89 @@ export function useMessage() {
 
   const connect = useConnection();
   const userStore = useUserStore();
-  const history = useMessageHisotry();
   const privateChat = usePrivateChat();
   const userInfo = useUserInfo();
   
   // 在线状态回调函数映射表 - 修改为Map<string, Set<Function>>结构
   const onlineStatusCallbacks = new Map();
 
-  const sendResult = new Map();
+  const registerHandlers = () => {
+    // 注册消息接收处理
+    connect.registerHandler(MSG_TYPE.Chat, async (msg) => {
+      console.log('收到私聊消息', msg);
 
-  // 注册消息接收处理
-  connect.registerHandler(MSG_TYPE.Chat, async (msg) => {
-    console.log('收到消息', msg);
+      // 检查是否是状态反馈消息（发送给自己的状态更新）
+      console.debug("if statement: ", !!msg.original_to && msg.status)
+      if (!!msg.original_to && msg.status) {
+        // 这是状态反馈消息，更新对应消息的状态
+        // 使用 original_to 字段确定原始接收者，如果没有则使用当前逻辑
+        const targetUserID = msg.original_to;
 
-    // 检查是否是状态反馈消息（发送给自己的状态更新）
-    if (msg.to === userStore.openid && msg.status) {
-      // 这是状态反馈消息，更新对应消息的状态
-      // 使用 original_to 字段确定原始接收者，如果没有则使用当前逻辑
-      const targetUserID = msg.original_to || (msg.from === userStore.openid ? msg.to : msg.from);
-      
-      if (msg.status === 'success') {
-        privateChat.updateMessageStatus(targetUserID, msg.id, MESSAGE_STATUS.SUCCESS);
-        console.log('消息发送成功，状态已更新:', msg.id);
-        
-        // 如果是发送成功，保存到历史记录
-        const originalMessage = privateChat.getMessages(targetUserID).find(m => m.id === msg.id);
-        if (originalMessage) {
-          history.add(targetUserID, { ...originalMessage, status: MESSAGE_STATUS.SUCCESS });
+        if (msg.status === 'success') {
+          privateChat.updateMessageStatus(targetUserID, msg.id, MESSAGE_STATUS.SUCCESS);
+        } else if (msg.status === 'failed') {
+          privateChat.updateMessageStatus(targetUserID, msg.id, MESSAGE_STATUS.FAILED);
+        } else if (msg.status === 'blocked') {
+          // 新增：处理消息被屏蔽状态
+          privateChat.updateMessageStatus(targetUserID, msg.id, MESSAGE_STATUS.BLOCKED);
         }
-      } else if (msg.status === 'failed') {
-        privateChat.updateMessageStatus(targetUserID, msg.id, MESSAGE_STATUS.FAILED);
-        console.log('消息发送失败:', msg.content || '未知错误');
-      } else if (msg.status === 'blocked') {
-        // 新增：处理消息被屏蔽状态
-        privateChat.updateMessageStatus(targetUserID, msg.id, MESSAGE_STATUS.BLOCKED);
-        console.log('消息被屏蔽:', msg.content || '对方已屏蔽您的消息');
-        
-        // 可以在这里添加用户提示逻辑
-        // 例如显示toast提示
-        if (typeof uni !== 'undefined') {
-          uni.showToast({
-            title: '对方已屏蔽您的消息',
-            icon: 'none',
-            duration: 2000
-          });
-        }
+        return;
       }
-      return; // 状态反馈消息处理完毕，不作为新消息处理
-    }
 
-    // 正常的聊天消息处理
-    const messageWithStatus = {
-      ...msg,
-      isSelf: false,
-      status: MESSAGE_STATUS.SUCCESS
-    };
-    privateChat.addMessage(msg.from, messageWithStatus);
-    
-    // 获取发送者用户信息（如果还没有的话）
-    const conversation = privateChat.getConversation(msg.from);
-    if (!conversation?.userInfo) {
-      console.log('收到消息时获取发送者用户信息:', msg.from);
-      await userInfo.setConversationUserInfo(msg.from);
-    }
-    
-    // 同时保存到历史记录
-    history.add(msg.from, msg);
-  });
+      const isSelf = msg.from === userStore.openid;
 
-  connect.registerHandler(MSG_TYPE.Notification, async (msg) => {
-    console.log('收到通知消息', msg);
-  });
+      const messageWithStatus = {
+        ...msg,
+        isSelf: isSelf, // 根据消息发送者正确判断
+        status: MESSAGE_STATUS.SUCCESS
+      };
 
-  connect.registerHandler(MSG_TYPE.System, async (msg) => {
-    console.log('收到系统消息', msg);
-  });
-
-  connect.registerHandler(MSG_TYPE.CheckOnline, async (msg) => {
-    console.log('收到在线状态消息', msg); // 收到在线状态消息 {msg_id: 17550941670567686, status: "offline", type: 4}
-    
-    // 处理在线状态回调
-    const targetId = msg.to || msg.user_id;
-    const isOnline = msg.status === "online";
-    
-    // 如果存在对应的回调函数集合，则调用所有回调
-    if (targetId && onlineStatusCallbacks.has(targetId)) {
-      const callbacks = onlineStatusCallbacks.get(targetId);
-      callbacks.forEach(callback => {
-        if (typeof callback === 'function') {
-          callback(isOnline);
-        }
+      console.log('🔍 消息处理结果:', {
+        originalMsg: msg,
+        processedMsg: messageWithStatus,
+        willAddToConversation: msg.from
       });
-    }
-  });
+
+      // 获取发送者用户信息（如果还没有的话）
+      let conversation = privateChat.getConversation(msg.from);
+      if (!conversation) {
+        console.log(`还没有来自${msg.from}的会话:`);
+        conversation = await privateChat.addConversation(msg.from);
+      }
+      if (!conversation?.userInfo) {
+        console.log('收到消息时获取发送者用户信息:', msg.from);
+        await userInfo.setConversationUserInfo(msg.from);
+      }
+
+      privateChat.addMessage(msg.from, messageWithStatus)
+    });
+
+    connect.registerHandler(MSG_TYPE.Notification, async (msg) => {
+      console.log('收到通知消息', msg);
+    });
+
+    connect.registerHandler(MSG_TYPE.System, async (msg) => {
+      console.log('收到系统消息', msg);
+    });
+
+    connect.registerHandler(MSG_TYPE.CheckOnline, async (msg) => {
+      console.log('收到在线状态消息', msg); // 收到在线状态消息 {msg_id: 17550941670567686, status: "offline", type: 4}
+
+      // 处理在线状态回调
+      const targetId = msg.to || msg.user_id;
+      const isOnline = msg.status === "online";
+
+      // 如果存在对应的回调函数集合，则调用所有回调
+      if (targetId && onlineStatusCallbacks.has(targetId)) {
+        const callbacks = onlineStatusCallbacks.get(targetId);
+        callbacks.forEach(callback => {
+          if (typeof callback === 'function') {
+            callback(isOnline);
+          }
+        });
+      }
+    });
+  }
 
   /**
    * sendCheckOnline 发送检测目标用户是否在线消息
@@ -161,9 +150,9 @@ export function useMessage() {
 
     try {
       await connect.send(msg);
-      console.log('发送检测在线消息成功');
+      console.log('发送检测在线消息成功', msg);
     } catch (err) {
-      console.error('发送检测在线消息失败:', err.message);
+      console.error('发送检测在线消息失败:', err);
       // 发送失败时，如果有回调函数，从映射表中移除该回调函数
       if (callback && onlineStatusCallbacks.has(to)) {
         onlineStatusCallbacks.get(to).delete(callback);
@@ -228,11 +217,6 @@ export function useMessage() {
       // 发送消息到服务器
       await connect.send(msg);
       console.log('消息已发送到服务器，等待处理结果反馈...');
-      
-      // 注意：不在这里设置SUCCESS状态，等待服务器反馈
-      // 服务器会返回处理结果，在消息处理器中更新状态
-      
-      return msg;
     } catch (err) {
       console.error('发送消息失败:', err.message);
       
@@ -281,6 +265,7 @@ export function useMessage() {
     sendChat,
     resendMessage,
     sendCheckOnline,
+    registerHandlers,
     MESSAGE_STATUS
   }
   return instance;

@@ -1,7 +1,5 @@
 import { socket } from "@/utils/request";
 import { ref, watch } from 'vue';
-import { useMessageHisotry } from './message_history';
-import { MSG_TYPE } from '@/constants/msg';
 
 let instance = null;
 let socketTask = null;
@@ -47,6 +45,7 @@ export function useConnection() {
       return; 
     }
     let timer;
+    console.group("===============================》开始建立WebSocket连接")
     try {
         socketTask = await socket({
           onOpen: (res) => {
@@ -76,9 +75,6 @@ export function useConnection() {
                 ? JSON.parse(res.data)
                 : res.data;
               
-              // 消息路由处理
-              handleIncomingMessage(data);
-              
               // 原有的事件处理机制
               const event = data.type;
               if (event && handlers.value[event]) {
@@ -91,6 +87,8 @@ export function useConnection() {
         });
     } catch (error) {
         console.error('WebSocket连接失败', error);
+    } finally {
+      console.groupEnd()
     }
   }
 
@@ -135,68 +133,6 @@ export function useConnection() {
     const pingFrame = createPingFrame()
     return send(pingFrame)
   }
-
-  // 处理接收到的消息
-  const handleIncomingMessage = (data) => {
-    console.log('处理消息:', data.type, data);
-    
-    switch (data.type) {
-      case MSG_TYPE.Chat:
-        // 私聊消息处理
-        handleChatMessage(data);
-        break;
-        
-      case MSG_TYPE.NOTICE:
-        // 系统通知处理
-        handleNotificationMessage(data);
-        break;
-        
-      case MSG_TYPE.SYSTEM:
-        // 系统消息处理
-        handleSystemMessage(data);
-        break;
-        
-      default:
-        console.log('未知消息类型:', data.type);
-    }
-  };
-  
-  // 处理私聊消息
-  const handleChatMessage = (data) => {
-    console.log('处理私聊消息:', data);
-    
-    // 保存到消息历史
-    const messageHistory = useMessageHisotry();
-    messageHistory.add(data.from, data);
-    
-    // 通过事件总线通知UI更新
-    uni.$emit('newChatMessage', data);
-    
-    // 如果有振动权限，可以添加振动提醒
-    if (uni.getSystemInfoSync().platform !== 'devtools') {
-      uni.vibrateShort();
-    }
-  };
-  
-  // 处理系统通知
-  const handleNotificationMessage = (data) => {
-    console.log('处理系统通知:', data);
-    uni.$emit('newSystemNotification', data);
-    
-    // 显示系统通知
-    if (data.showToast) {
-      uni.showToast({
-        title: data.title || '新消息',
-        icon: 'none'
-      });
-    }
-  };
-  
-  // 处理系统消息
-  const handleSystemMessage = (data) => {
-    console.log('处理系统消息:', data);
-    uni.$emit('newSystemMessage', data);
-  };
   
   // 拉取离线消息
   const fetchOfflineMessages = async () => {

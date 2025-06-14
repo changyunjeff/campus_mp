@@ -108,7 +108,7 @@ export function useConversations()  {
     
     // 合并会话列表：私聊 + 系统通知
     const conversations = computed(() => {
-        // 确保数据存在 - Pinia computed 不需要 .value
+        // 正确访问 Pinia computed 属性需要使用 .value
         const privateChatConversations = privateChat.getConversations || [];
         console.log('Conversations.js - 私聊会话数据:', privateChatConversations);
         console.log('privateChat.getConversations 类型:', typeof privateChat.getConversations);
@@ -198,6 +198,11 @@ export function useConversations()  {
         console.log('合并后的会话数:', conversations.value?.length || 0);
         console.log('聊天设置缓存统计:', chatSettings.getStats());
         console.log('详细会话数据:', conversations.value);
+        console.log('PrivateChat store state:', {
+            conversationsMapSize: privateChat.conversations?.size || 0,
+            getConversationsLength: privateChat.getConversations?.length || 0,
+            getConversationsData: privateChat.getConversations
+        });
         return {
             privateChats: privateChat.getConversations || [],
             systemUnread: systemNotification.getUnreadCount || 0,

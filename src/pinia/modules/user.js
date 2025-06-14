@@ -1,6 +1,7 @@
 import {defineStore} from 'pinia'
 import {AuthApi} from '@/api/auth'
 import { useConnection } from '@/composables/connection'
+import {useMessage} from "@/composables/message";
 
 export const useUserStore = defineStore('user', () => {
 
@@ -16,14 +17,16 @@ export const useUserStore = defineStore('user', () => {
             }
             console.debug('📤 获取登录code:', code)
             // 在每次登录前先删除旧的access token，因为每次登录都会生成新的access token和refresh token
-            uni.removeStorageSync("token")
             const res = await AuthApi.login(code)
             console.debug('📥 登录成功:', res)
             openid.value = res.openid
-            uni.setStorageSync('openid', openid.value)
             console.debug('openid:', openid.value)
+            // 连接WebSocket
             const connection = useConnection()
             await connection.connect()
+            // 注册消息处理函数
+            const message = useMessage()
+            message.registerHandlers()
             return res
         } catch (err) {
             console.log(err)
@@ -34,5 +37,14 @@ export const useUserStore = defineStore('user', () => {
     return {
         openid,
         login
+    }
+}, {
+    persist: {
+        key: 'user',
+        paths: ['openid'],
+        storage: {
+            getItem: uni.getStorageSync,
+            setItem: uni.setStorageSync,
+        }
     }
 })

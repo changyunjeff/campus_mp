@@ -46,51 +46,6 @@ export function useUserInfo() {
   };
   
   /**
-   * 模拟获取用户信息的API
-   * @param {string} userId - 用户ID
-   * @returns {Promise<Object>} 模拟的用户信息
-   */
-  const mockGetUserInfo = async (userId) => {
-    // 模拟网络延迟
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // 根据userId生成模拟数据
-    const mockUsers = {
-      'user123': {
-        openid: 'user123',
-        nickname: '张三',
-        avatar: { url: 'https://picsum.photos/100/100?random=1' },
-        gender: 1, // 1=男, 2=女, 0=未知
-        signature: '这个人很懒，什么都没留下'
-      },
-      'om8UA7XvHC-Yjx6_R8M254vXqk7E': {
-        openid: 'om8UA7XvHC-Yjx6_R8M254vXqk7E',
-        nickname: '李四',
-        avatar: { url: 'https://picsum.photos/100/100?random=2' },
-        gender: 2,
-        signature: '热爱生活，热爱代码'
-      }
-    };
-    
-    // 如果有预设的模拟数据，返回它
-    if (mockUsers[userId]) {
-      return mockUsers[userId];
-    }
-    
-    // 否则生成随机用户信息
-    const randomNicknames = ['小明', '小红', '小刚', '小美', '小华', '小丽'];
-    const randomNickname = randomNicknames[Math.floor(Math.random() * randomNicknames.length)];
-    
-    return {
-      openid: userId,
-      nickname: randomNickname,
-      avatar: { url: `https://picsum.photos/100/100?random=${Math.floor(Math.random() * 100)}` },
-      gender: Math.floor(Math.random() * 3), // 0, 1, 2
-      signature: '这是一个神秘用户'
-    };
-  };
-  
-  /**
    * 为会话设置用户信息
    * @param {string} userId - 用户ID
    * @param {Object} userInfo - 用户信息，如果不传则自动获取
