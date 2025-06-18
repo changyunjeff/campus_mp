@@ -4,6 +4,8 @@ import { usePrivateChat } from "@/pinia/modules/PrivateChat";
 import { useUserInfo } from "./user-info";
 import { MSG_TYPE, MSG_METHOD } from "@/constants/msg";
 import { generateID } from "@/utils/id";
+import Anonymous from "/static/images/anonymous.png"
+import {useLikeAndFavorite} from "@/pinia/modules/LikeAndFavorite";
 
 /**
  * 消息发送状态枚举
@@ -45,6 +47,15 @@ export function useMessage() {
     // 注册消息接收处理
     connect.registerHandler(MSG_TYPE.Chat, async (msg) => {
       console.log('收到私聊消息', msg);
+      console.log('🔍 消息处理开始:', {
+        messageId: msg.id,
+        from: msg.from,
+        to: msg.to,
+        anonymous: msg.anonymous,
+        currentUserOpenid: userStore.openid,
+        hasOriginalTo: !!msg.original_to,
+        hasStatus: !!msg.status
+      });
 
       // 检查是否是状态反馈消息（发送给自己的状态更新）
       console.debug("if statement: ", !!msg.original_to && msg.status)
@@ -52,6 +63,13 @@ export function useMessage() {
         // 这是状态反馈消息，更新对应消息的状态
         // 使用 original_to 字段确定原始接收者，如果没有则使用当前逻辑
         const targetUserID = msg.original_to;
+
+        console.log('收到状态反馈消息:', {
+          messageId: msg.id,
+          targetUser: targetUserID,
+          status: msg.status,
+          isAnonymous: msg.anonymous
+        });
 
         if (msg.status === 'success') {
           privateChat.updateMessageStatus(targetUserID, msg.id, MESSAGE_STATUS.SUCCESS);
@@ -65,31 +83,76 @@ export function useMessage() {
       }
 
       const isSelf = msg.from === userStore.openid;
+      
+      console.log('🔍 消息身份判断:', {
+        msgFrom: msg.from,
+        userStoreOpenid: userStore.openid,
+        isSelf: isSelf,
+        anonymous: msg.anonymous
+      });
 
       const messageWithStatus = {
         ...msg,
         isSelf: isSelf, // 根据消息发送者正确判断
-        status: MESSAGE_STATUS.SUCCESS
+        status: MESSAGE_STATUS.SUCCESS,
+        useAnonymousAvatar: msg.anonymous && !isSelf // 只有接收方看到匿名头像
       };
 
       console.log('🔍 消息处理结果:', {
         originalMsg: msg,
         processedMsg: messageWithStatus,
+        isAnonymous: msg.anonymous,
+        isSelf: isSelf,
         willAddToConversation: msg.from
       });
 
-      // 获取发送者用户信息（如果还没有的话）
-      let conversation = privateChat.getConversation(msg.from);
-      if (!conversation) {
-        console.log(`还没有来自${msg.from}的会话:`);
-        conversation = await privateChat.addConversation(msg.from);
-      }
-      if (!conversation?.userInfo) {
-        console.log('收到消息时获取发送者用户信息:', msg.from);
-        await userInfo.setConversationUserInfo(msg.from);
+      // 根据消息是否匿名决定会话ID
+      let conversationId = msg.from;
+      console.log(`🔍 会话ID判断条件:`, {
+        isAnonymous: msg.anonymous,
+        isSelf: isSelf,
+        shouldCreateAnonymousChat: msg.anonymous && !isSelf
+      });
+      
+      if (msg.anonymous && !isSelf) {
+        // 接收到匿名消息时，创建匿名会话
+        conversationId = `${msg.from}_anonymous`;
+        console.log(`🎭 收到匿名消息，创建匿名会话ID: ${conversationId}`);
+      } else {
+        console.log(`📝 收到普通消息，使用会话ID: ${conversationId}`);
+        // 如果是非匿名消息，确保使用真实用户ID作为会话ID
+        conversationId = msg.from;
       }
 
-      privateChat.addMessage(msg.from, messageWithStatus)
+      // 获取发送者用户信息（如果还没有的话）
+      let conversation = privateChat.getConversation(conversationId);
+      if (!conversation) {
+        console.log(`还没有来自${conversationId}的会话，创建新会话`);
+        conversation = await privateChat.addConversation(conversationId);
+        
+        // 为匿名会话设置特殊信息
+        if (msg.anonymous && !isSelf) {
+          console.log(`🎭 为匿名会话设置特殊信息: ${conversationId}`);
+
+          privateChat.setUserInfo(conversationId, {
+            nickname: '匿名用户',
+            avatar: { url: Anonymous },
+            isAnonymous: true,
+            realUserId: msg.from // 保存真实用户ID用于后端处理
+          });
+        }
+      } else {
+        console.log(`会话 ${conversationId} 已存在，消息数量: ${conversation.messages?.length || 0}`);
+      }
+      
+      // 只有非匿名会话才获取真实用户信息
+      if (!conversation?.userInfo && !(msg.anonymous && !isSelf)) {
+        console.log('收到消息时获取发送者用户信息:', msg.from);
+        await userInfo.setConversationUserInfo(conversationId);
+      }
+
+      console.log(`📨 添加消息到会话: ${conversationId}，消息内容: ${messageWithStatus.content}`);
+      privateChat.addMessage(conversationId, messageWithStatus)
     });
 
     connect.registerHandler(MSG_TYPE.Notification, async (msg) => {
@@ -100,45 +163,119 @@ export function useMessage() {
       console.log('收到系统消息', msg);
     });
 
+    connect.registerHandler(MSG_TYPE.Like, async (msg) => {
+      console.log("收到点赞类消息", msg)
+      const likeAndFavoriteStore = useLikeAndFavorite();
+      likeAndFavoriteStore.addLikeMessage(msg)
+    })
+
+    connect.registerHandler(MSG_TYPE.Notification, async (msg) => {
+      console.log("收到收藏类消息", msg)
+      const likeAndFavoriteStore = useLikeAndFavorite();
+      likeAndFavoriteStore.addFavoriteMessage(msg)
+    })
+
     connect.registerHandler(MSG_TYPE.CheckOnline, async (msg) => {
-      console.log('收到在线状态消息', msg); // 收到在线状态消息 {msg_id: 17550941670567686, status: "offline", type: 4}
+      console.log('收到在线状态消息', msg);
 
       // 处理在线状态回调
       const targetId = msg.to || msg.user_id;
       const isOnline = msg.status === "online";
 
+      // 验证消息的合法性
+      if (!targetId) {
+        console.error('在线状态消息缺少目标用户ID:', msg);
+        return;
+      }
+
+      if (!msg.status || (msg.status !== "online" && msg.status !== "offline")) {
+        console.error('在线状态消息状态值无效:', msg);
+        return;
+      }
+
+      console.log(`接收到用户 ${targetId} 的在线状态: ${msg.status}`);
+
+      // 判断消息类型：有event字段的是状态变化广播，否则是直接检测响应
+      const isStatusChangeEvent = !!msg.event && msg.event === "user_status_change";
+      const isDirectResponse = !isStatusChangeEvent && !!msg.msg_id;
+
       // 如果存在对应的回调函数集合，则调用所有回调
       if (targetId && onlineStatusCallbacks.has(targetId)) {
         const callbacks = onlineStatusCallbacks.get(targetId);
+        
+        console.log(`调用用户 ${targetId} 的 ${callbacks.size} 个在线状态回调，状态：${msg.status}`);
+        
+        // 调用所有回调函数
         callbacks.forEach(callback => {
           if (typeof callback === 'function') {
-            callback(isOnline);
+            try {
+              callback(isOnline);
+            } catch (error) {
+              console.error('在线状态回调执行出错:', error);
+            }
           }
         });
+        
+        if (isDirectResponse) {
+          console.log(`收到用户 ${targetId} 的直接检测响应`);
+        } else if (isStatusChangeEvent) {
+          console.log(`收到用户 ${targetId} 的状态变化广播`);
+        }
+      } else {
+        if (isStatusChangeEvent) {
+          console.log(`收到用户 ${targetId} 的状态变化广播，但没有订阅者`);
+        } else {
+          console.log(`收到用户 ${targetId} 的检测响应，但没有订阅者`);
+        }
       }
     });
   }
 
   /**
+   * subscribeUserOnlineStatus 订阅用户在线状态
+   * @param {string} userId - 目标用户ID
+   * @param {function} callback - 回调函数
+   * @returns {function} 取消订阅函数
+   * */
+  const subscribeUserOnlineStatus = (userId, callback) => {
+    if (!userId?.trim()) {
+      throw new Error('用户ID不能为空');
+    }
+    
+    if (typeof callback !== 'function') {
+      throw new Error('回调函数必须是function类型');
+    }
+
+    // 添加回调到订阅列表
+    if (!onlineStatusCallbacks.has(userId)) {
+      onlineStatusCallbacks.set(userId, new Set());
+    }
+    onlineStatusCallbacks.get(userId).add(callback);
+    
+    console.log(`订阅用户 ${userId} 的在线状态，当前订阅者数量: ${onlineStatusCallbacks.get(userId).size}`);
+
+    // 返回取消订阅函数
+    return () => {
+      if (onlineStatusCallbacks.has(userId)) {
+        onlineStatusCallbacks.get(userId).delete(callback);
+        if (onlineStatusCallbacks.get(userId).size === 0) {
+          onlineStatusCallbacks.delete(userId);
+        }
+        console.log(`取消订阅用户 ${userId} 的在线状态`);
+      }
+    };
+  };
+
+  /**
    * sendCheckOnline 发送检测目标用户是否在线消息
    * @param {string} to - 目标用户ID
-   * @param {function} callback - 回调函数
    * */
-  const sendCheckOnline = async (to, callback=undefined) => {
-
+  const sendCheckOnline = async (to) => {
     if (!to?.trim()) {
       throw new Error('请输入对方的openid');
     }
 
     const id = await generateID();
-
-    // 将目标用户to添加到回调映射表中，注册回调函数
-    if (typeof callback === 'function') {
-      if (!onlineStatusCallbacks.has(to)) {
-        onlineStatusCallbacks.set(to, new Set());
-      }
-      onlineStatusCallbacks.get(to).add(callback);
-    }
 
     const msg = {
       id: id,
@@ -149,18 +286,15 @@ export function useMessage() {
     }
 
     try {
+      // 检查连接状态
+      if (!connect.connected.value) {
+        throw new Error('WebSocket连接未建立');
+      }
+      
       await connect.send(msg);
       console.log('发送检测在线消息成功', msg);
     } catch (err) {
       console.error('发送检测在线消息失败:', err);
-      // 发送失败时，如果有回调函数，从映射表中移除该回调函数
-      if (callback && onlineStatusCallbacks.has(to)) {
-        onlineStatusCallbacks.get(to).delete(callback);
-        // 如果集合为空，删除整个条目
-        if (onlineStatusCallbacks.get(to).size === 0) {
-          onlineStatusCallbacks.delete(to);
-        }
-      }
       throw err;
     }
   }
@@ -170,9 +304,10 @@ export function useMessage() {
    * @param {string} id - 消息ID
    * @param {string} userID - 接收用户ID
    * @param {string} content - 消息内容
+   * @param {boolean} anonymous - 是否匿名发送消息
    * @returns {Promise<Message>} 发送的消息对象
    */
-  const sendChat = async (id, userID, content) => {
+  const sendChat = async (id, userID, content, anonymous) => {
     // 参数验证
     if (!userID?.trim()) {
       throw new Error('请输入对方的openid');
@@ -192,14 +327,16 @@ export function useMessage() {
       to: userID,
       content: content.trim(),
       type: MSG_TYPE.Chat,
-      method: MSG_METHOD.CheckSensitive | MSG_METHOD.Redirect,
-      status: MESSAGE_STATUS.SENDING
+      method: MSG_METHOD.CheckSensitive | MSG_METHOD.Redirect | MSG_METHOD.NeedFeedback,
+      status: MESSAGE_STATUS.SENDING,
+      anonymous: anonymous
     };
 
     // 先添加到UI显示（发送中状态）
     const messageForUI = {
       ...msg,
-      isSelf: true
+      isSelf: true,
+      useAnonymousAvatar: anonymous,
     };
     privateChat.addMessage(userID, messageForUI);
     
@@ -261,12 +398,81 @@ export function useMessage() {
     }
   };
 
+  /**
+   * 发送点赞消息
+   * @param {string} userID - 接收用户ID
+   * @param {string} postId - 帖子ID
+   * @param {string} title
+   * @param {string} image
+   * @returns {Promise<Message>} 发送的消息对象
+   */
+  const sendLikeMessage = async (userID, postId, title, image) => {
+    const id = await generateID();
+    const msg = {
+      id: id,
+      timestamp: new Date().getTime(),
+      from: userStore.openid,
+      nickname: userStore.getNickname(),
+      avatar: userStore.getAvatarUrl(),
+      to: userID,
+      type: MSG_TYPE.Like,
+      method: MSG_METHOD.Redirect,
+      contentType: 'community',
+      contentId: postId,
+      title: title || '',
+      image: image || '',
+    }
+    try {
+      await connect.send(msg);
+      console.log('发送点赞消息成功', msg);
+    } catch (err) {
+      console.error('发送点赞消息失败:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * 发送收藏消息
+   * @param {string} userID - 接收用户ID
+   * @param {string} postId - 帖子ID
+   * @param {string} title - 帖子标题
+   * @param {string} image - 帖子封面图片
+   * @returns {Promise<Message>} 发送的消息对象
+   */
+  const sendFavoriteMessage = async (userID, postId, title, image) => {
+    const id = await generateID();
+    const msg = {
+      id: id,
+      timestamp: new Date().getTime(),
+      from: userStore.openid,
+      nickname: userStore.getNickname(),
+      avatar: userStore.getAvatarUrl(),
+      to: userID,
+      type: MSG_TYPE.Favorite,
+      method: MSG_METHOD.Redirect,
+      contentType: 'community',
+      contentId: postId,
+      title: title || '',
+      image: image || '',
+    }
+    try {
+      await connect.send(msg);
+      console.log('发送收藏消息成功', msg);
+    } catch (err) {
+      console.error('发送收藏消息失败:', err);
+      throw err;
+    }
+  }
+
   instance = {
     sendChat,
     resendMessage,
     sendCheckOnline,
     registerHandlers,
-    MESSAGE_STATUS
+    MESSAGE_STATUS,
+    subscribeUserOnlineStatus,
+    sendLikeMessage,
+    sendFavoriteMessage
   }
   return instance;
 }

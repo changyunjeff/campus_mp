@@ -3,7 +3,7 @@ import Layout from '@/layout/index.vue'
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'uni-mini-router'
 import { useToast } from '@/composables/toast'
-import { useSettingsStore } from '@/pinia/modules/settings'
+import { useSettingsStore } from '@/subpackages/pinia/settings'
 import { useSchoolStore } from '@/pinia/modules/school'
 import { UserApi } from '@/api/user'
 
@@ -178,8 +178,11 @@ const handleClearCache = async () => {
     
     // 延迟跳转到学校选择页面
     setTimeout(() => {
-      router.replace({
-        path: '/pages/choose-school'
+      // router.replace({
+      //   path: '/pages/choose-school'
+      // })
+      uni.reLaunch({
+        url: '/pages/choose-school'
       })
     }, 1000)
     
@@ -293,9 +296,6 @@ onMounted(async () => {
           版本 1.0.0
         </text>
       </view>
-      
-      <!-- 底部安全区域 -->
-      <view class="h-20"></view>
     </view>
   </Layout>
 </template>

@@ -6,43 +6,94 @@ import {useUserStore} from '@/pinia/modules/user'
 import {usePrivateChat} from '@/pinia/modules/PrivateChat'
 import {useRouter} from 'uni-mini-router'
 import {useMessage} from '@/composables/message'
-import {useErrorHandler} from '@/utils/error-handler'
-import {onLoad} from "@dcloudio/uni-app"
+import {useErrorHandler} from '@/subpackages/utils/error-handler'
+import {onLoad, onUnload} from "@dcloudio/uni-app"
 import {generateID} from '@/utils/id'
 import GoodsPreview from '@/subpackages/components/goods/goods-preview.vue'
 import {UserApi} from "@/api/user"
 import User from "/static/images/user.png"
+import Anonymous from "/static/images/anonymous.png"
+import {useConversations} from "@/composables/Conversations";
 
 const router = useRouter()
 const userStore = useUserStore()
 const privateChatStore = usePrivateChat()
 const message = useMessage()
 const errorHandler = useErrorHandler()
+const conversationManager = useConversations()
 
 // 路由参数
 const targetId = ref('')
 const goodsId = ref(null)
+const isAnonymousChat = ref(false) // 是否为匿名会话
+
+// 在线状态
+const isOnline = ref(false)
+// 取消订阅函数
+let unsubscribeOnlineStatus = null
+
+const conversationItem = reactive({
+  id: '',
+  avatar: '',
+  lastMessage: '',
+  muted: false,
+  pinned: false,
+  type: 'user',
+  name: '',
+  unread: 0,
+  time: '',
+})
 
 // 获取路由参数
 onLoad(async (options) => {
   console.debug('options:', options)
 
-  if (options.id) {
-    targetId.value = options.id
+  if (options.item || options.id) {
+
+    let item = options.item
+    if (options.item) {
+      item = JSON.parse(options.item)
+      console.debug('item:', item)
+      Object.assign(conversationItem, item)
+    }
+
+    targetId.value = item?.id || options.id
+    console.debug('targetId:', targetId.value)
+    // 页面加载时，清空未读消息
+    conversationManager.clearUnreadCount(targetId.value)
+    isAnonymousChat.value = targetId.value.includes('_anonymous')
+    
+    // 如果是匿名会话，获取真实用户ID用于在线状态订阅
+    const realUserId = isAnonymousChat.value ? targetId.value.replace('_anonymous', '') : targetId.value
+    
     try {
-      await fetchUserInfo()
+      // 匿名会话不获取用户信息，直接使用匿名信息
+      if (!isAnonymousChat.value) {
+        await fetchUserInfo()
+      } else {
+        userInfo.value = {
+          nickname: '匿名用户',
+          avatar: Anonymous,
+          openid: targetId.value
+        }
+      }
     } catch (e) {
       console.error(e)
       toast.error('获取用户信息失败')
     }
+
+    // 订阅用户在线状态
     try {
-      await message.sendCheckOnline(targetId.value, (_isOnline)=>{
-        console.debug('执行检查用户在线状态回调，是否在线：', _isOnline)
-        isOnline.value = !!_isOnline
+      unsubscribeOnlineStatus = message.subscribeUserOnlineStatus(realUserId, (onlineStatus) => {
+        console.debug('收到用户在线状态更新：', onlineStatus)
+        isOnline.value = !!onlineStatus
       })
+      
+      // 发送一次检测请求获取当前状态
+      await message.sendCheckOnline(realUserId)
     } catch (e) {
       console.error(e)
-      toast.error('检查用户在线状态失败')
+      toast.error('订阅用户在线状态失败')
     }
 
     try {
@@ -50,6 +101,11 @@ onLoad(async (options) => {
     } catch (e) {
       console.error(e)
       toast.error('获取历史消息失败')
+    }
+    
+    // 如果是匿名会话，强制设置为非匿名状态（实名回复）
+    if (isAnonymousChat.value) {
+      input.anonymous = false
     }
   }
 
@@ -62,7 +118,19 @@ onLoad(async (options) => {
       console.error(e)
       toast.error('获取商品信息失败')
     }
+  }
+})
 
+// 页面卸载时取消订阅
+onUnload(() => {
+  if (unsubscribeOnlineStatus) {
+    unsubscribeOnlineStatus()
+    unsubscribeOnlineStatus = null
+    console.log('页面卸载，取消订阅用户在线状态')
+  }
+  // 页面卸载时清空未读消息
+  if (targetId.value) {
+    conversationManager.clearUnreadCount(targetId.value)
   }
 })
 
@@ -108,22 +176,14 @@ const handleMarkSold = (id) => {
 // 聊天信息
 const userInfo = ref({
   nickname: '',
-  avatar: {
-    url: User,
-  },
-  openid: 'user123'
+  avatar: User,
+  openid: ''
 })
 
 // 使用store中的消息数据
 const messages = computed(() => {
   if (!targetId.value) return [];
   return privateChatStore.getMessages(targetId.value);
-})
-
-// 当前会话信息
-const currentConversation = computed(() => {
-  if (!targetId.value) return null;
-  return privateChatStore.getConversation(targetId.value);
 })
 
 const selfAvatar = computed(() => userStore.userInfo?.avatar?.url || User)
@@ -137,11 +197,13 @@ const inputRef = ref(null)
  * @property { String } text
  * @property { Boolean } isSending
  * @property { Boolean } focus
+ * @property { Boolean } anonymous
  * */
 const input = reactive({
   text: '',
   isSending: false,
   focus: false,
+  anonymous: false,
 })
 
 const toView = ref('')
@@ -187,8 +249,14 @@ const handleSend = async () => {
     // 生成消息ID
     const id = await generateID();
 
+    // 获取真实接收者ID（如果是匿名会话，需要发送给真实用户）
+    const realTargetId = isAnonymousChat.value ? targetId.value.replace('_anonymous', '') : targetId.value;
+
+    // 在匿名会话中，强制以实名发送回复（不允许双方都匿名）
+    const shouldSendAnonymous = isAnonymousChat.value ? false : input.anonymous;
+
     // 发送消息（消息的添加和状态管理现在在message composable中处理）
-    await message.sendChat(id, targetId.value, messageContent);
+    await message.sendChat(id, realTargetId, messageContent, shouldSendAnonymous);
 
     // 滚动到底部
     scrollToBottom();
@@ -202,12 +270,6 @@ const handleSend = async () => {
     input.isSending = false;
     handleInputBlur();
   }
-}
-
-// 监听新消息
-const handleNewMessage = (chat) => {
-  messages.value.push(chat)
-  scrollToBottom()
 }
 
 // 滚动到底部
@@ -232,9 +294,6 @@ const gotoUser = (isSelf) => {
     params: {id: userInfo.value.openid}
   })
 }
-
-// 添加计算属性来获取在线状态
-const isOnline = ref(false)
 
 const gotoMore = () => {
   router.push({
@@ -340,6 +399,31 @@ const handleResendMessage = async (msg) => {
 const handleTapOutside = () => {
   actionMenu.visible = false
 }
+
+// 获取用户头像
+const userAvatarUrl = (msg) => {
+  // 使用匿名头像
+  if (msg.useAnonymousAvatar) {
+    return conversationItem.avatar || Anonymous
+  }
+  if (msg.isSelf) {
+    return selfAvatar
+  }
+  return userInfo.value.avatar || User
+}
+
+const placeholder = computed(() => {
+  if (isAnonymousChat.value) {
+    return '回复匿名消息...'
+  }
+  return input.anonymous ? '匿名发送消息...' : '输入聊天内容...'
+})
+
+// 处理匿名状态改变
+const handleAnonymousChange = (isAnonymous) => {
+  console.log('isAnonymous:', isAnonymous)
+  input.anonymous = isAnonymous
+}
 </script>
 
 <template>
@@ -366,7 +450,7 @@ const handleTapOutside = () => {
         <view class="message-list-content">
           <view v-for="(msg, index) in messages" :key="index"
                 :class="['message-item', msg.isSelf ? 'self' : 'other']" :id="`msg-${index}`">
-            <image :src="msg.isSelf ? selfAvatar : userInfo?.avatar?.url" class="avatar"
+            <image :src="userAvatarUrl(msg)" class="avatar"
                    :class="{ 'offline': !msg.isSelf && !isOnline }"
                    @tap.stop="msg.isSelf ? '' : gotoUser(msg.isSelf)">
             </image>
@@ -398,8 +482,9 @@ const handleTapOutside = () => {
 
       <!-- 输入框 -->
       <view class="input-container">
-        <InputSection v-model="input.text" placeholder="输入聊天内容..." :disabled="input.isSending"
+        <InputSection v-model="input.text" :placeholder="placeholder" :disabled="input.isSending"
                       :focus="input.focus" :send-button-text="input.isSending ? '发送中...' : '发送'"
+                      :show-anonymous="!isAnonymousChat" v-model:anonymous="input.anonymous" @anonymous-change="handleAnonymousChange"
                       class="animate animate-slide-up" @send="handleSend" @blur="handleInputBlur" ref="inputRef"/>
       </view>
     </view>

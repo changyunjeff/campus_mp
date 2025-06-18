@@ -1,18 +1,21 @@
 <script setup>
 import Layout from '@/layout/index'
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter } from 'uni-mini-router'
-import { formatTime } from '@/utils/time'
-import { CommunityApi } from '@/api/community'
+import {ref, reactive, computed, onMounted} from 'vue'
+import {useRouter} from 'uni-mini-router'
+import {formatTime} from '@/utils/time'
+import {CommunityApi} from '@/api/community'
 import events from '@/utils/events'
-import { throttle } from 'lodash'
-import { onLoad, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
+import {throttle} from 'lodash'
+import {onLoad, onReachBottom, onPullDownRefresh} from '@dcloudio/uni-app'
 import {useUserStore} from "@/pinia/modules/user";
 import {useToast} from "@/composables/toast"
+import User from '/static/images/user.png'
+import {useMessage} from '@/composables/message'
 
 const router = useRouter()
 const userStore = useUserStore()
 const toast = useToast()
+const {sendLikeMessage, sendFavoriteMessage} = useMessage()
 
 // 当前选中的标签
 const activeTab = ref('published')
@@ -36,9 +39,9 @@ const refresherEnabled = ref(true)
 
 // 分页参数
 const pagination = reactive({
-  published: { page: 1, hasMore: true },
-  favorite: { page: 1, hasMore: true },
-  liked: { page: 1, hasMore: true }
+  published: {page: 1, hasMore: true},
+  favorite: {page: 1, hasMore: true},
+  liked: {page: 1, hasMore: true}
 })
 
 // 数据存储
@@ -59,25 +62,25 @@ const loadPosts = async (tab, page = 1, isRefresh = false) => {
   try {
     loading.value = true
     let response = null
-    
+
     switch (tab) {
       case 'published':
         const userId = userStore.openid
         if (userId) {
-          response = await CommunityApi.getUserPosts(userId, { page, page_size: 10 })
+          response = await CommunityApi.getUserPosts(userId, {page, page_size: 10})
         }
         break
       case 'favorite':
-        response = await CommunityApi.getUserFavoritePosts({ page, page_size: 10 })
+        response = await CommunityApi.getUserFavoritePosts({page, page_size: 10})
         break
       case 'liked':
-        response = await CommunityApi.getUserLikedPosts({ page, page_size: 10 })
+        response = await CommunityApi.getUserLikedPosts({page, page_size: 10})
         break
     }
 
     if (response) {
-      const { posts, page: currentPage, total } = response
-      
+      const {posts, page: currentPage, total} = response
+
       if (isRefresh || page === 1) {
         postsData[tab] = posts || []
       } else {
@@ -119,6 +122,9 @@ const handleLike = throttle(async (post) => {
     post.isLiked = !post.isLiked
     if (post.isLiked) {
       post.stats.likes++
+      // 发送点赞通知给帖子作者
+      console.log('发送点赞通知给用户:', post)
+      await sendLikeMessage(post.user.id, post.id, post.content, post.images[0])
     } else {
       post.stats.likes--
     }
@@ -136,6 +142,9 @@ const handleFavorite = throttle(async (post) => {
     post.isFavorited = !post.isFavorited
     if (post.isFavorited) {
       post.stats.favorites++
+      // 发送收藏通知给帖子作者
+      console.log('发送收藏通知给用户:', post)
+      await sendFavoriteMessage(post.user.id, post.id, post.content, post.images[0])
     } else {
       post.stats.favorites--
     }
@@ -186,7 +195,7 @@ const handleReport = (post) => {
     author: post.author.nickname,
     cover: post.images && post.images.length > 0 ? post.images[0] : ''
   }
-  
+
   router.push({
     name: 'report',
     params: {
@@ -213,7 +222,7 @@ const deletePost = async (postId) => {
     })
 
     await CommunityApi.deletePost(postId)
-    
+
     const index = postsData.published.findIndex(post => post.id === postId)
     if (index !== -1) {
       postsData.published.splice(index, 1)
@@ -232,7 +241,7 @@ const deletePost = async (postId) => {
 const handleLongPress = (post) => {
   console.log('长按帖子:', post.id)
   if (post.isDeleted) return
-  
+
   if (activeTab.value === 'published') {
     const deleteAction = {
       name: "删除",
@@ -273,7 +282,7 @@ const refreshData = async () => {
 // 加载更多数据
 const loadMoreData = async () => {
   if (!hasMore.value || loading.value) return
-  
+
   const currentTab = activeTab.value
   const nextPage = pagination[currentTab].page + 1
   await loadPosts(currentTab, nextPage, false)
@@ -328,137 +337,112 @@ onLoad(() => {
       <!-- 标签切换 -->
       <view class="sticky top-0 z-10 bg-white shadow-sm">
         <tab-group
-          :tabs="personalTabs"
-          v-model:active-tab="activeTab"
-          @change="handleTabChange"
+            :tabs="personalTabs"
+            v-model:active-tab="activeTab"
+            @change="handleTabChange"
         />
       </view>
 
       <!-- 内容区域 - 使用scroll-view -->
-      <scroll-view 
-        scroll-y 
-        class="h-full"
-        :refresher-enabled="refresherEnabled"
-        :refresher-triggered="refresherTriggered"
-        @refresherrefresh="onRefresherRefresh"
-        @scrolltolower="onScrollToLower"
-        @scroll="onScroll"
-        lower-threshold="100"
-        style="height: calc(100vh - 258rpx);"
+      <scroll-view
+          scroll-y
+          class="h-full"
+          :refresher-enabled="refresherEnabled"
+          :refresher-triggered="refresherTriggered"
+          @refresherrefresh="onRefresherRefresh"
+          @scrolltolower="onScrollToLower"
+          @scroll="onScroll"
+          lower-threshold="100"
+          style="height: calc(100vh - 258rpx);"
       >
         <view class="p-20rpx pb-30rpx">
-        <!-- 帖子列表 -->
-        <template v-if="currentPosts.length > 0">
-          <view 
-            v-for="(post, index) in currentPosts" 
-            :key="post.id || index" 
-            class="mb-20rpx"
-          >
-            <!-- 正常帖子显示 -->
-            <view 
-              class="relative p-30rpx bg-white rounded-16rpx shadow-sm transition-all duration-300 active:scale-98 active:bg-gray-50"
-              @tap="viewPostDetail(post.id)"
-              @longpress="handleLongPress(post)"
+          <!-- 帖子列表 -->
+          <template v-if="currentPosts.length > 0">
+            <view
+                v-for="(post, index) in currentPosts"
+                :key="post.id || index"
+                class="mb-20rpx"
             >
-              <!-- 帖子头部 - 用户信息和发布时间 -->
-              <view class="flex justify-between items-center mb-20rpx">
-                <view class="flex items-center" @tap.stop="viewUserProfile(post.author.id)">
-                  <image 
-                    class="w-80rpx h-80rpx rounded-full mr-20rpx border-2rpx border-gray-100" 
-                    :src="post.author.avatar || '/static/images/user.png'" 
-                    mode="aspectFill"
-                  />
-                  <view class="flex flex-col">
-                    <text class="text-30rpx font-bold text-#333">{{ post.author.nickname }}</text>
-                    <text class="text-24rpx text-#999">{{ formatTime(post.publishTime) }}</text>
+              <!-- 正常帖子显示 -->
+              <view
+                  class="relative p-30rpx bg-white rounded-16rpx shadow-sm transition-all duration-300 active:scale-98 active:bg-gray-50"
+                  @tap="viewPostDetail(post.id)"
+                  @longpress="handleLongPress(post)"
+              >
+                <!-- 帖子头部 - 用户信息和发布时间 -->
+                <view class="flex justify-between items-center mb-20rpx">
+                  <view class="flex items-center" @tap.stop="viewUserProfile(post.author.id)">
+                    <image
+                        class="w-80rpx h-80rpx rounded-full mr-20rpx border-2rpx border-gray-100"
+                        :src="post.author.avatar || User"
+                        mode="aspectFill"
+                    />
+                    <view class="flex flex-col">
+                      <text class="text-30rpx font-bold text-#333">{{ post.author.nickname }}</text>
+                      <text class="text-24rpx text-#999">{{ formatTime(post.publishTime) }}</text>
+                    </view>
                   </view>
                 </view>
-              </view>
 
-              <!-- 帖子内容 -->
-              <view class="mb-20rpx">
-                <text class="text-30rpx text-#333 leading-relaxed">{{ post.content }}</text>
-              </view>
-
-              <!-- 图片网格 -->
-              <view v-if="post.images && post.images.length > 0" class="mb-20rpx">
-                <view class="grid grid-cols-3 gap-10rpx">
-                  <image
-                    v-for="(image, imgIndex) in post.images"
-                    :key="imgIndex"
-                    :src="image"
-                    class="w-full aspect-square rounded-12rpx"
-                    mode="aspectFill"
-                    @tap.stop="viewImage(post, imgIndex)"
-                  />
-                </view>
-              </view>
-
-              <!-- 位置信息 -->
-              <view v-if="post.location.address" class="flex items-center mb-20rpx">
-                <text class="iconfont icon-location text-24rpx text-#999 mr-8rpx">📍</text>
-                <text class="text-26rpx text-#999">{{ post.location.address }}</text>
-              </view>
-
-              <!-- 互动统计和操作按钮 -->
-              <view class="flex justify-between items-center pt-20rpx border-t-1rpx border-gray-100">
-                <!-- 统计信息 -->
-                <view class="flex items-center space-x-30rpx">
-                  <text class="text-26rpx text-#999">{{ post.stats.views || 0 }} 浏览</text>
-                  <text class="text-26rpx text-#999">{{ post.stats.likes || 0 }} 点赞</text>
-                  <text class="text-26rpx text-#999">{{ post.stats.comments || 0 }} 评论</text>
+                <!-- 帖子内容 -->
+                <view class="mb-20rpx">
+                  <text class="text-30rpx text-#333 leading-relaxed">{{ post.content }}</text>
                 </view>
 
-                <!-- 操作按钮 -->
-                <view class="flex items-center space-x-40rpx">
-                  <!-- 点赞按钮 -->
-                  <view 
-                    class="flex items-center"
-                    @tap.stop="handleLike(post)"
-                  >
-                    <text :style="`color:${post.isLiked ? '#ff6b35' : '#999'}`">👍</text>
+                <!-- 图片网格 -->
+                <view v-if="post.images && post.images.length > 0" class="mb-20rpx">
+                  <view class="grid grid-cols-3 gap-10rpx">
+                    <image
+                        v-for="(image, imgIndex) in post.images"
+                        :key="imgIndex"
+                        :src="image"
+                        class="w-full aspect-square rounded-12rpx"
+                        mode="aspectFill"
+                        @tap.stop="viewImage(post, imgIndex)"
+                    />
                   </view>
+                </view>
 
-                  <!-- 评论按钮 -->
-                  <view 
-                    class="flex items-center"
-                    @tap.stop="handleComment(post)"
-                  >
-                    <text style="color:#999">💬</text>
-                  </view>
+                <!-- 位置信息 -->
+                <view v-if="post.location.address" class="flex items-center mb-20rpx">
+                  <WdIcon custom-class="iconfont" class-prefix="icon" name="location"/>
+                  <text class="text-26rpx text-#999">{{ post.location.address }}</text>
+                </view>
 
-                  <!-- 收藏按钮 -->
-                  <view 
-                    class="flex items-center"
-                    @tap.stop="handleFavorite(post)"
-                  >
-                    <text :style="`color:${post.isFavorited ? '#fbbf24' : '#999'}`">⭐</text>
+                <!-- 互动统计和操作按钮 -->
+                <view class="flex justify-between items-center pt-20rpx border-t-1rpx border-gray-100">
+                  <!-- 统计信息 -->
+                  <view class="flex items-center space-x-30rpx">
+                    <text class="text-26rpx text-#999">{{ post.stats.views || 0 }} 浏览</text>
+                    <text class="text-26rpx text-#999">{{ post.stats.likes || 0 }} 点赞</text>
+                    <text class="text-26rpx text-#999">{{ post.stats.comments || 0 }} 评论</text>
                   </view>
                 </view>
               </view>
             </view>
+          </template>
+
+          <!-- 空状态 -->
+          <view v-else-if="!loading" class="flex flex-col items-center justify-center py-100rpx">
+            <text class="mt-20rpx text-30rpx text-#999">
+              {{
+                activeTab === 'published' ? '还没有发布任何动态' :
+                    activeTab === 'favorite' ? '还没有收藏任何动态' : '还没有点赞任何动态'
+              }}
+            </text>
+            <button
+                v-if="activeTab === 'published'"
+                class="mt-30rpx px-40rpx py-20rpx text-28rpx text-white bg-blue-500 rounded-full"
+                @tap="router.push({name: 'publish'})"
+            >
+              去发布动态
+            </button>
           </view>
-        </template>
 
-        <!-- 空状态 -->
-        <view v-else-if="!loading" class="flex flex-col items-center justify-center py-100rpx">
-          <text class="mt-20rpx text-30rpx text-#999">
-            {{ activeTab === 'published' ? '还没有发布任何动态' : 
-               activeTab === 'favorite' ? '还没有收藏任何动态' : '还没有点赞任何动态' }}
-          </text>
-          <button 
-            v-if="activeTab === 'published'"
-            class="mt-30rpx px-40rpx py-20rpx text-28rpx text-white bg-blue-500 rounded-full"
-            @tap="router.push({name: 'publish'})"
-          >
-            去发布动态
-          </button>
-        </view>
-
-        <!-- 加载更多指示器 -->
-        <view v-if="loading && currentPosts.length > 0" class="flex justify-center items-center py-30rpx">
-          <text class="ml-10rpx text-26rpx text-#666">正在加载...</text>
-        </view>
+          <!-- 加载更多指示器 -->
+          <view v-if="loading && currentPosts.length > 0" class="flex justify-center items-center py-30rpx">
+            <text class="ml-10rpx text-26rpx text-#666">正在加载...</text>
+          </view>
 
           <!-- 没有更多数据提示 -->
           <view v-if="!hasMore && currentPosts.length > 0" class="flex justify-center py-30rpx">

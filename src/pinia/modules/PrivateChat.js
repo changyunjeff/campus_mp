@@ -64,6 +64,7 @@ export const usePrivateChat = defineStore('private-chat', () => {
 
   const addConversation = (userId) => {
     if (!(userId in conversations.value)) {
+      const isAnonymous = userId.includes('_anonymous')
       conversations.value[userId] = {
         userId,
         userInfo: null,
@@ -73,7 +74,9 @@ export const usePrivateChat = defineStore('private-chat', () => {
         lastMessageTime: 0,
         isOnline: false,
         isPinned: false,
-        isMuted: false
+        isMuted: false,
+        isAnonymous, // 标记是否为匿名会话
+        realUserId: isAnonymous ? userId.replace('_anonymous', '') : userId // 保存真实用户ID
       }
     }
     return conversations.value[userId]
@@ -179,6 +182,7 @@ export const usePrivateChat = defineStore('private-chat', () => {
           const messages = Array.isArray(userMessages) ? userMessages : [userMessages]
 
           if (!(conversationUserId in conversations.value)) {
+            const isAnonymous = conversationUserId.includes('_anonymous')
             conversations.value[conversationUserId] = {
               userId: conversationUserId,
               userInfo: null,
@@ -188,7 +192,9 @@ export const usePrivateChat = defineStore('private-chat', () => {
               lastMessageTime: 0,
               isOnline: false,
               isPinned: false,
-              isMuted: false
+              isMuted: false,
+              isAnonymous, // 标记是否为匿名会话
+              realUserId: isAnonymous ? conversationUserId.replace('_anonymous', '') : conversationUserId // 保存真实用户ID
             }
           }
 

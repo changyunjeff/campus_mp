@@ -8,11 +8,12 @@ import {throttle} from 'lodash'
 import Layout from '@/layout/index.vue'
 import InputSection from '@/components/InputSection.vue'
 import SharePopups from '@/components/share-popups.vue'
-import {useShare} from '@/composables/share'
+import {useShare} from '@/subpackages/composables/share'
 import {useRouter} from 'uni-mini-router'
 import {CommunityApi} from '@/api/community'
 import {UserApi} from '@/api/user'
 import {useToast} from "@/composables/toast"
+import {useMessage} from '@/composables/message'
 // 引入地图组件
 import Amap from '@/components/Amap.vue'
 
@@ -36,6 +37,7 @@ const {
 } = useShare()
 
 const toast = useToast()
+const {sendLikeMessage, sendFavoriteMessage} = useMessage()
 
 // 路由
 const router = useRouter()
@@ -271,6 +273,14 @@ const handleLike = throttle(async () => {
     // 更新本地状态
     post.isLiked = !post.isLiked
     post.stats.likes += post.isLiked ? 1 : -1
+    
+    // 如果是点赞操作，发送通知消息
+    if (post.isLiked) {
+      // 这里应该通过消息系统发送点赞通知给帖子作者
+      // 实际实现中应该在后端处理，这里只是示例
+      console.log('发送点赞通知给用户:', post)
+      await sendLikeMessage(post.user.id, post.id, post.content, post.images[0])
+    }
   } catch (err) {
     console.error(err)
     toast.error('点赞失败')
@@ -286,6 +296,14 @@ const handleFavorite = throttle(async () => {
     post.isFavorited = !post.isFavorited
     post.stats.favorites += post.isFavorited ? 1 : -1
 
+    // 如果是收藏操作，发送通知消息
+    if (post.isFavorited) {
+      // 这里应该通过消息系统发送收藏通知给帖子作者
+      // 实际实现中应该在后端处理，这里只是示例
+      console.log('发送收藏通知给用户:', post)
+      await sendFavoriteMessage(post.user.id, post.id, post.content, post.images[0])
+    }
+    
     toast.show(post.isFavorited ? '收藏成功' : '已取消收藏')
   } catch (err) {
     console.error(err)
@@ -620,6 +638,23 @@ onLoad((options) => {
     }, 1500)
   }
 })
+
+const sortMode = [
+  {
+    code: 'hot',
+    desc: '按热度',
+  },
+  {
+    code: 'time',
+    desc: '按时间'
+  }
+]
+
+const currentSortMode = ref(0)
+
+const toggleSortMode = throttle(()=>{
+  currentSortMode.value = (currentSortMode.value+1) % sortMode.length
+})
 </script>
 
 <template>
@@ -702,7 +737,7 @@ onLoad((options) => {
         </view>
 
         <!-- 位置信息 -->
-        <view v-if="post.location" class="flex items-center gap-3 mb-30rpx">
+        <view v-if="post.location?.address" class="flex items-center gap-3 mb-30rpx">
           <WdIcon name="location" size="16" color="#f59e0b" />
           <view class="flex-1">
             <text class="text-sm text-gray-800 block">{{ post.location.address }}</text>
@@ -784,7 +819,7 @@ onLoad((options) => {
         <!-- 评论区标题 -->
         <view class="flex justify-between items-center mb-30rpx">
           <text class="text-32rpx font-bold">评论 ({{ post.stats.comments }})</text>
-          <view class="text-26rpx text-gray-500">按热度排序
+          <view class="text-26rpx text-gray-500" @tap.stop="toggleSortMode">{{ sortMode[currentSortMode].desc }}
             <WdIcon name="chevron-down" size="24rpx" color="#666"/>
           </view>
         </view>
@@ -803,7 +838,8 @@ onLoad((options) => {
               <!-- 头像 -->
               <image
                   :src="comment.user.avatar"
-                  class="w-70rpx h-70rpx rounded-full flex-shrink-0 mr-20rpx"
+                  class="w-70rpx h-70rpx rounded-full border-4rpx border-white shadow-md flex-shrink-0 mr-20rpx"
+                  mode="aspectFill"
                   @tap.stop="viewUserProfile(comment.user.id)"
               />
 

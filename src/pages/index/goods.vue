@@ -382,6 +382,7 @@ onReachBottom(async () => {
                   <image 
                     :src="item.seller && item.seller.avatar_url ? item.seller.avatar_url : User" 
                     class="w-32rpx h-32rpx rounded-full mr-8rpx"
+                    mode="aspectFill"
                   ></image>
                   <text class="text-22rpx text-gray-500 truncate max-w-120rpx">
                     {{ item.seller && item.seller.nickname ? item.seller.nickname : '匿名用户' }}

@@ -5,6 +5,10 @@ import {useUserInfo} from "./user-info";
 import {UserApi} from "@/api/user";
 import { computed, ref } from 'vue'
 import { useChatSettings } from "./chat-settings";
+import User from "/static/images/user.png"
+import Anonymous from "/static/images/anonymous.png"
+import AnonymousMale from "/static/images/anonymous_male.png"
+import AnonymousFemale from "/static/images/anonymous_female.png"
 
 const chatSettings = useChatSettings();
 let instance = null;
@@ -116,13 +120,28 @@ export function useConversations()  {
         
         const privateChatList = privateChatConversations.map(conv => {
             // 同步获取缓存的聊天设置
-            const chatSettingsData = getChatSettingsSync(conv.userId);
+            const chatSettingsData = getChatSettingsSync(conv.realUserId || conv.userId);
+
+            const gender = conv.userInfo.gender;
+            console.debug("Conversation.js 获取性别:", gender)
+            let avatar = '';
+            switch (gender) {
+                case 1:
+                    avatar = AnonymousMale;
+                    break;
+                case 2:
+                    avatar = AnonymousFemale;
+                    break;
+                default:
+                    avatar = Anonymous;
+                    break;
+            }
             
             const result = {
                 ...conv,
                 type: 'private',
-                displayName: conv.userInfo?.nickname || `用户${conv.userId}`,
-                displayAvatar: conv.userInfo?.avatar?.url || '/static/images/user.png',
+                displayName: conv.isAnonymous ? '匿名用户' : (conv.userInfo?.nickname || `用户${conv.userId}`),
+                displayAvatar: conv.isAnonymous ? avatar : (conv.userInfo?.avatar?.url || User),
                 displayLastMessage: conv.lastMessage?.content || '',
                 displayTime: conv.lastMessageTime,
                 unreadCount: chatSettingsData.isMuted ? 0 : conv.unreadCount, // 免打扰时不显示未读数
@@ -227,6 +246,33 @@ export function useConversations()  {
         return conversations.value;
     };
 
+    /**
+     * clearUnreadCount 清空会话的未读数量
+     * @param {string} id - 会话id
+     * */
+    const clearUnreadCount = (id) => {
+        if (!id) {
+            console.warn('clearUnreadCount: 会话ID不能为空');
+            return;
+        }
+
+        console.log(`清空会话 ${id} 的未读数量`);
+
+        try {
+            if (id === 'system') {
+                // 系统通知的未读数量清空
+                systemNotification.markAllAsRead();
+                console.log('已清空系统通知的未读数量');
+            } else {
+                // 私聊消息的未读数量清空
+                privateChat.markAsRead(id);
+                console.log(`已清空私聊会话 ${id} 的未读数量`);
+            }
+        } catch (error) {
+            console.error(`清空会话 ${id} 未读数量失败:`, error);
+        }
+    }
+
     instance = {
         conversations,
         totalUnreadCount,
@@ -248,7 +294,8 @@ export function useConversations()  {
         markPrivateChatAsRead: privateChat.markAsRead,
         markSystemNotificationAsRead: systemNotification.markAsRead,
         deletePrivateChat: privateChat.deleteConversation,
-        deleteSystemNotification: systemNotification.deleteNotification
+        deleteSystemNotification: systemNotification.deleteNotification,
+        clearUnreadCount
     }
     return instance;
 }

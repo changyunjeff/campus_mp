@@ -50,7 +50,8 @@ interface NavigateToOptions {
        "/subpackages/pages/activity/center" |
        "/subpackages/pages/activity/publish" |
        "/subpackages/pages/activity/my" |
-       "/subpackages/pages/activity/detail";
+       "/subpackages/pages/activity/detail" |
+       "/subpackages/pages/feedback/index";
 }
 interface RedirectToOptions extends NavigateToOptions {}
 

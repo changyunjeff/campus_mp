@@ -64,7 +64,6 @@ declare global {
   const useModel: typeof import('vue')['useModel']
   const useRoute: typeof import('uni-mini-router')['useRoute']
   const useRouter: typeof import('uni-mini-router')['useRouter']
-  const useShare: typeof import('../composables/share.js')['useShare']
   const useSlots: typeof import('vue')['useSlots']
   const useTabbar: typeof import('../composables/tabbar.js')['useTabbar']
   const useTabbr: typeof import('../composables/tabbar.js')['useTabbr']

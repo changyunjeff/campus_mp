@@ -232,9 +232,6 @@ const toggleFaq = (index) => {
             </text>
           </view>
         </view>
-        
-        <!-- 底部安全区域 -->
-        <view class="bottom-safe-area h-120rpx"></view>
       </scroll-view>
     </view>
   </Layout>

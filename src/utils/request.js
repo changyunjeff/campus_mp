@@ -1,6 +1,7 @@
 import {objectToQuery} from '@/utils/param';
 import {concat} from '@/utils/string';
 import {ERR_TOKEN_EXPIRE} from '@/constants/error';
+import { useSchoolStore } from "@/pinia/modules/school";
 
 /**
  * handleExpire 处理token过期
@@ -42,7 +43,6 @@ const http = (options) => {
         try {
             const schoolData = uni.getStorageSync('school_selection')
             if (schoolData) {
-                const { useSchoolStore } = require('@/pinia/modules/school')
                 const schoolStore = useSchoolStore()
                 schoolCode = schoolStore.currentSchoolCode || 'suda'
             }
@@ -96,7 +96,6 @@ export const socket = (config = {}) => {
         try {
             const schoolData = uni.getStorageSync('school_selection')
             if (schoolData) {
-                const { useSchoolStore } = require('@/pinia/modules/school')
                 const schoolStore = useSchoolStore()
                 schoolCode = schoolStore.currentSchoolCode || 'suda'
             }
@@ -152,7 +151,6 @@ export const upload = (url, filePath, config = {}) => {
         try {
             const schoolData = uni.getStorageSync('school_selection')
             if (schoolData) {
-                const { useSchoolStore } = require('@/pinia/modules/school')
                 const schoolStore = useSchoolStore()
                 schoolCode = schoolStore.currentSchoolCode || 'suda'
             }

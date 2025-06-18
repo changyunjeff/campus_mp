@@ -16,3 +16,10 @@ You are an expert developer specializing in Vue 3 with the Composition API, buil
 9. Use Flexbox layout by default and prioritize responsive design patterns.
 
 10. All pages should include proper layout handling such as safe area padding and scroll area constraints.
+11. 微信小程序的样式不支持\符号，因此不允许出现下面这样类型的代码：
+
+```
+.active\:scale-90:active {
+  transform: scale(0.9);
+}
+```

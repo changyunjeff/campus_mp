@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, onUnmounted, onMounted } from 'vue'
 import Layout from '@/layout/index.vue'
 import { useTabbar } from '@/composables/tabbar'
 import { useRouter } from 'uni-mini-router'
@@ -7,10 +7,12 @@ import { useConversations } from '@/composables/Conversations'
 import { formatTime } from '@/utils/time'
 import events from '@/utils/events'
 import User from "/static/images/user.png"
+import {useLikeAndFavorite} from "@/pinia/modules/LikeAndFavorite";
 
 const { hiddened, show, hide } = useTabbar()
 const router = useRouter()
 const conversationsManager = useConversations()
+const likeAndFavoriteStore = useLikeAndFavorite()
 
 onMounted(() => {
   show()
@@ -36,13 +38,13 @@ const messageList = computed(() => {
 })
 
 // 跳转到聊天页面
-const goToChat = (type, id) => {
+const goToChat = (type, item) => {
   switch (type) {
     case 'user':
       router.push({
         name: 'private_chat',
         params: {
-          id: id
+          item: JSON.stringify(item)
         }
       })
       break
@@ -68,6 +70,14 @@ const handleLongPress = (item) => {
   events.emit('openActionSheet', actions)
 }
 
+const goToPage = (page) => {
+  router.push({
+    name: page
+  })
+}
+
+const unreadOfLikeAndFavorite = computed(()=>likeAndFavoriteStore.getTotalUnreadCount)
+
 </script>
 
 <template>
@@ -75,19 +85,26 @@ const handleLongPress = (item) => {
     <template #left></template>
     <!-- 消息分类图标区域 -->
     <div class="flex justify-around py-5 bg-white mb-2">
-      <div class="flex flex-col items-center">
+      <div class="flex flex-col items-center relative" @tap.stop="goToPage('likesAndFavorite')">
+        <!-- 未读徽标 -->
+        <div
+          v-if="unreadOfLikeAndFavorite > 0"
+          class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-5 h-5 flex items-center justify-center px-1 z-10"
+        >
+          {{ unreadOfLikeAndFavorite > 99 ? '99+' : unreadOfLikeAndFavorite }}
+        </div>
         <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-2">
           <WdIcon custom-class="iconfont" class-prefix="icon" name="heart" :size="24" custom-style="color:#ef4444" />
         </div>
         <div class="text-xs">赞和收藏</div>
       </div>
-      <div class="flex flex-col items-center">
+      <div class="flex flex-col items-center" @tap.stop="goToPage('NewFans')">
         <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-2">
           <WdIcon custom-class="iconfont" class-prefix="icon" name="user" :size="24" custom-style="color:#3b82f6" />
         </div>
         <div class="text-xs">新增关注</div>
       </div>
-      <div class="flex flex-col items-center">
+      <div class="flex flex-col items-center" @tap.stop="goToPage('CommentAndMention')">
         <div class="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-2">
           <WdIcon custom-class="iconfont" class-prefix="icon" name="message" :size="24" custom-style="color:#22c55e" />
         </div>
@@ -101,7 +118,7 @@ const handleLongPress = (item) => {
           v-for="item in messageList"
           :key="item.id"
           class="message-item flex p-3 border-b border-gray-100 active:bg-gray-50"
-          @click="goToChat(item.type, item.id)"
+          @click="goToChat(item.type, item)"
           @longpress="handleLongPress(item)"
       >
         <!-- 头像 -->

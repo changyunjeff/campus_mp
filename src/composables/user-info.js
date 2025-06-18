@@ -29,16 +29,14 @@ export function useUserInfo() {
     }
     
     try {
-      const response = await UserApi.getUserProfile(userId);
-      const userInfo = response;
-      
+      const res = await UserApi.getUserProfile(userId);
       // 缓存用户信息
-      if (userInfo) {
-        userInfoCache.set(userId, userInfo);
-        console.log(`获取用户信息成功: ${userId}`, userInfo);
+      if (res) {
+        userInfoCache.set(userId, res);
+        console.log(`获取用户信息成功: ${userId}`, res);
       }
       
-      return userInfo;
+      return res;
     } catch (error) {
       console.error(`获取用户信息失败: ${userId}`, error);
       return null;

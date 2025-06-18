@@ -16,7 +16,7 @@ export const CommunityApi = {
         return get('/posts', {
             tab: params.tab || 'recommend',
             page: params.page || 1,
-            page_size: params.page_size || 20
+            page_size: params.page_size || 10
         })
     },
     

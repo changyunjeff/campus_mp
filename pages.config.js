@@ -400,6 +400,16 @@ export default defineUniPages({
                     meta: {
                         title: '活动详情'
                     },
+                },
+                {
+                    path: 'pages/feedback/index',
+                    name: 'feedback',
+                    style: {
+                        navigationBarTitleText: '反馈与建议'
+                    },
+                    meta: {
+                        title: '反馈与建议'
+                    }
                 }
             ]
         },

@@ -202,9 +202,9 @@
 
 <script setup>
 import common from "./common.vue"
-import {useRegisterStore} from "@/pinia/modules/register";
-import {RegisterApi} from "@/api/register"
-import {SMSApi} from "@/api/sms";
+import {useRegisterStore} from "@/subpackages/pinia/register";
+import {RegisterApi} from "@/subpackages/api/register"
+import {SMSApi} from "@/subpackages/api/sms";
 import {useToast} from "@/composables/toast";
 import {useRouter} from "uni-mini-router";
 import events from "@/utils/events";

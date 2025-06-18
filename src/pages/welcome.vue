@@ -53,7 +53,13 @@ async function handleEnter() {
     success: async ({userInfo}) => {
       console.debug('👤 获取微信用户信息', userInfo)
       try {
-        await userStore.login()
+        const res = await userStore.login()
+        console.debug('📥 登录成功:', res)
+        // 设置头像
+        if (Array.isArray(res.user?.avatar) && res.user.avatar.length > 0) {
+          userStore.setAvatar(res.user.avatar[0]);
+        }
+
         // 登录成功后直接跳转到社区页面
         router.pushTab('/pages/index/community')
       } catch (err) {

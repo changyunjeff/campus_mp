@@ -8,6 +8,7 @@ import { UserApi } from '@/api/user'
 import { MediaApi } from '@/api/media'
 import {useUserStore} from "@/pinia/modules/user";
 import {useToast} from "@/composables/toast";
+import events from "@/utils/events";
 // import AvatarCropper from '@/components/avatar-cropper.vue'; // 已移除裁剪功能
 
 const router = useRouter()
@@ -57,8 +58,7 @@ const avatarUrl = computed(() => {
     return userInfo.avatar[0].url // 使用第一个头像
   }
   // 检查本地存储的头像
-  const localAvatar = uni.getStorageSync('userAvatar')
-  return localAvatar || User
+  return userStore.getAvatarUrl()
 })
 
 // 显示昵称，如果为空则显示默认值
@@ -92,27 +92,18 @@ const entrances = [
   {
     id: 1,
     title: '我的社区动态',
-    icon: 'message-square',
+    icon: 'chat',
     color: '#3b82f6',
     route: 'community_personal_center'
   },
   {
     id: 2,
     title: '我的闲置商品',
-    icon: 'shopping-bag',
+    icon: 'gift',
     color: '#10b981',
     route: 'goods_personal_center'
   },
 ]
-
-// 检查并加载本地存储的头像
-const checkLocalAvatar = () => {
-  const localAvatar = uni.getStorageSync('userAvatar')
-  if (localAvatar) {
-    // 触发响应式更新
-    userInfo.avatar = [localAvatar]
-  }
-}
 
 // 跳转到编辑资料页面
 const goToEditProfile = () => {
@@ -143,6 +134,12 @@ const goToContact = (type) => {
   })
 }
 
+const goToFeedback = () => {
+  router.push({
+    name: 'feedback'
+  })
+}
+
 // 处理头像点击
 const handleAvatarClick = () => {
   uni.showActionSheet({
@@ -162,8 +159,17 @@ const handleAvatarClick = () => {
   })
 }
 
+const isUploading = ref(false)
+
 // 选择并上传头像（简化版，无裁剪）
 const chooseAndUploadAvatar = () => {
+
+  // 如果正在上传，则不处理
+  if (isUploading.value) {
+    toast.show('正在上传图片，请稍后')
+    return
+  }
+
   uni.chooseImage({
     count: 1,
     sizeType: ['compressed'], // 只使用压缩版本
@@ -174,16 +180,14 @@ const chooseAndUploadAvatar = () => {
       
       try {
         // 显示上传进度
-        uni.showLoading({
-          title: '上传中...',
-          mask: true
-        })
+        isUploading.value = true
+        events.emit('showUpload', 0)
         
         // 使用设置当前头像的API，确保头像被正确设置
         const uploadResult = await MediaApi.setCurrentUserAvatar({
           file: tempFilePath,
           onProgress: (progress) => {
-            console.log('上传进度:', progress)
+            events.emit('updateUpload', progress)
           }
         })
         
@@ -199,7 +203,11 @@ const chooseAndUploadAvatar = () => {
           }]
           
           // 同时保存到本地存储
-          uni.setStorageSync('userAvatar', uploadResult.url)
+          userStore.setAvatar({
+            url: uploadResult.url,
+            object_key: uploadResult.object_key,
+            type: uploadResult.type
+          })
           
           toast.show('头像更新成功')
           
@@ -212,7 +220,8 @@ const chooseAndUploadAvatar = () => {
         console.error('上传头像失败:', error)
         toast.show('头像上传失败，请重试')
       } finally {
-        uni.hideLoading()
+        isUploading.value = false
+        events.emit('hideUpload')
       }
     },
     fail: () => {
@@ -233,8 +242,6 @@ const copyUserId = () => {
     }
   })
 }
-
-// 这些裁剪相关的函数已经不需要了，已被简化的上传功能替代
 
 const popupLeftDialog = () => {
     
@@ -279,26 +286,25 @@ const fetchPersonalProfile = async (autoUpdateLocation = true) => {
     console.log('更新后的用户信息:', userInfo)
     
     // 如果用户资料中没有头像，尝试从媒体API获取
-    if (!userInfo.avatar || userInfo.avatar.length === 0) {
-      try {
-        const currentAvatar = await MediaApi.getCurrentUserAvatar()
-        if (currentAvatar && currentAvatar.url) {
-          userInfo.avatar = [currentAvatar]
-          console.log('从媒体API获取到头像:', currentAvatar)
-          
-          // 更新本地存储
-          uni.setStorageSync('userAvatar', currentAvatar.url)
-        }
-      } catch (avatarError) {
-        console.log('媒体API中也没有头像，使用默认头像')
-      }
-    } else {
-      // 如果有头像，同步更新本地存储
-      if (userInfo.avatar.length > 0 && userInfo.avatar[0].url) {
-        uni.setStorageSync('userAvatar', userInfo.avatar[0].url)
-        console.log('同步头像到本地存储:', userInfo.avatar[0].url)
-      }
-    }
+    // if (!userInfo.avatar || userInfo.avatar.length === 0) {
+    //   try {
+    //     const currentAvatar = await MediaApi.getCurrentUserAvatar()
+    //     if (currentAvatar && currentAvatar.url) {
+    //       userInfo.avatar = [currentAvatar]
+    //
+    //       // 更新本地存储
+    //       userStore.setAvatar(currentAvatar)
+    //     }
+    //   } catch (avatarError) {
+    //     console.log('媒体API中也没有头像，使用默认头像')
+    //   }
+    // } else {
+    //   // 如果有头像，同步更新本地存储
+    //   if (userInfo.avatar.length > 0 && userInfo.avatar[0].url) {
+    //     userStore.setAvatar(userInfo.avatar)
+    //     console.log('同步头像到本地存储:', userInfo.avatar[0].url)
+    //   }
+    // }
     
     // 只在自动模式且没有设置位置信息时，尝试获取IP属地
     if (autoUpdateLocation && (!userInfo.location || userInfo.location === '未设置')) {
@@ -457,8 +463,6 @@ const showLocationInfo = () => {
 
 // 每次页面显示时检查头像更新
 onShow(async () => {
-  // 初始加载检查本地头像
-  checkLocalAvatar()
   await fetchPersonalProfile()
 })
 
@@ -519,7 +523,7 @@ onMounted(() => {
                     </view>
                   </view>
                   <view class="flex items-center mt-8rpx">
-                    <text class="text-24rpx text-gray-500">用户ID：{{ displayUserId }}</text>
+                    <text class="text-24rpx text-gray-500 truncate w-30">用户ID：{{ displayUserId }}</text>
                     <WdIcon name="copy" size="24rpx" color="#999" class="ml-8rpx" @tap="copyUserId" />
                   </view>
                   <view class="flex items-center mt-8rpx">
@@ -599,7 +603,7 @@ onMounted(() => {
           hover-class="bg-gray-50" @tap.stop="goToSettings()"
         >
           <view class="w-80rpx h-80rpx rounded-16rpx flex items-center justify-center mr-24rpx bg-purple-100">
-            <WdIcon name="settings" size="40rpx" color="#8b5cf6" />
+            <WdIcon name="setting" size="40rpx" color="#8b5cf6" />
           </view>
           <text class="flex-1 text-30rpx text-gray-700">设置</text>
           <WdIcon name="chevron-right" size="36rpx" color="#ccc" />
@@ -607,7 +611,7 @@ onMounted(() => {
         
         <view 
           class="flex items-center p-30rpx"
-          hover-class="bg-gray-50"
+          hover-class="bg-gray-50" @tap.stop="goToFeedback()"
         >
           <view class="w-80rpx h-80rpx rounded-16rpx flex items-center justify-center mr-24rpx bg-red-100">
             <WdIcon name="help-circle" size="40rpx" color="#ef4444" />

@@ -455,6 +455,14 @@ onLoad((options) => {
     }, 1500)
   }
 })
+
+// handleAvatarClick 预览头像
+const handleAvatarClick = () => {
+  uni.previewImage({
+    urls: [userInfo.avatar],
+    current: 0
+  })
+}
 </script>
 
 <template>
@@ -499,6 +507,7 @@ onLoad((options) => {
                   :src="userInfo.avatar" 
                   class="w-140rpx h-140rpx rounded-full border-4rpx border-white shadow-md"
                   mode="aspectFill"
+                  @tap="handleAvatarClick"
                 />
                 <view 
                   class="absolute bottom-0 right-0 w-36rpx h-36rpx bg-white rounded-full flex items-center justify-center shadow-sm"

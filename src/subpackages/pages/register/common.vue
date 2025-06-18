@@ -105,7 +105,7 @@
 
 <script setup>
 import Layout from '@/layout/index.vue'
-import {useRegisterStore} from "@/pinia/modules/register"
+import {useRegisterStore} from "@/subpackages/pinia/register"
 
 const validationStore = useRegisterStore()
 

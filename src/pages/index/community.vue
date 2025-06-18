@@ -9,11 +9,15 @@ import { debounce, throttle } from 'lodash'
 import {onLoad} from '@dcloudio/uni-app'
 import { CommunityApi } from '@/api/community'
 import { UserApi } from '@/api/user'
+import { useMessage } from '@/composables/message'
+import {useToast} from "@/composables/toast";
 
 const {show} = useTabbar()
+const {sendLikeMessage, sendFavoriteMessage} = useMessage()
 
 const activeTab = ref('latest')
 const router = useRouter()
+const toast = useToast()
 
 // 社区页面的tab选项
 const communityTabs = [
@@ -25,7 +29,7 @@ const communityTabs = [
 // 帖子列表数据
 const posts = ref([])
 const page = ref(1)
-const pageSize = ref(20)
+const pageSize = ref(10)
 const total = ref(0)
 const isLoading = ref(false)
 const isRefreshing = ref(false)
@@ -100,10 +104,7 @@ const loadPosts = async (refresh = false) => {
     
   } catch (error) {
     console.error('加载帖子失败:', error)
-    uni.showToast({
-      title: '加载失败',
-      icon: 'none'
-    })
+    toast.show('加载失败')
   } finally {
     isLoading.value = false
     isRefreshing.value = false
@@ -128,12 +129,16 @@ const handleLike = throttle(async (post) => {
     // 更新本地状态
     post.isLiked = !post.isLiked
     post.stats.likes += post.isLiked ? 1 : -1
+    
+    // 如果是点赞操作，发送通知消息
+    if (post.isLiked) {
+      // 这里应该通过消息系统发送点赞通知给帖子作者
+      console.log('发送点赞通知给用户:', post)
+      await sendLikeMessage(post.user.id, post.id, post.content, post.images[0])
+    }
   } catch (error) {
     console.error('点赞失败:', error)
-    uni.showToast({
-      title: '操作失败',
-      icon: 'none'
-    })
+    toast.show('操作失败')
   }
 }, 1000)
 
@@ -146,10 +151,14 @@ const handleFavorite = throttle(async (post) => {
     post.isFavorited = !post.isFavorited
     post.stats.favorites += post.isFavorited ? 1 : -1
     
-    uni.showToast({
-      title: post.isFavorited ? '收藏成功' : '已取消收藏',
-      icon: 'none'
-    })
+    // 如果是收藏操作，发送通知消息
+    if (post.isFavorited) {
+      // 这里应该通过消息系统发送收藏通知给帖子作者
+      console.log('发送收藏通知给用户:', post)
+      await sendFavoriteMessage(post.user.id, post.id, post.content, post.images[0])
+    }
+
+    toast.show(post.isFavorited ? '收藏成功' : '已取消收藏')
   } catch (error) {
     console.error('收藏失败:', error)
     uni.showToast({

@@ -3,119 +3,62 @@ import Layout from '@/layout/index.vue'
 import {formatTime} from '@/utils/time'
 import {useRouter} from 'uni-mini-router'
 import {useToast} from "@/composables/toast"
-import {onLoad} from "@dcloudio/uni-app"
+import {useSystemNotification} from '@/pinia/modules/SystemNotification'
+import {useConversations} from '@/composables/Conversations'
+import {onLoad, onUnload} from "@dcloudio/uni-app"
 
 const router = useRouter()
 const toast = useToast()
+const systemNotification = useSystemNotification()
+const conversationManager = useConversations()
 
-// 通知列表
-const notifications = ref([
-  {
-    id: 1,
-    title: '系统通知',
-    content: '欢迎使用校园通知系统，这里将显示所有与您相关的系统通知。',
-    timestamp: Date.now() - 3600000 * 24 * 3,
-    read: true,
-    type: 'welcome'
-  },
-  {
-    id: 2,
-    title: '活动提醒',
-    content: '您关注的「校园歌手大赛」将于明天下午2点在大礼堂举行，不要错过哦！',
-    timestamp: Date.now() - 3600000 * 12,
-    read: false,
-    type: 'event'
-  },
-  {
-    id: 3,
-    title: '课程变更',
-    content: '您的「高等数学」课程时间已变更为周三上午10:00-11:30，请及时查看。',
-    timestamp: Date.now() - 1800000,
-    read: false,
-    type: 'course'
-  },
-  {
-    id: 4,
-    title: '系统维护',
-    content: '系统将于本周六凌晨2:00-4:00进行例行维护，期间部分功能可能无法使用。',
-    timestamp: Date.now() - 600000,
-    read: false,
-    type: 'system'
-  },
-  {
-    id: 5,
-    title: '成绩发布',
-    content: '您的「数据结构」课程成绩已发布，请前往成绩查询页面查看。',
-    timestamp: Date.now() - 300000,
-    read: false,
-    type: 'grade'
-  }
-])
+// 使用store中的通知列表
+const notifications = computed(() => systemNotification.getSortedNotifications)
+
+// 获取未读通知数量
+const unreadCount = computed(() => systemNotification.getUnreadCount)
+
+// 页面加载时清空未读数量
+onLoad(() => {
+  // 清空系统通知的未读数量
+  conversationManager.clearUnreadCount('system')
+})
+
+// 页面卸载时也清空未读数量
+onUnload(() => {
+  conversationManager.clearUnreadCount('system')
+})
 
 // 标记通知为已读
 const markAsRead = (id) => {
-  const notification = notifications.value.find(item => item.id === id)
-  if (notification) {
-    notification.read = true
-  }
+  systemNotification.markAsRead(id)
 }
 
 // 标记所有通知为已读
 const markAllAsRead = () => {
-  notifications.value.forEach(notification => {
-    notification.read = true
-  })
+  systemNotification.markAllAsRead()
   toast.show('已全部标为已读')
 }
 
 // 删除通知
 const deleteNotification = (id) => {
-  const index = notifications.value.findIndex(item => item.id === id)
-  if (index !== -1) {
-    notifications.value.splice(index, 1)
-    toast.show('已删除通知')
-  }
+  systemNotification.deleteNotification(id)
+  toast.show('已删除通知')
 }
 
-// 获取未读通知数量
-const unreadCount = computed(() => {
-  return notifications.value.filter(item => !item.read).length
-})
-
-// 获取通知图标
+// 获取通知图标（使用store中的方法）
 const getNotificationIcon = (type) => {
-  switch(type) {
-    case 'welcome': return 'home'
-    case 'event': return 'calendar'
-    case 'course': return 'book'
-    case 'system': return 'setting'
-    case 'grade': return 'star'
-    default: return 'notification'
-  }
+  return systemNotification.getNotificationIcon(type)
 }
 
-// 获取通知图标背景色
+// 获取通知图标背景色（使用store中的方法）
 const getNotificationIconBg = (type) => {
-  switch(type) {
-    case 'welcome': return 'bg-green-50'
-    case 'event': return 'bg-blue-50'
-    case 'course': return 'bg-purple-50'
-    case 'system': return 'bg-gray-50'
-    case 'grade': return 'bg-yellow-50'
-    default: return 'bg-blue-50'
-  }
+  return systemNotification.getNotificationIconBg(type)
 }
 
-// 获取通知图标颜色
+// 获取通知图标颜色（使用store中的方法）
 const getNotificationIconColor = (type) => {
-  switch(type) {
-    case 'welcome': return 'color:#22c55e'
-    case 'event': return 'color:#3b82f6'
-    case 'course': return 'color:#8b5cf6'
-    case 'system': return 'color:#6b7280'
-    case 'grade': return 'color:#eab308'
-    default: return 'color:#3b82f6'
-  }
+  return `color:${systemNotification.getNotificationIconColor(type)}`
 }
 
 // 操作菜单状态

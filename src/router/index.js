@@ -35,7 +35,7 @@ router.beforeEach(async (to, from) => {
     // 如果验证完成了，会设置一个缓存，下次进来就不再显示引导页
     const dontShow = uni.getStorageSync('isDontShowGuide')
     if(!dontShow) {
-      router.replace({
+      return router.replace({
         name: 'validation-step1'
       })
     }

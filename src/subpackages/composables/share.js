@@ -1,6 +1,6 @@
 import { ref } from 'vue'
-import shareUtils from '@/utils/share'
-import { qrcodeApi } from '@/api/qrcode'
+import shareUtils from '@/subpackages/utils/share'
+import { qrcodeApi } from '@/subpackages/api/qrcode'
 import { useToast } from '@/composables/toast'
 
 /**

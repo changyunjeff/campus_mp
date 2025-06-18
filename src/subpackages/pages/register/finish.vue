@@ -181,9 +181,9 @@
 
 <script setup>
 import common from "./common.vue";
-import {useRegisterStore} from "@/pinia/modules/register";
+import {useRegisterStore} from "@/subpackages/pinia/register";
 import {useRouter} from "uni-mini-router";
-import {RegisterApi} from "@/api/register";
+import {RegisterApi} from "@/subpackages/api/register";
 import {useToast} from "@/composables/toast";
 
 const validationStore = useRegisterStore()
