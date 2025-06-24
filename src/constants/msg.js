@@ -5,6 +5,7 @@ const MSG_TYPE = {
     CheckOnline : 4,   // 在线状态类消息
     Like : 5,   // 点赞类消息
     Favorite : 6,   // 收藏类消息
+    FetchOfflineMessages : 7,   // 拉取离线消息类消息
 }
 
 const MSG_METHOD = {

@@ -197,7 +197,7 @@ const handleSearch = debounce(async (value) => {
       page_size: 50
     })
     
-    const users = response.users || []
+    const users = response.list || []
     searchResults.value = users.map(user => ({
       id: user.open_id,
       nickname: user.nickname || '未设置昵称',

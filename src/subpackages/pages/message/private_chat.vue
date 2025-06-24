@@ -186,7 +186,7 @@ const messages = computed(() => {
   return privateChatStore.getMessages(targetId.value);
 })
 
-const selfAvatar = computed(() => userStore.userInfo?.avatar?.url || User)
+const selfAvatar = computed(() => userStore.getAvatarUrl() || User)
 
 // 输入组件
 const inputRef = ref(null)
@@ -256,7 +256,8 @@ const handleSend = async () => {
     const shouldSendAnonymous = isAnonymousChat.value ? false : input.anonymous;
 
     // 发送消息（消息的添加和状态管理现在在message composable中处理）
-    await message.sendChat(id, realTargetId, messageContent, shouldSendAnonymous);
+    // 传入当前会话ID，确保消息添加到正确的会话中
+    await message.sendChat(id, realTargetId, messageContent, shouldSendAnonymous, targetId.value);
 
     // 滚动到底部
     scrollToBottom();
@@ -379,6 +380,7 @@ const handleAction = (action) => {
 // 处理重发消息
 const handleResendMessage = async (msg) => {
   try {
+    // 使用当前会话ID进行重发（可能是匿名会话ID）
     await message.resendMessage(targetId.value, msg.id)
     uni.showToast({
       title: '重发成功',

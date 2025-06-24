@@ -59,6 +59,15 @@ async function handleEnter() {
         if (Array.isArray(res.user?.avatar) && res.user.avatar.length > 0) {
           userStore.setAvatar(res.user.avatar[0]);
         }
+        // 设置昵称
+        if (res.user?.nickname) {
+          userStore.setNickname(res.user.nickname);
+        }
+
+        // 设置性别
+        if (res.user?.gender) {
+          userStore.setGender(res.user.gender)
+        }
 
         // 登录成功后直接跳转到社区页面
         router.pushTab('/pages/index/community')

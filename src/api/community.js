@@ -379,4 +379,22 @@ export const CommunityApi = {
     deletePost: (postId) => {
         return del(`/posts/${postId}`)
     },
+
+    /**
+     * 删除评论
+     * @param {string} commentId 评论ID
+     * @returns {Promise<Object>} 删除结果
+     * */
+    deleteComment: (commentId) => {
+        return del(`/comments/${commentId}`)
+    },
+
+    /**
+     * 删除回复
+     * @param {string} replyId 回复ID
+     * @returns {Promise<Object>} 删除结果
+     * */
+    deleteReply: (replyId) => {
+        return del(`/replies/${replyId}`)
+    },
 } 

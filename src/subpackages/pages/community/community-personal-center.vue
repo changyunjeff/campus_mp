@@ -115,57 +115,6 @@ const handleTabChange = throttle(async (tabName) => {
   hasMore.value = pagination[tabName].hasMore
 }, 500)
 
-// 处理点赞
-const handleLike = throttle(async (post) => {
-  try {
-    await CommunityApi.likePost(post.id)
-    post.isLiked = !post.isLiked
-    if (post.isLiked) {
-      post.stats.likes++
-      // 发送点赞通知给帖子作者
-      console.log('发送点赞通知给用户:', post)
-      await sendLikeMessage(post.user.id, post.id, post.content, post.images[0])
-    } else {
-      post.stats.likes--
-    }
-    toast.show(post.isLiked ? '已点赞' : '已取消点赞')
-  } catch (error) {
-    console.error('点赞操作失败:', error)
-    toast.error('操作失败')
-  }
-}, 500)
-
-// 处理收藏
-const handleFavorite = throttle(async (post) => {
-  try {
-    await CommunityApi.favoritePost(post.id)
-    post.isFavorited = !post.isFavorited
-    if (post.isFavorited) {
-      post.stats.favorites++
-      // 发送收藏通知给帖子作者
-      console.log('发送收藏通知给用户:', post)
-      await sendFavoriteMessage(post.user.id, post.id, post.content, post.images[0])
-    } else {
-      post.stats.favorites--
-    }
-    toast.show(post.isFavorited ? '已收藏' : '已取消收藏')
-  } catch (error) {
-    console.error('收藏操作失败:', error)
-    toast.error('操作失败')
-  }
-}, 500)
-
-// 处理评论
-const handleComment = throttle((post) => {
-  router.push({
-    name: 'post_detail',
-    params: {
-      id: post.id,
-      scrollToComments: true
-    }
-  })
-}, 500)
-
 // 查看用户信息
 const viewUserProfile = throttle((userId) => {
   console.log('查看用户资料:', userId)
@@ -379,7 +328,7 @@ onLoad(() => {
                     />
                     <view class="flex flex-col">
                       <text class="text-30rpx font-bold text-#333">{{ post.author.nickname }}</text>
-                      <text class="text-24rpx text-#999">{{ formatTime(post.publishTime) }}</text>
+                      <text class="text-24rpx text-#999">{{ formatTime(post.publish_time) }}</text>
                     </view>
                   </view>
                 </view>

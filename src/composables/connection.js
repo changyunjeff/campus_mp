@@ -1,5 +1,7 @@
 import { socket } from "@/utils/request";
 import { ref, watch } from 'vue';
+import {useUserStore} from "@/pinia/modules/user";
+import {MSG_TYPE} from "@/constants/msg";
 
 let instance = null;
 let socketTask = null;
@@ -54,9 +56,6 @@ export function useConnection() {
             
             // 连接建立后，发送心跳包
             timer = setInterval(sendPing, import.meta.env.VITE_PING_INTERVAL);
-            
-            // 拉取离线消息
-            fetchOfflineMessages();
           },
           onClose: (res) => {
             console.log('WebSocket连接已关闭');
@@ -133,25 +132,6 @@ export function useConnection() {
     const pingFrame = createPingFrame()
     return send(pingFrame)
   }
-  
-  // 拉取离线消息
-  const fetchOfflineMessages = async () => {
-    try {
-      console.log('开始拉取离线消息...');
-      
-      // 发送拉取离线消息的请求
-      const request = {
-        type: 'fetch_offline_messages',
-        timestamp: Date.now()
-      };
-      
-      await send(request);
-      console.log('离线消息拉取请求已发送');
-      
-    } catch (error) {
-      console.error('拉取离线消息失败:', error);
-    }
-  };
 
   /**
    * 创建 ping 帧

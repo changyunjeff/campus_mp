@@ -14,8 +14,8 @@ import {CommunityApi} from '@/api/community'
 import {UserApi} from '@/api/user'
 import {useToast} from "@/composables/toast"
 import {useMessage} from '@/composables/message'
-// 引入地图组件
 import Amap from '@/components/Amap.vue'
+import {useUserStore} from "@/pinia/modules/user";
 
 // 初始化分享功能
 const {
@@ -38,6 +38,8 @@ const {
 
 const toast = useToast()
 const {sendLikeMessage, sendFavoriteMessage} = useMessage()
+
+const userStore = useUserStore()
 
 // 路由
 const router = useRouter()
@@ -652,8 +654,70 @@ const sortMode = [
 
 const currentSortMode = ref(0)
 
-const toggleSortMode = throttle(()=>{
+const toggleSortMode = ()=>{
   currentSortMode.value = (currentSortMode.value+1) % sortMode.length
+}
+
+const popupCommentActions = (_comment)=>{
+  console.debug("comment:", _comment)
+
+  // 如果是自己的评论，则显示删除按钮
+  if (userStore.openid === _comment.user.id){
+    const actions = [{
+      name: '删除评论',
+      callback: async ()=> {
+        try {
+          await CommunityApi.deleteComment(_comment.id)
+          toast.show('删除成功')
+
+          // 从本地数据中删除评论
+          const index = comments.value.findIndex(comment => comment.id === _comment.id)
+          if (index !== -1) {
+            comments.value.splice(index, 1)
+          }
+
+          commentTotal.value--
+
+        } catch (err) {
+          console.error(err)
+          toast.show('删除失败')
+        }
+      },
+    }]
+
+    events.emit('openActionSheet', actions)
+  }
+}
+
+const popupReplyActions = throttle((_reply)=>{
+  console.debug("reply:", _reply)
+  // 如果是自己的回复，则显示删除按钮
+  if (userStore.openid === _reply.user.id){
+
+    const actions = [{
+      name: '删除回复',
+      callback: async ()=> {
+        try {
+          await CommunityApi.deleteReply(_reply.id)
+          toast.show('删除成功')
+
+          // 从本地数据中删除回复
+          const index = allReplies.value.findIndex(reply => reply.id === _reply.id)
+          if (index !== -1) {
+            allReplies.value.splice(index, 1)
+          }
+
+          replyTotal.value--
+
+        } catch (err) {
+          console.error(err)
+          toast.show('删除失败')
+        }
+      },
+    }]
+
+    events.emit('openActionSheet', actions)
+  }
 })
 </script>
 
@@ -692,6 +756,7 @@ const toggleSortMode = throttle(()=>{
               :class="['px-20rpx py-10rpx rounded-full text-26rpx transition-all duration-300',
               post.user.isFollowed ? 'bg-gray-200 text-gray-500' : 'bg-blue-500 text-white']"
               @tap="followUser"
+              v-if="post.user.id !== userStore.openid"
           >
             {{ post.user.isFollowed ? '已关注' : '+ 关注' }}
           </view>
@@ -834,7 +899,7 @@ const toggleSortMode = throttle(()=>{
               @tap="handleCommentReply(comment)"
           >
             <!-- 评论主体 -->
-            <view class="flex">
+            <view class="flex" @longpress.stop="popupCommentActions(comment)">
               <!-- 头像 -->
               <image
                   :src="comment.user.avatar"
@@ -1006,7 +1071,7 @@ const toggleSortMode = throttle(()=>{
               :key="reply.id"
               class="mb-30rpx pb-20rpx border-b border-gray-100 last:border-b-0"
           >
-            <view class="flex">
+            <view class="flex" @longpress="popupReplyActions(reply)">
               <!-- 头像 -->
               <image
                   :src="reply.user.avatar"

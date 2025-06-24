@@ -61,23 +61,40 @@ export function useMessage() {
       console.debug("if statement: ", !!msg.original_to && msg.status)
       if (!!msg.original_to && msg.status) {
         // 这是状态反馈消息，更新对应消息的状态
-        // 使用 original_to 字段确定原始接收者，如果没有则使用当前逻辑
+        // 使用 original_to 字段确定原始接收者
         const targetUserID = msg.original_to;
+        
+        // 确定应该更新状态的会话ID
+        // 需要查找包含该消息的会话（可能是普通会话或匿名会话）
+        let targetConversationId = targetUserID;
+        
+        // 检查是否是匿名消息的状态反馈
+        if (msg.anonymous) {
+          // 对于匿名消息，需要查找正确的匿名会话
+          const anonymousConversationId = `${targetUserID}_anonymous`;
+          const anonymousConversation = privateChat.getConversation(anonymousConversationId);
+          
+          // 如果匿名会话存在且包含该消息，使用匿名会话ID
+          if (anonymousConversation && anonymousConversation.messages.some(m => m.id === msg.id)) {
+            targetConversationId = anonymousConversationId;
+          }
+        }
 
         console.log('收到状态反馈消息:', {
           messageId: msg.id,
           targetUser: targetUserID,
+          targetConversationId: targetConversationId,
           status: msg.status,
           isAnonymous: msg.anonymous
         });
 
         if (msg.status === 'success') {
-          privateChat.updateMessageStatus(targetUserID, msg.id, MESSAGE_STATUS.SUCCESS);
+          privateChat.updateMessageStatus(targetConversationId, msg.id, MESSAGE_STATUS.SUCCESS);
         } else if (msg.status === 'failed') {
-          privateChat.updateMessageStatus(targetUserID, msg.id, MESSAGE_STATUS.FAILED);
+          privateChat.updateMessageStatus(targetConversationId, msg.id, MESSAGE_STATUS.FAILED);
         } else if (msg.status === 'blocked') {
           // 新增：处理消息被屏蔽状态
-          privateChat.updateMessageStatus(targetUserID, msg.id, MESSAGE_STATUS.BLOCKED);
+          privateChat.updateMessageStatus(targetConversationId, msg.id, MESSAGE_STATUS.BLOCKED);
         }
         return;
       }
@@ -302,12 +319,13 @@ export function useMessage() {
   /**
    * sendChat 发送聊天消息
    * @param {string} id - 消息ID
-   * @param {string} userID - 接收用户ID
+   * @param {string} userID - 接收用户ID（真实用户ID）
    * @param {string} content - 消息内容
    * @param {boolean} anonymous - 是否匿名发送消息
+   * @param {string} conversationId - 会话ID（可能是匿名会话ID）
    * @returns {Promise<Message>} 发送的消息对象
    */
-  const sendChat = async (id, userID, content, anonymous) => {
+  const sendChat = async (id, userID, content, anonymous, conversationId = null) => {
     // 参数验证
     if (!userID?.trim()) {
       throw new Error('请输入对方的openid');
@@ -338,14 +356,20 @@ export function useMessage() {
       isSelf: true,
       useAnonymousAvatar: anonymous,
     };
-    privateChat.addMessage(userID, messageForUI);
+    
+    // 确定要添加消息的会话ID
+    // 如果提供了conversationId，使用它；否则使用userID
+    const targetConversationId = conversationId || userID;
+    console.log(`🔍 发送消息到会话: ${targetConversationId}, 实际接收者: ${userID}`);
+    
+    privateChat.addMessage(targetConversationId, messageForUI);
     
     // 获取接收者用户信息（如果还没有的话）
-    const conversation = privateChat.getConversation(userID);
-    if (!conversation?.userInfo) {
+    const conversation = privateChat.getConversation(targetConversationId);
+    if (!conversation?.userInfo && !targetConversationId.includes('_anonymous')) {
       console.log('发送消息时获取接收者用户信息:', userID);
       // 异步获取，不阻塞发送流程
-      userInfo.setConversationUserInfo(userID).catch(err => {
+      userInfo.setConversationUserInfo(targetConversationId).catch(err => {
         console.error('获取接收者用户信息失败:', err);
       });
     }
@@ -359,7 +383,7 @@ export function useMessage() {
       
       // 网络发送失败，直接更新状态为失败
       msg.status = MESSAGE_STATUS.FAILED;
-      privateChat.updateMessageStatus(userID, id, MESSAGE_STATUS.FAILED);
+      privateChat.updateMessageStatus(targetConversationId, id, MESSAGE_STATUS.FAILED);
       
       throw err;
     }
@@ -367,12 +391,12 @@ export function useMessage() {
 
   /**
    * 重新发送失败的消息
-   * @param {string} userID - 接收用户ID
+   * @param {string} conversationId - 会话ID（可能是匿名会话ID）
    * @param {string} messageId - 消息ID
    * @returns {Promise<void>}
    */
-  const resendMessage = async (userID, messageId) => {
-    const messages = privateChat.getMessages(userID);
+  const resendMessage = async (conversationId, messageId) => {
+    const messages = privateChat.getMessages(conversationId);
     const message = messages.find(msg => msg.id === messageId);
     
     if (!message || (message.status !== MESSAGE_STATUS.FAILED && message.status !== MESSAGE_STATUS.BLOCKED)) {
@@ -380,7 +404,7 @@ export function useMessage() {
     }
 
     // 更新状态为发送中
-    privateChat.updateMessageStatus(userID, messageId, MESSAGE_STATUS.SENDING);
+    privateChat.updateMessageStatus(conversationId, messageId, MESSAGE_STATUS.SENDING);
 
     try {
       // 重新发送消息，移除状态字段让服务器重新处理
@@ -393,7 +417,7 @@ export function useMessage() {
       
     } catch (err) {
       // 网络发送失败，更新状态为失败
-      privateChat.updateMessageStatus(userID, messageId, MESSAGE_STATUS.FAILED);
+      privateChat.updateMessageStatus(conversationId, messageId, MESSAGE_STATUS.FAILED);
       throw err;
     }
   };

@@ -13,12 +13,36 @@ export const useUserStore = defineStore('user', () => {
         type: ''
     })
     const nickname = ref('')
+    const gender = ref(0)
 
     const setNickname = (_nickname) => {
         nickname.value = _nickname
     }
     const getNickname = () => {
         return nickname.value || '未知用户'
+    }
+
+    /**
+     * setGender
+     * @param {number} _gender 1:男 2:女
+     * */
+    const setGender = (_gender) => {
+        gender.value = _gender
+    }
+
+    const getGender = () => {
+        return gender.value
+    }
+
+    const genderDisplayText = ()=>{
+        switch (gender.value) {
+            case 1:
+                return '男'
+            case 2:
+                return '女'
+            default:
+                return '未知'
+        }
     }
 
     /** setAvatar 设置头像
@@ -76,17 +100,21 @@ export const useUserStore = defineStore('user', () => {
         openid,
         avatar,
         nickname,
+        gender,
         login,
         setNickname,
         getNickname,
         setAvatar,
         getAvatarUrl,
         getAvatarObjectKey,
+        setGender,
+        getGender,
+        genderDisplayText,
     }
 }, {
     persist: {
         key: 'user',
-        paths: ['openid', 'avatar', 'nickname'],
+        paths: ['openid', 'avatar', 'nickname', 'gender'],
         storage: {
             getItem: uni.getStorageSync,
             setItem: uni.setStorageSync,
