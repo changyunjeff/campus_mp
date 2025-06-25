@@ -85,6 +85,8 @@ export const useUserStore = defineStore('user', () => {
             openid.value = res.openid
             // 连接WebSocket
             const connection = useConnection()
+            // 启用重连机制
+            connection.enableReconnect()
             await connection.connect()
             // 注册消息处理函数
             const message = useMessage()

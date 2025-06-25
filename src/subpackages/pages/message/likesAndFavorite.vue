@@ -112,6 +112,7 @@ const handleLongpress = (messageItem) => {
               :src="messageItem?.avatar || User"
               class="user-avatar"
               @tap="goToUser(messageItem?.from)"
+              mode="aspectFill"
             />
             
             <!-- 消息内容 -->

@@ -4,7 +4,10 @@ import { usePrivateChat } from "@/pinia/modules/PrivateChat";
 import { useUserInfo } from "./user-info";
 import { MSG_TYPE, MSG_METHOD } from "@/constants/msg";
 import { generateID } from "@/utils/id";
+import User from "/static/images/user.png"
 import Anonymous from "/static/images/anonymous.png"
+import AnonymousMale from "/static/images/anonymous_male.png"
+import AnonymousFemale from "/static/images/anonymous_female.png"
 import {useLikeAndFavorite} from "@/pinia/modules/LikeAndFavorite";
 import {useNewFans} from "@/pinia/modules/NewFans";
 import {useCommentAndMention} from "@/pinia/modules/CommentAndMention";
@@ -55,6 +58,8 @@ export function useMessage() {
         to: msg.to,
         anonymous: msg.anonymous,
         avatar: msg.avatar,
+        nickname: msg.nickname,
+        gender: msg.gender,
         currentUserOpenid: userStore.openid,
         hasOriginalTo: !!msg.original_to,
         hasStatus: !!msg.status
@@ -83,14 +88,6 @@ export function useMessage() {
           }
         }
 
-        console.log('收到状态反馈消息:', {
-          messageId: msg.id,
-          targetUser: targetUserID,
-          targetConversationId: targetConversationId,
-          status: msg.status,
-          isAnonymous: msg.anonymous
-        });
-
         if (msg.status === 'success') {
           privateChat.updateMessageStatus(targetConversationId, msg.id, MESSAGE_STATUS.SUCCESS);
         } else if (msg.status === 'failed') {
@@ -103,13 +100,6 @@ export function useMessage() {
       }
 
       const isSelf = msg.from === userStore.openid;
-      
-      console.log('🔍 消息身份判断:', {
-        msgFrom: msg.from,
-        userStoreOpenid: userStore.openid,
-        isSelf: isSelf,
-        anonymous: msg.anonymous
-      });
 
       const messageWithStatus = {
         ...msg,
@@ -118,21 +108,8 @@ export function useMessage() {
         useAnonymousAvatar: msg.anonymous && !isSelf // 只有接收方看到匿名头像
       };
 
-      console.log('🔍 消息处理结果:', {
-        originalMsg: msg,
-        processedMsg: messageWithStatus,
-        isAnonymous: msg.anonymous,
-        isSelf: isSelf,
-        willAddToConversation: msg.from
-      });
-
       // 根据消息是否匿名决定会话ID
       let conversationId = msg.from;
-      console.log(`🔍 会话ID判断条件:`, {
-        isAnonymous: msg.anonymous,
-        isSelf: isSelf,
-        shouldCreateAnonymousChat: msg.anonymous && !isSelf
-      });
       
       if (msg.anonymous && !isSelf) {
         // 接收到匿名消息时，创建匿名会话
@@ -155,8 +132,8 @@ export function useMessage() {
           console.log(`🎭 为匿名会话设置特殊信息: ${conversationId}`);
 
           privateChat.setUserInfo(conversationId, {
-            nickname: '匿名用户',
-            avatar: { url: Anonymous },
+            nickname: msg.anonymous_nickname,
+            gender: msg.gender,
             isAnonymous: true,
             realUserId: msg.from // 保存真实用户ID用于后端处理
           });
@@ -168,7 +145,13 @@ export function useMessage() {
       // 只有非匿名会话才获取真实用户信息
       if (!conversation?.userInfo && !(msg.anonymous && !isSelf)) {
         console.log('收到消息时获取发送者用户信息:', msg.from);
-        await userInfo.setConversationUserInfo(conversationId);
+        await userInfo.setConversationUserInfo(conversationId, {
+          userId: msg.from,
+          nickname: msg.nickname,
+          avatar: msg.avatar || User,
+          gender: msg.gender,
+          isAnonymous: false,
+        });
       }
 
       console.log(`📨 添加消息到会话: ${conversationId}，消息内容: ${messageWithStatus.content}`);
@@ -324,15 +307,22 @@ export function useMessage() {
     }
 
     try {
-      // 检查连接状态
+      // 检查连接状态，如果未连接则尝试连接
       if (!connect.connected.value) {
-        throw new Error('WebSocket连接未建立');
+        console.log('WebSocket连接断开，尝试重新连接...');
+        await connect.connect();
       }
       
       await connect.send(msg);
       console.log('发送检测在线消息成功', msg);
     } catch (err) {
       console.error('发送检测在线消息失败:', err);
+      
+      // 如果是连接相关错误，可能触发重连
+      if (!connect.connected.value && connect.shouldReconnect?.value) {
+        console.log('连接已断开，重连机制将自动处理');
+      }
+      
       throw err;
     }
   }
@@ -345,9 +335,11 @@ export function useMessage() {
    * @param {boolean} anonymous - 是否匿名发送消息
    * @param {string} conversationId - 会话ID（可能是匿名会话ID）
    * @param {string} avatar - 发送者的头像url
+   * @param {string} nickname - 发送者的昵称
+   * @param {number} gender - 发送者的性别
    * @returns {Promise<Message>} 发送的消息对象
    */
-  const sendChat = async (id, userID, content, anonymous, conversationId = null, avatar='') => {
+  const sendChat = async (id, userID, content, anonymous, conversationId = null, avatar='', nickname='', gender=0) => {
     // 参数验证
     if (!userID?.trim()) {
       throw new Error('请输入对方的openid');
@@ -371,6 +363,9 @@ export function useMessage() {
       status: MESSAGE_STATUS.SENDING,
       anonymous: anonymous,
       avatar: avatar,
+      nickname: nickname,
+      anonymous_nickname: '大二计算机男生',
+      gender: gender,
     };
 
     // 先添加到UI显示（发送中状态）
@@ -398,11 +393,22 @@ export function useMessage() {
     }
 
     try {
+      // 检查连接状态
+      if (!connect.connected.value) {
+        console.log('WebSocket连接断开，尝试重新连接...');
+        await connect.connect();
+      }
+      
       // 发送消息到服务器
       await connect.send(msg);
       console.log('消息已发送到服务器，等待处理结果反馈...');
     } catch (err) {
       console.error('发送消息失败:', err.message);
+      
+      // 如果是连接相关错误，可能触发重连
+      if (!connect.connected.value && connect.shouldReconnect?.value) {
+        console.log('连接已断开，重连机制将自动处理');
+      }
       
       // 网络发送失败，直接更新状态为失败
       msg.status = MESSAGE_STATUS.FAILED;
@@ -430,6 +436,12 @@ export function useMessage() {
     privateChat.updateMessageStatus(conversationId, messageId, MESSAGE_STATUS.SENDING);
 
     try {
+      // 检查连接状态
+      if (!connect.connected.value) {
+        console.log('WebSocket连接断开，尝试重新连接...');
+        await connect.connect();
+      }
+      
       // 重新发送消息，移除状态字段让服务器重新处理
       const { status, ...messageToSend } = message;
       await connect.send(messageToSend);
@@ -439,6 +451,11 @@ export function useMessage() {
       // 服务器会返回处理结果，在消息处理器中更新状态
       
     } catch (err) {
+      // 如果是连接相关错误，可能触发重连
+      if (!connect.connected.value && connect.shouldReconnect?.value) {
+        console.log('连接已断开，重连机制将自动处理');
+      }
+      
       // 网络发送失败，更新状态为失败
       privateChat.updateMessageStatus(conversationId, messageId, MESSAGE_STATUS.FAILED);
       throw err;

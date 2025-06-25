@@ -113,9 +113,9 @@ export const usePrivateChat = defineStore('private-chat', () => {
     }
   }
 
-  const setUserInfo = (userId, userInfo) => {
+  const setUserInfo = (userId, userInfo={}) => {
     if (conversations.value[userId]) {
-      const conv = { ...conversations.value[userId], userInfo }
+      const conv = { ...conversations.value[userId], ...userInfo }
       conversations.value[userId] = conv
     }
   }

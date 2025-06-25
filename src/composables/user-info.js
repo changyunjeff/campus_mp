@@ -48,11 +48,7 @@ export function useUserInfo() {
    * @param {string} userId - 用户ID
    * @param {Object} userInfo - 用户信息，如果不传则自动获取
    */
-  const setConversationUserInfo = async (userId, userInfo = null) => {
-    if (!userInfo) {
-      userInfo = await fetchUserInfo(userId);
-    }
-    
+  const setConversationUserInfo = async (userId, userInfo = {}) => {
     if (userInfo) {
       privateChatStore.setUserInfo(userId, userInfo);
       console.log(`设置会话用户信息: ${userId}`, userInfo.nickname);

@@ -143,12 +143,13 @@ const unreadOfCommentAndMention = computed(()=>commentAndMentionStore.getTotalUn
       >
         <!-- 头像 -->
         <div class="relative mr-3">
-          <img
+          <image
               v-if="item.type !== 'system'"
               :src="item.avatar"
               class="w-12 h-12 rounded-full object-cover"
               alt="avatar"
-          >
+              mode="aspectFill"
+          ></image>
           <div
               v-else
               class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center"

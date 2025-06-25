@@ -121,27 +121,16 @@ export function useConversations()  {
         const privateChatList = privateChatConversations.map(conv => {
             // 同步获取缓存的聊天设置
             const chatSettingsData = getChatSettingsSync(conv.realUserId || conv.userId);
-
-            const gender = conv.userInfo.gender;
-            console.debug("Conversation.js 获取性别:", gender)
-            let avatar = '';
-            switch (gender) {
-                case 1:
-                    avatar = AnonymousMale;
-                    break;
-                case 2:
-                    avatar = AnonymousFemale;
-                    break;
-                default:
-                    avatar = Anonymous;
-                    break;
+            const avatar = {
+                0: Anonymous,
+                1: AnonymousMale,
+                2: AnonymousFemale
             }
-            
             const result = {
                 ...conv,
                 type: 'private',
-                displayName: conv.isAnonymous ? '匿名用户' : (conv.userInfo?.nickname || `用户${conv.userId}`),
-                displayAvatar: conv.isAnonymous ? avatar : (conv.userInfo?.avatar?.url || User),
+                displayName: conv.isAnonymous ? conv.anonymous_nickname : (conv.nickname || `用户${conv.userId}`),
+                displayAvatar: conv.isAnonymous ? avatar[conv.gender] || Anonymous : conv.avatar,
                 displayLastMessage: conv.lastMessage?.content || '',
                 displayTime: conv.lastMessageTime,
                 unreadCount: chatSettingsData.isMuted ? 0 : conv.unreadCount, // 免打扰时不显示未读数

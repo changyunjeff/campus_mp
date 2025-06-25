@@ -1,7 +1,8 @@
 <script setup>
-import { onLaunch } from '@dcloudio/uni-app'
+import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
 import { useGlobalStore } from '@/pinia/modules/global';
 import { useSchoolStore } from '@/pinia/modules/school';
+import { useConnection } from '@/composables/connection';
 
 const globalStore = useGlobalStore();
 
@@ -11,6 +12,30 @@ onLaunch(() => {
   
   // 检查学校选择状态
   checkSchoolSelection();
+});
+
+// 应用显示时，确保重连机制启用
+onShow(() => {
+  console.log('📱 应用显示，检查WebSocket连接状态');
+  const connection = useConnection();
+  
+  // 如果已经有实例，启用重连机制
+  if (connection.connected || connection.reconnecting) {
+    connection.enableReconnect();
+    console.log('🔄 WebSocket重连机制已启用');
+  }
+});
+
+// 应用隐藏时，停止重连但不断开连接
+onHide(() => {
+  console.log('📱 应用隐藏，暂停WebSocket重连机制');
+  const connection = useConnection();
+  
+  // 暂时停止重连，但保持连接
+  if (connection.stopReconnect) {
+    connection.stopReconnect();
+    console.log('⏸️ WebSocket重连机制已暂停');
+  }
 });
 
 // 检查学校选择状态

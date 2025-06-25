@@ -17,6 +17,15 @@ export function useConnection() {
 
   const connected = ref(false);
   const handlers = ref({});
+  // 重连相关状态
+  const reconnecting = ref(false);
+  const shouldReconnect = ref(true); // 是否应该重连（用户主动断开时设为false）
+  
+  // 重连定时器和配置
+  let reconnectTimer = null;
+  let heartbeatTimer = null;
+  const RECONNECT_INTERVAL = 10000; // 10秒重连间隔
+  let reconnectAttempts = 0;
 
   const send = async (data) => {
     // 如果连接未建立，先建立连接
@@ -43,29 +52,56 @@ export function useConnection() {
   }
 
   const connect = async () => {
-    if (connected.value) {
+    if (connected.value || reconnecting.value) {
+      console.log('WebSocket已连接或正在重连中，跳过连接请求');
       return; 
     }
-    let timer;
+
     console.group("===============================》开始建立WebSocket连接")
+    reconnecting.value = true;
+    
     try {
         socketTask = await socket({
           onOpen: (res) => {
             console.log('WebSocket连接已打开');
             connected.value = true;
+            reconnecting.value = false;
+            reconnectAttempts = 0; // 重置重连次数
+            
+            // 清除重连定时器
+            if (reconnectTimer) {
+              clearTimeout(reconnectTimer);
+              reconnectTimer = null;
+            }
             
             // 连接建立后，发送心跳包
-            timer = setInterval(sendPing, import.meta.env.VITE_PING_INTERVAL);
+            heartbeatTimer = setInterval(sendPing, import.meta.env.VITE_PING_INTERVAL);
           },
           onClose: (res) => {
-            console.log('WebSocket连接已关闭');
+            console.log('WebSocket连接已关闭', res);
             connected.value = false;
+            reconnecting.value = false;
+            
             // 断开连接后取消心跳包
-            clearInterval(timer)
+            if (heartbeatTimer) {
+              clearInterval(heartbeatTimer);
+              heartbeatTimer = null;
+            }
+            
+            // 如果应该重连且不是用户主动关闭，则启动重连
+            if (shouldReconnect.value && res.code !== 1000) {
+              startReconnect();
+            }
           },
           onError: (err) => {
             console.log('WebSocket连接发生错误', err);
             connected.value = false;
+            reconnecting.value = false;
+            
+            // 连接错误时也启动重连
+            if (shouldReconnect.value) {
+              startReconnect();
+            }
           },
           onMessage: (res) => {
             console.log('收到服务器消息：', res);
@@ -86,8 +122,45 @@ export function useConnection() {
         });
     } catch (error) {
         console.error('WebSocket连接失败', error);
+        reconnecting.value = false;
+        
+        // 连接失败时启动重连
+        if (shouldReconnect.value) {
+          startReconnect();
+        }
     } finally {
       console.groupEnd()
+    }
+  }
+
+  // 启动重连机制
+  const startReconnect = () => {
+    if (reconnectTimer || !shouldReconnect.value) {
+      return; // 已有重连定时器或不应该重连
+    }
+
+    reconnectAttempts++;
+    console.log(`WebSocket连接断开，将在${RECONNECT_INTERVAL/1000}秒后进行第${reconnectAttempts}次重连...`);
+    
+    reconnectTimer = setTimeout(async () => {
+      if (!connected.value && shouldReconnect.value) {
+        console.log(`开始第${reconnectAttempts}次重连...`);
+        try {
+          await connect();
+        } catch (error) {
+          console.error(`第${reconnectAttempts}次重连失败:`, error);
+        }
+      }
+      reconnectTimer = null;
+    }, RECONNECT_INTERVAL);
+  }
+
+  // 停止重连
+  const stopReconnect = () => {
+    shouldReconnect.value = false;
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
     }
   }
 
@@ -95,17 +168,27 @@ export function useConnection() {
     if (!connected.value || !socketTask) {
       return;
     }
+    
+    // 用户主动断开，停止重连机制
+    stopReconnect();
+    
     // 关闭WebSocket连接
     socketTask.close({
       code: 1000,
       reason: '用户主动关闭连接',
       success: () => {
         connected.value = false;
+        console.log('WebSocket连接已主动关闭');
       },
       fail: (err) => {
         console.error('关闭WebSocket连接失败', err);
       }
     });
+  }
+
+  // 重新启用重连机制（用于登录后重新开启）
+  const enableReconnect = () => {
+    shouldReconnect.value = true;
   }
 
   // 注册事件处理程序
@@ -129,8 +212,19 @@ export function useConnection() {
   })
 
   async function sendPing() {
-    const pingFrame = createPingFrame()
-    return send(pingFrame)
+    try {
+      const pingFrame = createPingFrame()
+      return send(pingFrame)
+    } catch (error) {
+      console.error('发送心跳包失败:', error);
+      // 心跳包发送失败，可能连接已断开
+      if (connected.value) {
+        connected.value = false;
+        if (shouldReconnect.value) {
+          startReconnect();
+        }
+      }
+    }
   }
 
   /**
@@ -151,12 +245,15 @@ export function useConnection() {
 
   instance = {
     connected,
+    reconnecting,
     handlers,
     connect,
     disconnect,
+    enableReconnect,
+    stopReconnect,
     registerHandler,
     unregisterHandler,
     send,
   }
   return instance;
-}
+} 

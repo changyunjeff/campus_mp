@@ -58,6 +58,11 @@ const fetchUserInfo = async () => {
     const res = await UserApi.getUserProfile(targetId.value)
     console.debug('用户信息:', res)
     userInfo.value = res
+    settings.value = {
+      doNotDisturb: res.chat_settings.do_not_disturb,
+      pinChat: res.chat_settings.set_top,
+      blockMessages: res.chat_settings.blocking
+    }
   } catch (e) {
     toast.error('获取用户信息失败')
     console.error(e)
@@ -229,13 +234,13 @@ const toggleFollow = async () => {
   if (!targetId.value) return
   
   try {
-    if (userInfo.value.isFollowing) {
+    if (userInfo.value.is_following) {
       await UserApi.unfollowUser(targetId.value)
-      userInfo.value.isFollowing = false
+      userInfo.value.is_following = false
       toast.show('已取消关注')
     } else {
       await UserApi.followUser(targetId.value)
-      userInfo.value.isFollowing = true
+      userInfo.value.is_following = true
       toast.show('关注成功')
     }
   } catch (e) {
@@ -265,8 +270,6 @@ const clearChatHistory = () => {
     }
   })
 }
-
-const test = ref(false)
 </script>
 
 <template>
@@ -274,11 +277,11 @@ const test = ref(false)
     <template #center></template>
     <div class="p-4 flex flex-col items-center mb-3">
       <div class="mb-4 relative">
-        <img :src="userInfo.avatar" alt="avatar" class="w-20 h-20 rounded-full object-cover border-2 border-gray-100" />
+        <image :src="userInfo.avatar[0]?.url" alt="avatar" class="w-20 h-20 rounded-full object-cover border-2 border-gray-100" mode="aspectFill" />
       </div>
       <div class="mb-4 text-lg font-medium">{{ userInfo.nickname }}</div>
-      <wd-button :type="userInfo.isFollowing ? 'info' : 'error'" size="medium" custom-class="px-8 py-2 rounded-full text-sm" @click="toggleFollow">
-        {{ userInfo.isFollowing ? '已关注' : '关注' }}
+      <wd-button :type="userInfo.is_following ? 'info' : 'error'" size="medium" custom-class="px-8 py-2 rounded-full text-sm" @click="toggleFollow">
+        {{ userInfo.is_following ? '已关注' : '关注' }}
       </wd-button>
     </div>
 

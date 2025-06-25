@@ -13,7 +13,10 @@ import GoodsPreview from '@/subpackages/components/goods/goods-preview.vue'
 import {UserApi} from "@/api/user"
 import User from "/static/images/user.png"
 import Anonymous from "/static/images/anonymous.png"
+import AnonymousMale from "/static/images/anonymous_male.png"
+import AnonymousFemale from "/static/images/anonymous_female.png"
 import {useConversations} from "@/composables/Conversations";
+import {useToast} from "@/composables/toast";
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -21,6 +24,7 @@ const privateChatStore = usePrivateChat()
 const message = useMessage()
 const errorHandler = useErrorHandler()
 const conversationManager = useConversations()
+const toast = useToast()
 
 // 路由参数
 const targetId = ref('')
@@ -67,13 +71,25 @@ onLoad(async (options) => {
     const realUserId = isAnonymousChat.value ? targetId.value.replace('_anonymous', '') : targetId.value
     
     try {
+      const conversation = privateChatStore.getConversation(targetId.value)
+      console.debug('conversation:', conversation)
       // 匿名会话不获取用户信息，直接使用匿名信息
       if (!isAnonymousChat.value) {
-        await fetchUserInfo()
-      } else {
         userInfo.value = {
-          nickname: '匿名用户',
-          avatar: Anonymous,
+          nickname: conversation.lastMessage?.nickname || conversation.nickname,
+          avatar: conversation.lastMessage?.avatar || conversation.avatar || User,
+          openid: targetId.value
+        }
+      } else {
+        const avatars = {
+          0: Anonymous,
+          1: AnonymousMale,
+          2: AnonymousFemale,
+        }
+        const gender = conversation.lastMessage?.gender || conversation.gender || 0
+        userInfo.value = {
+          nickname: conversation.lastMessage?.anonymous_nickname || conversation.nickname,
+          avatar: avatars[gender] || Anonymous,
           openid: targetId.value
         }
       }
@@ -208,20 +224,6 @@ const input = reactive({
 
 const toView = ref('')
 
-// 获取用户信息
-const fetchUserInfo = async () => {
-  // 获取用户信息
-  try{
-    const res = await UserApi.getUserProfile(targetId.value)
-    console.debug('res:', res)
-    userInfo.value.openid = targetId.value
-    userInfo.value.nickname = res.nickname
-    userInfo.value.avatar = res.avatar[0]?.url || User
-  } catch (err) {
-    console.error('获取用户信息失败:', err.message)
-  }
-}
-
 // 获取历史消息（现在由store管理，这个方法简化）
 const fetchHistoryMessages = async () => {
   if (!targetId.value) return;
@@ -257,7 +259,7 @@ const handleSend = async () => {
 
     // 发送消息（消息的添加和状态管理现在在message composable中处理）
     // 传入当前会话ID，确保消息添加到正确的会话中
-    await message.sendChat(id, realTargetId, messageContent, shouldSendAnonymous, targetId.value, userStore.getAvatarUrl());
+    await message.sendChat(id, realTargetId, messageContent, shouldSendAnonymous, targetId.value, userStore.getAvatarUrl(), userStore.nickname, userStore.getGender());
 
     // 滚动到底部
     scrollToBottom();
@@ -290,13 +292,21 @@ const gotoUser = (isSelf) => {
   if (isSelf || !userInfo.value.openid) {
     return
   }
+  if (isAnonymousChat.value) {
+    toast.show("这个人很神秘，无法查看TA的主页")
+    return;
+  }
   router.push({
-    path: '/pages/profile/other',
+    name: 'other_index',
     params: {id: userInfo.value.openid}
   })
 }
 
 const gotoMore = () => {
+  if (isAnonymousChat.value) {
+    toast.show("这个人很神秘，无法查看TA的主页")
+    return;
+  }
   router.push({
     name: 'private_chat_more',
     params: {id: userInfo.value.openid}
@@ -404,12 +414,12 @@ const handleTapOutside = () => {
 
 // 获取用户头像
 const userAvatarUrl = (msg) => {
+  if (msg.isSelf) {
+    return selfAvatar
+  }
   // 使用匿名头像
   if (msg.useAnonymousAvatar) {
     return conversationItem.avatar || Anonymous
-  }
-  if (msg.isSelf) {
-    return selfAvatar
   }
   return msg.avatar || userInfo.value.avatar || User
 }
@@ -454,6 +464,7 @@ const handleAnonymousChange = (isAnonymous) => {
                 :class="['message-item', msg.isSelf ? 'self' : 'other']" :id="`msg-${index}`">
             <image :src="userAvatarUrl(msg)" class="avatar"
                    :class="{ 'offline': !msg.isSelf && !isOnline }"
+                   mode="aspectFill"
                    @tap.stop="msg.isSelf ? '' : gotoUser(msg.isSelf)">
             </image>
             <view class="message-content">
