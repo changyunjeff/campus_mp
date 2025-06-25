@@ -285,7 +285,7 @@ onMounted(() => {
       <text class="text-lg font-medium text-gray-800">活动大厅</text>
     </template>
     
-    <view class="min-h-screen bg-gray-50">
+    <view class="min-h-full bg-gray-50">
       <!-- 搜索和房间号区域 -->
       <view class="bg-white px-4 py-3 mb-3">
         <!-- 搜索框 -->

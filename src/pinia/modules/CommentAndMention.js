@@ -201,4 +201,13 @@ export const useCommentAndMention = defineStore('commentAndMention', () => {
     replyComment,
     batchDeleteMessages
   }
+}, {
+  persist: {
+    key: 'commentAndMention',
+    paths: ['commentMessages', 'mentionMessages'],
+    storage: {
+      getItem: uni.getStorageSync,
+      setItem: uni.setStorageSync,
+    }
+  }
 })

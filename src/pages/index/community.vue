@@ -101,6 +101,7 @@ const loadPosts = async (refresh = false) => {
     
     // 判断是否还有更多数据
     hasMore.value = posts.value.length < total.value
+    console.debug(`当前的hasMore值为${hasMore.value}, length of posts: ${posts.value.length}, total: ${total.value}`)
     
   } catch (error) {
     console.error('加载帖子失败:', error)

@@ -257,7 +257,7 @@ const handleSend = async () => {
 
     // 发送消息（消息的添加和状态管理现在在message composable中处理）
     // 传入当前会话ID，确保消息添加到正确的会话中
-    await message.sendChat(id, realTargetId, messageContent, shouldSendAnonymous, targetId.value);
+    await message.sendChat(id, realTargetId, messageContent, shouldSendAnonymous, targetId.value, userStore.getAvatarUrl());
 
     // 滚动到底部
     scrollToBottom();
@@ -411,7 +411,7 @@ const userAvatarUrl = (msg) => {
   if (msg.isSelf) {
     return selfAvatar
   }
-  return userInfo.value.avatar || User
+  return msg.avatar || userInfo.value.avatar || User
 }
 
 const placeholder = computed(() => {

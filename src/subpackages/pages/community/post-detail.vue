@@ -37,7 +37,7 @@ const {
 } = useShare()
 
 const toast = useToast()
-const {sendLikeMessage, sendFavoriteMessage} = useMessage()
+const {sendLikeMessage, sendFavoriteMessage, sendCommentMessage, sendMentionMessage, sendFollowMessage} = useMessage()
 
 const userStore = useUserStore()
 
@@ -382,6 +382,66 @@ const cancelReplyComment = () => {
   replyingToReply.value = null
 }
 
+// 检测并发送@消息
+const detectAndSendMentions = async (content, commentId, contentType = 'community') => {
+  // 检测@用户的正则表达式
+  const mentionRegex = /@([^\s@]+)/g
+  const mentions = []
+  let match
+
+  while ((match = mentionRegex.exec(content)) !== null) {
+    const mentionedNickname = match[1]
+    mentions.push(mentionedNickname)
+  }
+
+  // 如果有@用户，发送@消息
+  if (mentions.length > 0) {
+    for (const nickname of mentions) {
+      try {
+        // 这里需要根据昵称找到用户ID，实际项目中可能需要调用API
+        // 为了演示，这里假设昵称就是用户ID或者有用户映射
+        // 实际实现中可能需要维护一个用户映射表或调用搜索API
+        
+        // 临时解决方案：从评论数据中查找对应的用户
+        let mentionedUserId = null
+        
+        // 在当前评论列表中查找匹配的用户
+        for (const comment of comments.value) {
+          if (comment.user.nickname === nickname) {
+            mentionedUserId = comment.user.id
+            break
+          }
+          // 也检查回复中的用户
+          if (comment.hotReplies) {
+            for (const reply of comment.hotReplies) {
+              if (reply.user.nickname === nickname) {
+                mentionedUserId = reply.user.id
+                break
+              }
+            }
+          }
+        }
+        
+        // 如果找到了被@的用户，发送@消息
+        if (mentionedUserId && mentionedUserId !== userStore.openid) {
+          await sendMentionMessage(
+            mentionedUserId,
+            post.id,
+            contentType,
+            content,
+            post.content.substring(0, 50),
+            post.images?.[0] || ''
+          )
+          console.log(`@消息已发送给用户: ${nickname}`)
+        }
+      } catch (err) {
+        console.error(`发送@消息失败 (${nickname}):`, err)
+        // 不阻断评论流程，静默处理消息发送失败
+      }
+    }
+  }
+}
+
 // 发送评论或回复
 const handleSend = async (text) => {
   if (!text.trim() || isSubmitting.value) return
@@ -415,6 +475,27 @@ const handleSend = async (text) => {
 
       allReplies.value.unshift(newReply)
       currentComment.value.replyCount++
+
+      // 发送评论消息给被回复的用户（如果不是自己）
+      const targetUserId = replyingToReply.value ? replyingToReply.value.user.id : currentComment.value.user.id
+      if (targetUserId !== userStore.openid) {
+        try {
+          await sendCommentMessage(
+            targetUserId,
+            post.id,
+            'community',
+            text,
+            post.content.substring(0, 50),
+            post.images?.[0] || ''
+          )
+          console.log('回复消息已发送')
+        } catch (msgErr) {
+          console.error('发送回复消息失败:', msgErr)
+        }
+      }
+      
+      // 检测并发送@消息
+      await detectAndSendMentions(text, newReply.id, 'community')
 
       // 清除回复状态
       replyingToReply.value = null
@@ -455,6 +536,27 @@ const handleSend = async (text) => {
         }
       }
 
+      // 发送评论消息给被回复的用户（如果不是自己）
+      const targetUserId = replyingToReply.value ? replyingToReply.value.user.id : replyingToComment.value.user.id
+      if (targetUserId !== userStore.openid) {
+        try {
+          await sendCommentMessage(
+            targetUserId,
+            post.id,
+            'community',
+            text,
+            post.content.substring(0, 50),
+            post.images?.[0] || ''
+          )
+          console.log('回复消息已发送')
+        } catch (msgErr) {
+          console.error('发送回复消息失败:', msgErr)
+        }
+      }
+      
+      // 检测并发送@消息
+      await detectAndSendMentions(text, res.id, 'community')
+
       // 取消回复状态
       replyingToComment.value = null
       replyingToReply.value = null
@@ -486,6 +588,27 @@ const handleSend = async (text) => {
 
       comments.value.unshift(newComment)
       post.stats.comments++
+      
+      // 发送评论消息给帖子作者（如果不是自己）
+      if (post.user.id !== userStore.openid) {
+        try {
+          await sendCommentMessage(
+            post.user.id,
+            post.id,
+            'community',
+            text,
+            post.content.substring(0, 50),
+            post.images?.[0] || ''
+          )
+          console.log('评论消息已发送给帖子作者')
+        } catch (msgErr) {
+          console.error('发送评论消息失败:', msgErr)
+        }
+      }
+      
+      // 检测并发送@消息
+      await detectAndSendMentions(text, newComment.id, 'community')
+      
       toast.show('评论成功')
     }
 
@@ -506,6 +629,15 @@ const followUser = throttle(async () => {
       await UserApi.unfollowUser(post.user.id)
     } else {
       await UserApi.followUser(post.user.id)
+      
+      // 发送关注消息通知
+      try {
+        await sendFollowMessage(post.user.id)
+        console.log('关注消息已发送')
+      } catch (msgErr) {
+        console.error('发送关注消息失败:', msgErr)
+        // 不阻断关注流程，静默处理消息发送失败
+      }
     }
 
     post.user.isFollowed = !post.user.isFollowed

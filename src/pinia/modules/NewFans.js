@@ -165,4 +165,13 @@ export const useNewFans = defineStore('newFans', () => {
     addFanMessage,
     batchMarkAsRead
   }
+}, {
+  persist: {
+    key: 'newFans',
+    paths: ['fanMessages'],
+    storage: {
+      getItem: uni.getStorageSync,
+      setItem: uni.setStorageSync,
+    }
+  }
 })

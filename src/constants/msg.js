@@ -6,6 +6,9 @@ const MSG_TYPE = {
     Like : 5,   // 点赞类消息
     Favorite : 6,   // 收藏类消息
     FetchOfflineMessages : 7,   // 拉取离线消息类消息
+    Follow : 8,   // 关注类消息
+    Comment : 9,   // 评论类消息
+    Mention : 10,   // @提及类消息
 }
 
 const MSG_METHOD = {

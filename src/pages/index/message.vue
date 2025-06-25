@@ -8,11 +8,15 @@ import { formatTime } from '@/utils/time'
 import events from '@/utils/events'
 import User from "/static/images/user.png"
 import {useLikeAndFavorite} from "@/pinia/modules/LikeAndFavorite";
+import {useNewFans} from "@/pinia/modules/NewFans";
+import {useCommentAndMention} from "@/pinia/modules/CommentAndMention";
 
 const { hiddened, show, hide } = useTabbar()
 const router = useRouter()
 const conversationsManager = useConversations()
 const likeAndFavoriteStore = useLikeAndFavorite()
+const newFansStore = useNewFans()
+const commentAndMentionStore = useCommentAndMention()
 
 onMounted(() => {
   show()
@@ -77,6 +81,8 @@ const goToPage = (page) => {
 }
 
 const unreadOfLikeAndFavorite = computed(()=>likeAndFavoriteStore.getTotalUnreadCount)
+const unreadOfNewFans = computed(()=>newFansStore.getUnreadCount())
+const unreadOfCommentAndMention = computed(()=>commentAndMentionStore.getTotalUnreadCount)
 
 </script>
 
@@ -98,13 +104,27 @@ const unreadOfLikeAndFavorite = computed(()=>likeAndFavoriteStore.getTotalUnread
         </div>
         <div class="text-xs">赞和收藏</div>
       </div>
-      <div class="flex flex-col items-center" @tap.stop="goToPage('NewFans')">
+      <div class="flex flex-col items-center relative" @tap.stop="goToPage('NewFans')">
+        <!-- 未读徽标 -->
+        <div
+          v-if="unreadOfNewFans > 0"
+          class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-5 h-5 flex items-center justify-center px-1 z-10"
+        >
+          {{ unreadOfNewFans > 99 ? '99+' : unreadOfNewFans }}
+        </div>
         <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-2">
           <WdIcon custom-class="iconfont" class-prefix="icon" name="user" :size="24" custom-style="color:#3b82f6" />
         </div>
         <div class="text-xs">新增关注</div>
       </div>
-      <div class="flex flex-col items-center" @tap.stop="goToPage('CommentAndMention')">
+      <div class="flex flex-col items-center relative" @tap.stop="goToPage('CommentAndMention')">
+        <!-- 未读徽标 -->
+        <div
+          v-if="unreadOfCommentAndMention > 0"
+          class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-5 h-5 flex items-center justify-center px-1 z-10"
+        >
+          {{ unreadOfCommentAndMention > 99 ? '99+' : unreadOfCommentAndMention }}
+        </div>
         <div class="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-2">
           <WdIcon custom-class="iconfont" class-prefix="icon" name="message" :size="24" custom-style="color:#22c55e" />
         </div>

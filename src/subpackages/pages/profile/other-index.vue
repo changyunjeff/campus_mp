@@ -675,7 +675,7 @@ const handleAvatarClick = () => {
               
               <!-- 统计和时间 -->
               <view class="flex items-center justify-between text-gray-500 text-24rpx">
-                <text>{{ formatTime(post.publishTime) }}</text>
+                <text>{{ formatTime(post.publish_time) }}</text>
                 <view class="flex items-center gap-30rpx">
                   <view class="flex items-center gap-8rpx">
                     <WdIcon name="heart" size="24rpx" />

@@ -6,6 +6,8 @@ import { MSG_TYPE, MSG_METHOD } from "@/constants/msg";
 import { generateID } from "@/utils/id";
 import Anonymous from "/static/images/anonymous.png"
 import {useLikeAndFavorite} from "@/pinia/modules/LikeAndFavorite";
+import {useNewFans} from "@/pinia/modules/NewFans";
+import {useCommentAndMention} from "@/pinia/modules/CommentAndMention";
 
 /**
  * 消息发送状态枚举
@@ -52,6 +54,7 @@ export function useMessage() {
         from: msg.from,
         to: msg.to,
         anonymous: msg.anonymous,
+        avatar: msg.avatar,
         currentUserOpenid: userStore.openid,
         hasOriginalTo: !!msg.original_to,
         hasStatus: !!msg.status
@@ -192,6 +195,24 @@ export function useMessage() {
       likeAndFavoriteStore.addFavoriteMessage(msg)
     })
 
+    connect.registerHandler(MSG_TYPE.Follow, async (msg) => {
+      console.log("收到关注类消息", msg)
+      const newFansStore = useNewFans();
+      newFansStore.addFanMessage(msg)
+    })
+
+    connect.registerHandler(MSG_TYPE.Comment, async (msg) => {
+      console.log("收到评论类消息", msg)
+      const commentAndMentionStore = useCommentAndMention();
+      commentAndMentionStore.addCommentMessage(msg)
+    })
+
+    connect.registerHandler(MSG_TYPE.Mention, async (msg) => {
+      console.log("收到@提及类消息", msg)
+      const commentAndMentionStore = useCommentAndMention();
+      commentAndMentionStore.addMentionMessage(msg)
+    })
+
     connect.registerHandler(MSG_TYPE.CheckOnline, async (msg) => {
       console.log('收到在线状态消息', msg);
 
@@ -323,9 +344,10 @@ export function useMessage() {
    * @param {string} content - 消息内容
    * @param {boolean} anonymous - 是否匿名发送消息
    * @param {string} conversationId - 会话ID（可能是匿名会话ID）
+   * @param {string} avatar - 发送者的头像url
    * @returns {Promise<Message>} 发送的消息对象
    */
-  const sendChat = async (id, userID, content, anonymous, conversationId = null) => {
+  const sendChat = async (id, userID, content, anonymous, conversationId = null, avatar='') => {
     // 参数验证
     if (!userID?.trim()) {
       throw new Error('请输入对方的openid');
@@ -347,7 +369,8 @@ export function useMessage() {
       type: MSG_TYPE.Chat,
       method: MSG_METHOD.CheckSensitive | MSG_METHOD.Redirect | MSG_METHOD.NeedFeedback,
       status: MESSAGE_STATUS.SENDING,
-      anonymous: anonymous
+      anonymous: anonymous,
+      avatar: avatar,
     };
 
     // 先添加到UI显示（发送中状态）
@@ -488,6 +511,104 @@ export function useMessage() {
     }
   }
 
+  /**
+   * 发送关注消息
+   * @param {string} userID - 接收用户ID
+   * @returns {Promise<Message>} 发送的消息对象
+   */
+  const sendFollowMessage = async (userID) => {
+    const id = await generateID();
+    const msg = {
+      id: id,
+      timestamp: new Date().getTime(),
+      from: userStore.openid,
+      nickname: userStore.getNickname(),
+      avatar: userStore.getAvatarUrl(),
+      to: userID,
+      type: MSG_TYPE.Follow,
+      method: MSG_METHOD.Redirect,
+    }
+    try {
+      await connect.send(msg);
+      console.log('发送关注消息成功', msg);
+    } catch (err) {
+      console.error('发送关注消息失败:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * 发送评论消息
+   * @param {string} userID - 接收用户ID
+   * @param {string} contentId - 内容ID
+   * @param {string} contentType - 内容类型
+   * @param {string} commentContent - 评论内容
+   * @param {string} title - 内容标题
+   * @param {string} image - 内容图片
+   * @returns {Promise<Message>} 发送的消息对象
+   */
+  const sendCommentMessage = async (userID, contentId, contentType, commentContent, title, image) => {
+    const id = await generateID();
+    const msg = {
+      id: id,
+      timestamp: new Date().getTime(),
+      from: userStore.openid,
+      nickname: userStore.getNickname(),
+      avatar: userStore.getAvatarUrl(),
+      to: userID,
+      type: MSG_TYPE.Comment,
+      method: MSG_METHOD.Redirect,
+      contentType: contentType,
+      contentId: contentId,
+      commentContent: commentContent,
+      title: title || '',
+      image: image || '',
+    }
+    try {
+      await connect.send(msg);
+      console.log('发送评论消息成功', msg);
+    } catch (err) {
+      console.error('发送评论消息失败:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * 发送@提及消息
+   * @param {string} userID - 接收用户ID
+   * @param {string} contentId - 内容ID
+   * @param {string} contentType - 内容类型
+   * @param {string} commentContent - 评论内容
+   * @param {string} title - 内容标题
+   * @param {string} image - 内容图片
+   * @returns {Promise<Message>} 发送的消息对象
+   */
+  const sendMentionMessage = async (userID, contentId, contentType, commentContent, title, image) => {
+    const id = await generateID();
+    const msg = {
+      id: id,
+      timestamp: new Date().getTime(),
+      from: userStore.openid,
+      nickname: userStore.getNickname(),
+      avatar: userStore.getAvatarUrl(),
+      to: userID,
+      type: MSG_TYPE.Mention,
+      method: MSG_METHOD.Redirect,
+      contentType: contentType,
+      contentId: contentId,
+      commentContent: commentContent,
+      title: title || '',
+      image: image || '',
+    }
+    try {
+      await connect.send(msg);
+      console.log('发送@提及消息成功', msg);
+    } catch (err) {
+      console.error('发送@提及消息失败:', err);
+      throw err;
+    }
+  }
+
   instance = {
     sendChat,
     resendMessage,
@@ -496,7 +617,10 @@ export function useMessage() {
     MESSAGE_STATUS,
     subscribeUserOnlineStatus,
     sendLikeMessage,
-    sendFavoriteMessage
+    sendFavoriteMessage,
+    sendFollowMessage,
+    sendCommentMessage,
+    sendMentionMessage
   }
   return instance;
 }
