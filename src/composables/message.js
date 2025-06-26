@@ -5,12 +5,11 @@ import { useUserInfo } from "./user-info";
 import { MSG_TYPE, MSG_METHOD } from "@/constants/msg";
 import { generateID } from "@/utils/id";
 import User from "/static/images/user.png"
-import Anonymous from "/static/images/anonymous.png"
-import AnonymousMale from "/static/images/anonymous_male.png"
-import AnonymousFemale from "/static/images/anonymous_female.png"
 import {useLikeAndFavorite} from "@/pinia/modules/LikeAndFavorite";
 import {useNewFans} from "@/pinia/modules/NewFans";
 import {useCommentAndMention} from "@/pinia/modules/CommentAndMention";
+import {UserApi} from "@/api/user";
+import {useSystemNotification} from "@/pinia/modules/SystemNotification";
 
 /**
  * 消息发送状态枚举
@@ -160,6 +159,8 @@ export function useMessage() {
 
     connect.registerHandler(MSG_TYPE.Notification, async (msg) => {
       console.log('收到通知消息', msg);
+      const notificationStore = useSystemNotification()
+      notificationStore.addNotification(msg)
     });
 
     connect.registerHandler(MSG_TYPE.System, async (msg) => {
@@ -172,7 +173,7 @@ export function useMessage() {
       likeAndFavoriteStore.addLikeMessage(msg)
     })
 
-    connect.registerHandler(MSG_TYPE.Notification, async (msg) => {
+    connect.registerHandler(MSG_TYPE.Favorite, async (msg) => {
       console.log("收到收藏类消息", msg)
       const likeAndFavoriteStore = useLikeAndFavorite();
       likeAndFavoriteStore.addFavoriteMessage(msg)
@@ -188,12 +189,6 @@ export function useMessage() {
       console.log("收到评论类消息", msg)
       const commentAndMentionStore = useCommentAndMention();
       commentAndMentionStore.addCommentMessage(msg)
-    })
-
-    connect.registerHandler(MSG_TYPE.Mention, async (msg) => {
-      console.log("收到@提及类消息", msg)
-      const commentAndMentionStore = useCommentAndMention();
-      commentAndMentionStore.addMentionMessage(msg)
     })
 
     connect.registerHandler(MSG_TYPE.CheckOnline, async (msg) => {
@@ -323,6 +318,49 @@ export function useMessage() {
         console.log('连接已断开，重连机制将自动处理');
       }
       
+      throw err;
+    }
+  }
+
+  /**
+   * sendSystemNotification 发送系统通知(以system的名义发给自己)
+   * @param {string} title - 通知标题
+   * @param {string} content - 通知内容
+   * @param {string} type - 通知类型('welcome'|'event'|'course'|'system'|'grade'|'unknown')
+   * @param {number} priority - 通知优先级('low'=0|'normal'=1|'high'=2)
+   * */
+  const sendSystemNotification = async (title, content, type='unknown', priority=0) => {
+    if (!title?.trim()) {
+      throw new Error('请输入通知标题');
+    }
+    if (!content?.trim()) {
+      throw new Error('请输入通知内容');
+    }
+    if (!type?.trim()) {
+      throw new Error('请输入通知类型');
+    }
+
+    const id = await generateID();
+    const msg = {
+      id: id,
+      timestamp: new Date().getTime(),
+      from: 'system',
+      to: userStore.openid,
+      title: title.trim(),
+      content: content.trim(),
+      type: MSG_TYPE.Notification,
+      notification_type: type,
+      priority: priority,
+      method: MSG_METHOD.Redirect,
+      status: MESSAGE_STATUS.SENDING,
+    }
+
+    try {
+      // 发送消息到服务器
+      await connect.send(msg);
+      console.log('消息已发送到服务器，等待处理结果反馈...');
+    } catch (err) {
+      console.error('发送系统通知失败:', err.message);
       throw err;
     }
   }
@@ -534,6 +572,12 @@ export function useMessage() {
    * @returns {Promise<Message>} 发送的消息对象
    */
   const sendFollowMessage = async (userID) => {
+    try {
+      await UserApi.followUser(userID)
+    } catch (err) {
+      throw err
+    }
+
     const id = await generateID();
     const msg = {
       id: id,
@@ -577,7 +621,7 @@ export function useMessage() {
       method: MSG_METHOD.Redirect,
       contentType: contentType,
       contentId: contentId,
-      commentContent: commentContent,
+      content: commentContent,
       title: title || '',
       image: image || '',
     }
@@ -590,43 +634,10 @@ export function useMessage() {
     }
   }
 
-  /**
-   * 发送@提及消息
-   * @param {string} userID - 接收用户ID
-   * @param {string} contentId - 内容ID
-   * @param {string} contentType - 内容类型
-   * @param {string} commentContent - 评论内容
-   * @param {string} title - 内容标题
-   * @param {string} image - 内容图片
-   * @returns {Promise<Message>} 发送的消息对象
-   */
-  const sendMentionMessage = async (userID, contentId, contentType, commentContent, title, image) => {
-    const id = await generateID();
-    const msg = {
-      id: id,
-      timestamp: new Date().getTime(),
-      from: userStore.openid,
-      nickname: userStore.getNickname(),
-      avatar: userStore.getAvatarUrl(),
-      to: userID,
-      type: MSG_TYPE.Mention,
-      method: MSG_METHOD.Redirect,
-      contentType: contentType,
-      contentId: contentId,
-      commentContent: commentContent,
-      title: title || '',
-      image: image || '',
-    }
-    try {
-      await connect.send(msg);
-      console.log('发送@提及消息成功', msg);
-    } catch (err) {
-      console.error('发送@提及消息失败:', err);
-      throw err;
-    }
-  }
+
 
   instance = {
+    sendSystemNotification,
     sendChat,
     resendMessage,
     sendCheckOnline,
@@ -636,8 +647,7 @@ export function useMessage() {
     sendLikeMessage,
     sendFavoriteMessage,
     sendFollowMessage,
-    sendCommentMessage,
-    sendMentionMessage
+    sendCommentMessage
   }
   return instance;
 }

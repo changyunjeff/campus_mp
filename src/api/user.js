@@ -1,15 +1,5 @@
 import { get, post, put, del } from '@/utils/request'
 
-// 延迟导入useMessage，避免循环依赖
-let messageComposable = null
-const getMessageComposable = async () => {
-  if (!messageComposable) {
-    const { useMessage } = await import('@/composables/message')
-    messageComposable = useMessage()
-  }
-  return messageComposable
-}
-
 /**
  * UserApi 用户接口
  */
@@ -72,30 +62,14 @@ export const UserApi = {
      * @param {string} userId 用户ID
      * @returns {Promise<Object>} 操作结果
      */
-    followUser: async (userId) => {
-        const result = await post(`/users/${userId}/follow`)
-        
-        // 发送关注消息通知
-        try {
-            const messageComposable = await getMessageComposable()
-            await messageComposable.sendFollowMessage(userId)
-            console.log('关注消息已发送给用户:', userId)
-        } catch (msgErr) {
-            console.error('发送关注消息失败:', msgErr)
-            // 不阻断关注流程，静默处理消息发送失败
-        }
-        
-        return result
-    },
+    followUser: (userId) => post(`/users/${userId}/follow`),
     
     /**
      * 取消关注用户
      * @param {string} userId 用户ID
      * @returns {Promise<Object>} 操作结果
      */
-    unfollowUser: (userId) => {
-        return del(`/users/${userId}/follow`)
-    },
+    unfollowUser: (userId) => del(`/users/${userId}/follow`),
     
     /**
      * 获取用户的关注列表

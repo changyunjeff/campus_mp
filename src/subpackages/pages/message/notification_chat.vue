@@ -18,17 +18,6 @@ const notifications = computed(() => systemNotification.getSortedNotifications)
 // 获取未读通知数量
 const unreadCount = computed(() => systemNotification.getUnreadCount)
 
-// 页面加载时清空未读数量
-onLoad(() => {
-  // 清空系统通知的未读数量
-  conversationManager.clearUnreadCount('system')
-})
-
-// 页面卸载时也清空未读数量
-onUnload(() => {
-  conversationManager.clearUnreadCount('system')
-})
-
 // 标记通知为已读
 const markAsRead = (id) => {
   systemNotification.markAsRead(id)
@@ -146,13 +135,13 @@ const handleTapOutside = () => {
           <view v-else v-for="(notification, index) in notifications" :key="notification.id"
             class="notification-item" :class="{ 'unread': !notification.read }">
             <!-- 通知图标 -->
-            <view :class="['notification-icon', getNotificationIconBg(notification.type)]">
+            <view :class="['notification-icon', getNotificationIconBg(notification.notification_type)]">
               <WdIcon 
                 custom-class="iconfont" 
                 class-prefix="icon" 
-                :name="getNotificationIcon(notification.type)" 
+                :name="getNotificationIcon(notification.notification_type)"
                 :size="20" 
-                :custom-style="getNotificationIconColor(notification.type)" 
+                :custom-style="getNotificationIconColor(notification.notification_type)"
               />
             </view>
             

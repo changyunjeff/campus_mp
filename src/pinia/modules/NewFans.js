@@ -1,73 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import {useMessage} from "@/composables/message";
 
 // 定义新增关注的pinia
 export const useNewFans = defineStore('newFans', () => {
   // 新增关注消息列表
   const fanMessages = ref([])
-  
-  // 模拟数据初始化
-  const initMockData = () => {
-    fanMessages.value = [
-      {
-        id: 1,
-        fromUser: {
-          id: 'user1',
-          nickname: '小明',
-          avatar: '/static/images/user.png',
-          introduction: '热爱生活，喜欢摄影',
-          followersCount: 123,
-          followingCount: 45,
-          isFollowing: false
-        },
-        timestamp: Date.now() - 3600000,
-        read: false
-      },
-      {
-        id: 2,
-        fromUser: {
-          id: 'user2',
-          nickname: '小红',
-          avatar: '/static/images/user.png',
-          introduction: '设计师，追求美的生活',
-          followersCount: 89,
-          followingCount: 67,
-          isFollowing: true
-        },
-        timestamp: Date.now() - 7200000,
-        read: true
-      },
-      {
-        id: 3,
-        fromUser: {
-          id: 'user3',
-          nickname: '小李',
-          avatar: '/static/images/user.png',
-          introduction: '程序员，技术宅',
-          followersCount: 234,
-          followingCount: 12,
-          isFollowing: false
-        },
-        timestamp: Date.now() - 1800000,
-        read: false
-      }
-    ]
-  }
-  
-  // 获取新增关注消息
-  const fetchMessages = async () => {
-    try {
-      // 这里应该调用实际的API
-      // const res = await api.getNewFansMessages()
-      // fanMessages.value = res.data
-      
-      // 暂时使用模拟数据
-      initMockData()
-    } catch (error) {
-      console.error('获取新增关注消息失败:', error)
-    }
-  }
-  
+
   // 标记消息为已读
   const markAsRead = (id) => {
     const message = fanMessages.value.find(msg => msg.id === id)
@@ -94,11 +33,11 @@ export const useNewFans = defineStore('newFans', () => {
   // 关注用户
   const followUser = async (userId) => {
     try {
-      // 这里应该调用实际的API
-      // await api.followUser(userId)
-      
+      const messageComposable = useMessage()
+      await messageComposable.sendFollowMessage(userId)
+
       // 更新本地状态
-      const message = fanMessages.value.find(msg => msg.fromUser.id === userId)
+      const message = fanMessages.value.find(msg => msg.from === userId)
       if (message) {
         message.fromUser.isFollowing = true
         message.fromUser.followersCount += 1
@@ -112,11 +51,10 @@ export const useNewFans = defineStore('newFans', () => {
   // 取消关注用户
   const unfollowUser = async (userId) => {
     try {
-      // 这里应该调用实际的API
-      // await api.unfollowUser(userId)
+      await UserApi.unfollowUser(userId)
       
       // 更新本地状态
-      const message = fanMessages.value.find(msg => msg.fromUser.id === userId)
+      const message = fanMessages.value.find(msg => msg.from === userId)
       if (message) {
         message.fromUser.isFollowing = false
         message.fromUser.followersCount -= 1
@@ -136,8 +74,6 @@ export const useNewFans = defineStore('newFans', () => {
   const addFanMessage = (message) => {
     fanMessages.value.unshift({
       ...message,
-      id: Date.now(),
-      timestamp: Date.now(),
       read: false
     })
   }
@@ -155,7 +91,6 @@ export const useNewFans = defineStore('newFans', () => {
   return {
     fanMessages,
     getLatestFanMessage,
-    fetchMessages,
     markAsRead,
     markAllAsRead,
     deleteMessage,

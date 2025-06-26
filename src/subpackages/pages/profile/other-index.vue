@@ -8,7 +8,10 @@ import { UserApi } from '@/api/user'
 import { CommunityApi } from '@/api/community'
 import { formatTime } from '@/utils/time'
 import User from '/static/images/user.png'
+import {useMessage} from "@/composables/message";
 
+
+const {sendFollowMessage} = useMessage()
 const router = useRouter()
 const toast = useToast()
 
@@ -213,7 +216,7 @@ const loadUserInfo = async () => {
     userInfo.registerTime = res.created_at
     
     // 根据关系状态设置关注状态
-    userInfo.isFollowed = res.relationship === 1 || res.relationship === 3
+    userInfo.isFollowed = res.relationship >= 1
     userInfo.isBlocked = res.banned_at > 0
 
     // 更新统计数据
@@ -321,7 +324,7 @@ const toggleFollow = async () => {
       toast.success('已取消关注')
     } else {
       // 关注用户
-      await UserApi.followUser(userId.value)
+      await sendFollowMessage(userId.value)
       userInfo.isFollowed = true
       userStats.fans += 1
       toast.success('已关注')

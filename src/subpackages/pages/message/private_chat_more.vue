@@ -5,6 +5,7 @@ import Layout from '@/layout/index.vue'
 import { useToast } from '@/composables/toast'
 import { useRouter } from "uni-mini-router";
 import { UserApi } from "@/api/user";
+import {useMessage} from "@/composables/message";
 import { useConversations } from '@/composables/Conversations'
 import { useChatSettings } from '@/composables/chat-settings'
 import events, { 
@@ -239,7 +240,8 @@ const toggleFollow = async () => {
       userInfo.value.is_following = false
       toast.show('已取消关注')
     } else {
-      await UserApi.followUser(targetId.value)
+      const messageComposable = useMessage()
+      await messageComposable.sendFollowMessage(targetId.value)
       userInfo.value.is_following = true
       toast.show('关注成功')
     }

@@ -47,7 +47,8 @@ const deleteMessage = (messageItem) => {
 }
 
 // 跳转到用户页面
-const goToUser = (userId) => {
+const goToUser = (id, userId) => {
+  newFansStore.markAsRead(id)
   router.push({
     name: 'other_index',
     params: { id: userId }
@@ -69,11 +70,6 @@ const followUser = async (messageItem) => {
 const handleLongpress = (messageItem) => {
   deleteMessage(messageItem)
 }
-
-// 页面加载时获取消息
-onMounted(() => {
-  newFansStore.fetchMessages()
-})
 </script>
 
 <template>
@@ -101,13 +97,14 @@ onMounted(() => {
             
             <!-- 用户头像 -->
             <image 
-              :src="messageItem.fromUser?.avatar || User"
+              :src="messageItem?.avatar || User"
               class="user-avatar"
-              @tap="goToUser(messageItem.fromUser?.id)"
+              @tap="goToUser(messageItem?.id, messageItem?.from)"
+              mode="aspectFill"
             />
             
             <!-- 消息内容 -->
-            <view class="message-content" @tap="goToUser(messageItem?.id)" @longpress="handleLongpress(messageItem)">
+            <view class="message-content" @tap="goToUser(messageItem?.id, messageItem?.from)" @longpress="handleLongpress(messageItem)">
               <view class="message-header">
                 <view class="message-info">
                   <view class="message-icon">
@@ -121,37 +118,6 @@ onMounted(() => {
                   </view>
                 </view>
                 <text class="message-time">{{ formatTime(messageItem.timestamp) }}</text>
-              </view>
-              
-              <!-- 用户信息预览 -->
-              <view class="user-preview">
-                <view class="user-info">
-                  <text class="user-nickname">{{ messageItem?.nickname }}</text>
-                  <text v-if="messageItem?.introduction" class="user-intro">
-                    {{ messageItem?.introduction }}
-                  </text>
-                  <view class="user-stats">
-                    <text class="stat-item">{{ messageItem?.followersCount || 0 }} 粉丝</text>
-                    <text class="stat-item">{{ messageItem?.followingCount || 0 }} 关注</text>
-                  </view>
-                </view>
-                
-                <!-- 关注按钮 -->
-                <view class="action-buttons">
-                  <view 
-                    v-if="!messageItem?.isFollowing"
-                    class="follow-btn"
-                    @click.stop="followUser(messageItem)"
-                  >
-                    回关
-                  </view>
-                  <view 
-                    v-else
-                    class="followed-btn"
-                  >
-                    已关注
-                  </view>
-                </view>
               </view>
             </view>
             
@@ -241,51 +207,6 @@ onMounted(() => {
 
 .message-time {
   @apply text-xs text-gray-400 ml-2;
-}
-
-.user-preview {
-  @apply flex items-center justify-between p-3 bg-gray-50 rounded-lg;
-}
-
-.user-info {
-  @apply flex-1;
-}
-
-.user-nickname {
-  @apply text-sm font-medium text-gray-800 block mb-1;
-}
-
-.user-intro {
-  @apply text-xs text-gray-500 block mb-2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 200rpx;
-}
-
-.user-stats {
-  @apply flex items-center;
-}
-
-.stat-item {
-  @apply text-xs text-gray-400 mr-3;
-}
-
-.action-buttons {
-  @apply flex-shrink-0;
-}
-
-.follow-btn {
-  @apply px-4 py-2 bg-blue-500 text-white text-sm rounded-full;
-  transition: all 0.2s ease;
-  
-  &:active {
-    @apply bg-blue-600;
-  }
-}
-
-.followed-btn {
-  @apply px-4 py-2 bg-gray-200 text-gray-500 text-sm rounded-full;
 }
 
 .unread-dot {

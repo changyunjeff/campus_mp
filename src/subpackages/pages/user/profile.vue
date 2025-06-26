@@ -3,9 +3,10 @@ import Layout from '@/layout/index'
 import { ref, reactive, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useRouter } from 'uni-mini-router'
-import { UserApi } from '@/api/user'
+import {UserApi} from "@/api/user";
+import {useMessage} from "@/composables/message";
 import { CommunityApi } from '@/api/community'
-import User from '@/static/images/user.png'
+import User from '/static/images/user.png'
 import { formatTime } from '@/utils/time'
 import { throttle } from 'lodash'
 
@@ -117,7 +118,8 @@ const toggleFollow = throttle(async () => {
       await UserApi.unfollowUser(userId.value)
       userInfo.followerCount--
     } else {
-      await UserApi.followUser(userId.value)
+      const messageComposable = useMessage()
+      await messageComposable.sendFollowMessage(userId.value)
       userInfo.followerCount++
     }
     

@@ -7,6 +7,9 @@ import { throttle, debounce } from 'lodash'
 import User from '/static/images/user.png'
 import { useToast } from '@/composables/toast'
 import { UserApi } from '@/api/user'
+import {useMessage} from "@/composables/message";
+
+const {sendFollowMessage} = useMessage()
 
 const router = useRouter()
 const toast = useToast()
@@ -259,7 +262,7 @@ const handleUserAction = throttle(async (user, action) => {
   try {
     switch (action) {
       case 'follow':
-        await UserApi.followUser(user.id)
+        await sendFollowMessage(user.id)
         user.relationship = user.relationship === 0 ? 2 : 1
         toast.show('已关注')
         break

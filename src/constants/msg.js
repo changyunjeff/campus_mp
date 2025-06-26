@@ -8,7 +8,6 @@ const MSG_TYPE = {
     FetchOfflineMessages : 7,   // 拉取离线消息类消息
     Follow : 8,   // 关注类消息
     Comment : 9,   // 评论类消息
-    Mention : 10,   // @提及类消息
 }
 
 const MSG_METHOD = {

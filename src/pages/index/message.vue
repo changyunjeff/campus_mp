@@ -10,7 +10,9 @@ import User from "/static/images/user.png"
 import {useLikeAndFavorite} from "@/pinia/modules/LikeAndFavorite";
 import {useNewFans} from "@/pinia/modules/NewFans";
 import {useCommentAndMention} from "@/pinia/modules/CommentAndMention";
+import {useMessage} from "@/composables/message";
 
+const messageComposable = useMessage()
 const { hiddened, show, hide } = useTabbar()
 const router = useRouter()
 const conversationsManager = useConversations()
@@ -82,7 +84,7 @@ const goToPage = (page) => {
 
 const unreadOfLikeAndFavorite = computed(()=>likeAndFavoriteStore.getTotalUnreadCount)
 const unreadOfNewFans = computed(()=>newFansStore.getUnreadCount())
-const unreadOfCommentAndMention = computed(()=>commentAndMentionStore.getTotalUnreadCount)
+const unreadOfCommentAndMention = computed(()=>commentAndMentionStore.getUnreadCount())
 
 </script>
 
@@ -128,7 +130,7 @@ const unreadOfCommentAndMention = computed(()=>commentAndMentionStore.getTotalUn
         <div class="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-2">
           <WdIcon custom-class="iconfont" class-prefix="icon" name="message" :size="24" custom-style="color:#22c55e" />
         </div>
-        <div class="text-xs">评论和@</div>
+        <div class="text-xs">评论消息</div>
       </div>
     </div>
 

@@ -12,33 +12,17 @@ const router = useRouter()
 const commentAndMentionStore = useCommentAndMention()
 const toast = useToast()
 
-// 标签页状态
-const activeTab = ref('comments')
-
 // 获取评论消息
 const commentMessages = computed(() => commentAndMentionStore.commentMessages)
 
-// 获取@消息
-const mentionMessages = computed(() => commentAndMentionStore.mentionMessages)
-
-// 获取当前显示的消息列表
-const currentMessages = computed(() => {
-  return activeTab.value === 'comments' ? commentMessages.value : mentionMessages.value
-})
-
-// 切换标签页
-const switchTab = (tab) => {
-  activeTab.value = tab
-}
-
 // 标记消息为已读
 const markAsRead = (id) => {
-  commentAndMentionStore.markAsRead(id, activeTab.value)
+  commentAndMentionStore.markAsRead(id)
 }
 
 // 标记所有消息为已读
 const markAllAsRead = () => {
-  commentAndMentionStore.markAllAsRead(activeTab.value)
+  commentAndMentionStore.markAllAsRead()
   toast.show('已全部标为已读')
 }
 
@@ -48,7 +32,7 @@ const deleteMessage = (messageItem) => {
     {
       name: "删除消息",
       callback: () => {
-        commentAndMentionStore.deleteMessage(messageItem.id, activeTab.value)
+        commentAndMentionStore.deleteMessage(messageItem.id)
         toast.show('已删除消息')
       }
     }
@@ -83,49 +67,9 @@ const goToUser = (userId) => {
   })
 }
 
-// 点赞消息
-const likeMessage = (messageItem) => {
-  toast.show('已点赞', messageItem)
-  // 这里可以调用点赞API
-}
-
-// 回复评论
-const replyComment = (message) => {
-  // 跳转到内容详情页面并定位到评论区
-  goToContent(message)
-}
-
 // 获取未读数量
-const getUnreadCount = (type) => {
-  return commentAndMentionStore.getUnreadCount(type)
-}
-
-// 获取消息图标
-const getMessageIcon = (message) => {
-  if (activeTab.value === 'comments') {
-    return 'chat'
-  } else {
-    return 'at'
-  }
-}
-
-// 获取消息标题前缀
-const getMessageActionText = (message) => {
-  if (activeTab.value === 'comments') {
-    return '评论了你的'
-  } else {
-    return '在'
-  }
-}
-
-// 获取消息标题后缀
-const getMessageSuffix = (message) => {
-  const contentType = message.contentType === 'goods' ? '商品' : '动态'
-  if (activeTab.value === 'comments') {
-    return contentType
-  } else {
-    return `${contentType}中@了你`
-  }
+const getUnreadCount = () => {
+  return commentAndMentionStore.getUnreadCount()
 }
 
 // 处理长按事件
@@ -133,65 +77,36 @@ const handleLongpress = (messageItem) => {
   deleteMessage(messageItem)
 }
 
-// 页面加载时获取消息
-onMounted(() => {
-  commentAndMentionStore.fetchMessages()
-})
 </script>
 
 <template>
   <Layout>
     <template #center>
-      收到的评论和@
+      收到的评论
     </template>
     <template #right>
-      <view class="flex items-center" @tap="markAllAsRead">
+      <view class="flex items-center" @tap="markAllAsRead" v-if="getUnreadCount() > 0">
         <text class="text-sm text-blue-500">全部已读</text>
       </view>
     </template>
-    
-    <!-- 标签页 -->
-    <view class="tab-container">
-      <view 
-        class="tab-item" 
-        :class="{ active: activeTab === 'comments' }"
-        @tap="switchTab('comments')"
-      >
-        <text>评论</text>
-        <view v-if="getUnreadCount('comments') > 0" class="unread-badge">
-          {{ getUnreadCount('comments') }}
-        </view>
-      </view>
-      <view 
-        class="tab-item" 
-        :class="{ active: activeTab === 'mentions' }"
-        @tap="switchTab('mentions')"
-      >
-        <text>@我的</text>
-        <view v-if="getUnreadCount('mentions') > 0" class="unread-badge">
-          {{ getUnreadCount('mentions') }}
-        </view>
-      </view>
-    </view>
     
     <view class="message-container">
       <!-- 消息列表 -->
       <scroll-view class="message-list" scroll-y :show-scrollbar="false" scroll-anchoring>
         <view class="message-list-content">
-          <view v-if="currentMessages.length === 0" class="empty-state">
-            <WdIcon :name="activeTab === 'comments' ? 'chat' : 'at'" size="64" color="#ccc"></WdIcon>
-            <text class="mt-3 text-gray-400">
-              {{ activeTab === 'comments' ? '暂无评论消息' : '暂无@消息' }}
-            </text>
+          <view v-if="commentMessages.length === 0" class="empty-state">
+            <WdIcon name="chat" size="64" color="#ccc"></WdIcon>
+            <text class="mt-3 text-gray-400">暂无评论消息</text>
           </view>
           
-          <view v-else v-for="messageItem in currentMessages" :key="messageItem.id"
+          <view v-else v-for="messageItem in commentMessages" :key="messageItem.id"
             class="message-item" :class="{ 'unread': !messageItem.read }">
             <!-- 用户头像 -->
             <image 
               :src="messageItem?.avatar || User" 
               class="user-avatar"
-              @tap="goToUser(messageItem?.id)"
+              @tap="goToUser(messageItem?.from)"
+              mode="aspectFill"
             />
             
             <!-- 消息内容 -->
@@ -200,25 +115,25 @@ onMounted(() => {
                 <view class="message-info">
                   <view class="message-icon">
                     <WdIcon 
-                      :name="getMessageIcon(messageItem)" 
+                      name="chat" 
                       size="16" 
-                      :color="activeTab === 'comments' ? '#2196f3' : '#ff9800'" 
+                      color="#2196f3" 
                     />
                   </view>
                   <view class="message-text">
                     <text class="user-name" :class="{ 'font-bold': !messageItem.read }">
                       {{ messageItem?.nickname }}
                     </text>
-                    <text class="action-text">{{ getMessageActionText(messageItem) }}</text>
-                    <text class="content-type">{{ getMessageSuffix(messageItem) }}</text>
+                    <text class="action-text">评论了你的</text>
+                    <text class="content-type">{{ messageItem.contentType === 'goods' ? '商品' : '动态' }}</text>
                   </view>
                 </view>
                 <text class="message-time">{{ formatTime(messageItem.timestamp) }}</text>
               </view>
               
               <!-- 评论内容 -->
-              <view v-if="messageItem.commentContent" class="comment-content">
-                <text class="comment-text">{{ messageItem.commentContent }}</text>
+              <view v-if="messageItem.content" class="comment-content">
+                <text class="comment-text">{{ messageItem.content }}</text>
               </view>
               
               <!-- 内容预览 -->
@@ -234,18 +149,6 @@ onMounted(() => {
                   :src="messageItem?.image" 
                   class="content-image"
                 />
-                
-                <!-- 操作按钮 -->
-                <view class="action-buttons">
-                  <view class="action-btn like-btn" @click.stop="likeMessage(messageItem)">
-                    <WdIcon name="heart" size="14" color="#666" />
-                    <text>赞</text>
-                  </view>
-                  <view class="action-btn reply-btn" @click.stop="replyComment(messageItem)">
-                    <WdIcon name="chat" size="14" color="#666" />
-                    <text>回复</text>
-                  </view>
-                </view>
               </view>
             </view>
             
@@ -259,27 +162,10 @@ onMounted(() => {
 </template>
 
 <style lang="scss" scoped>
-.tab-container {
-  @apply flex bg-white border-b border-gray-200;
-}
-
-.tab-item {
-  @apply flex-1 flex items-center justify-center py-3 relative;
-  
-  &.active {
-    @apply text-blue-500 border-b-2 border-blue-500;
-  }
-}
-
-.unread-badge {
-  @apply absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-4 h-4 flex items-center justify-center px-1;
-  font-size: 10px;
-}
-
 .message-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 240rpx);
+  height: calc(100vh - 180rpx);
   background-color: #f5f5f5;
   position: relative;
 }

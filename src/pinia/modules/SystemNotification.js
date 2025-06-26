@@ -57,20 +57,6 @@ export const useSystemNotification = defineStore('system-notification', () => {
     ]
   }
   
-  // 获取系统通知
-  const fetchNotifications = async () => {
-    try {
-      // 这里应该调用实际的API
-      // const res = await api.getSystemNotifications()
-      // notifications.value = res.data
-      
-      // 暂时使用模拟数据
-      initMockData()
-    } catch (error) {
-      console.error('获取系统通知失败:', error)
-    }
-  }
-  
   // 标记通知为已读
   const markAsRead = (id) => {
     const notification = notifications.value.find(item => item.id === id)
@@ -120,8 +106,6 @@ export const useSystemNotification = defineStore('system-notification', () => {
   const addNotification = (notification) => {
     notifications.value.unshift({
       ...notification,
-      id: Date.now(),
-      timestamp: Date.now(),
       read: false
     })
   }
@@ -145,7 +129,7 @@ export const useSystemNotification = defineStore('system-notification', () => {
       }
       // 再按优先级排序（高优先级在前）
       if (a.priority !== b.priority) {
-        return a.priority === 'high' ? -1 : 1
+        return a.priority > b.priority ? -1 : 1
       }
       // 最后按时间排序（新的在前）
       return b.timestamp - a.timestamp
@@ -193,7 +177,6 @@ export const useSystemNotification = defineStore('system-notification', () => {
     getSortedNotifications,
     getUnreadCount,
     getHighPriorityUnreadCount,
-    fetchNotifications,
     markAsRead,
     markAllAsRead,
     deleteNotification,

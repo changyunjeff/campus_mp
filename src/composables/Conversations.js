@@ -29,20 +29,10 @@ export function useConversations()  {
     console.log('Conversations.js 当前用户ID:', currentUserOpenid);
     
     privateChat.initConversations(currentUserOpenid);
-    
-    // 初始化系统通知数据
-    systemNotification.fetchNotifications();
-    
+
     // 清理过期缓存
     chatSettings.cleanExpiredCache();
-    
-    // 延迟补充用户信息，避免阻塞初始化
-    setTimeout(() => {
-      userInfoService.enrichConversationsUserInfo();
-      // 同时预加载聊天设置
-      loadChatSettings();
-    }, 500);
-    
+
     // 加载所有会话的聊天设置（使用chat-settings.js的批量预加载）
     const loadChatSettings = async () => {
         const privateChatConversations = privateChat.getConversations || [];
@@ -223,7 +213,6 @@ export function useConversations()  {
     const refreshConversations = async () => {
         console.log('强制刷新会话数据...');
         privateChat.initConversations(currentUserOpenid);
-        systemNotification.fetchNotifications();
         
         // 补充用户信息和聊天设置
         setTimeout(() => {
