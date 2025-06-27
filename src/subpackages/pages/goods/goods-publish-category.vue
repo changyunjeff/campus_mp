@@ -1,328 +1,243 @@
 <script setup>
 import Layout from "@/layout/index.vue"
-import { ref, reactive, computed, onMounted } from 'vue'
-import { onLoad, onUnload } from '@dcloudio/uni-app'
+import { ref, onMounted } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import { useRouter } from 'uni-mini-router'
-import { GoodsApi } from '@/api/goods'
+import { getAllCategories, getSubcategories } from './category.config.js'
 
 const router = useRouter()
 
-// 当前选中的一级分类ID
-const selectedCategoryId = ref('')
-// 当前选中的二级分类数据
-const subCategoriesData = ref([])
-// 选中分类的历史记录，用于显示最近使用
-const recentCategories = ref([])
-// 加载状态
+// 页面状态
 const loading = ref(true)
+const selectedCategory = ref(null)
+const selectedSubCategory = ref(null)
+
 // 分类数据
 const categories = ref([])
+const subCategories = ref([])
 
-// 初始化页面数据
-onLoad(() => {
-  // 获取本地缓存的最近使用分类
-  try {
-    const cached = uni.getStorageSync('recentCategories')
-    if (cached) {
-      recentCategories.value = JSON.parse(cached)
-    }
-  } catch (e) {
-    console.error('获取最近使用分类失败', e)
-  }
-  
-  // 获取分类数据
-  loadCategories()
-})
+// 显示子分类
+const showSubCategories = ref(false)
 
 // 加载分类数据
-const loadCategories = async () => {
+const loadCategories = () => {
   try {
-    loading.value = true
-    const response = await GoodsApi.getCategoryTree()
-    categories.value = response
-    // 默认选中第一个分类
-    if (categories.value.length > 0) {
-      selectCategory(categories.value[0].id)
-    }
+    categories.value = getAllCategories()
+    loading.value = false
   } catch (error) {
-    console.error('获取分类失败', error)
+    console.error('加载分类失败:', error)
     uni.showToast({
-      title: '获取分类失败',
+      title: '加载分类失败',
       icon: 'none'
     })
-  } finally {
-    loading.value = false
   }
 }
 
 // 选择一级分类
-const selectCategory = async (categoryId) => {
-  selectedCategoryId.value = categoryId
-  // 获取二级分类数据
-  try {
-    const response = await GoodsApi.getSubcategories(categoryId)
-    subCategoriesData.value = response || []
-  } catch (error) {
-    console.error('获取子分类失败', error)
-    subCategoriesData.value = []
+const selectCategory = (category) => {
+  selectedCategory.value = category
+  
+  // 获取子分类
+  const subs = getSubcategories(category.id)
+  if (subs.length > 0) {
+    subCategories.value = subs
+    showSubCategories.value = true
+    selectedSubCategory.value = null
+  } else {
+    // 没有子分类，直接跳转到发布页面
+    goToPublish()
+  }
+}
+
+// 选择子分类
+const selectSubCategory = (subCategory) => {
+  selectedSubCategory.value = subCategory
+  goToPublish()
+}
+
+// 返回上级分类
+const goBackToCategories = () => {
+  showSubCategories.value = false
+  selectedCategory.value = null
+  selectedSubCategory.value = null
+}
+
+// 跳转到发布页面
+const goToPublish = () => {
+  if (!selectedCategory.value) {
     uni.showToast({
-      title: '获取子分类失败',
+      title: '请选择商品分类',
       icon: 'none'
     })
+    return
   }
-}
 
-// 选择二级分类
-const selectSubcategory = (subcategory) => {
-  // 记录选择的分类到最近使用
-  saveToRecentCategories({
-    parentId: selectedCategoryId.value,
-    categoryId: subcategory.id,
-    name: subcategory.name,
-    icon: subcategory.icon
-  })
-  
-  // 跳转到下一步骤（发布商品详情页）
+  const params = {
+    categoryId: selectedCategory.value.id,
+    categoryName: selectedCategory.value.name
+  }
+
+  if (selectedSubCategory.value) {
+    params.subCategoryId = selectedSubCategory.value.id
+    params.subCategoryName = selectedSubCategory.value.name
+  }
+
   router.push({
-    name: 'publish_goods_submit',
-    params: {
-      categoryId: selectedCategoryId.value,
-      subcategoryId: subcategory.id,
-      subcategoryName: subcategory.name
-    }
+    name: 'goods_publish_submit',
+    query: params
   })
 }
 
-// 从最近使用中选择分类
-const selectFromRecent = (recent) => {
-  // 跳转到下一步骤
-  router.push({
-    name: 'publish_goods_submit',
-    params: {
-      categoryId: recent.parentId,
-      subcategoryId: recent.categoryId
-    }
-  })
-}
-
-// 保存到最近使用分类
-const saveToRecentCategories = (category) => {
-  // 移除已存在的相同项
-  let updatedRecent = recentCategories.value.filter(item => 
-    !(item.parentId === category.parentId && item.categoryId === category.categoryId)
-  )
-  
-  // 添加到开头
-  updatedRecent.unshift(category)
-  
-  // 只保留最近5个
-  if (updatedRecent.length > 5) {
-    updatedRecent = updatedRecent.slice(0, 5)
-  }
-  
-  recentCategories.value = updatedRecent
-  
-  // 保存到本地缓存
-  try {
-    uni.setStorageSync('recentCategories', JSON.stringify(updatedRecent))
-  } catch (e) {
-    console.error('保存最近使用分类失败', e)
-  }
-}
-
-// 是否有最近使用的分类
-const hasRecentCategories = computed(() => recentCategories.value.length > 0)
-
-// 按类型分组的分类（根据API返回的数据动态分组）
-const groupedCategories = computed(() => {
-  if (!categories.value || categories.value.length === 0) {
-    return { work: { title: 'Work!', items: [] }, fun: { title: 'Fun!', items: [] }, life: { title: 'Life!', items: [] } }
-  }
-  
-  // 简单的分组逻辑，可以根据实际需要调整
-  const itemsPerGroup = Math.ceil(categories.value.length / 3)
-  
-  return {
-    work: { 
-      title: 'Work!', 
-      items: categories.value.slice(0, itemsPerGroup)
-    },
-    fun: { 
-      title: 'Fun!', 
-      items: categories.value.slice(itemsPerGroup, itemsPerGroup * 2)
-    },
-    life: { 
-      title: 'Life!', 
-      items: categories.value.slice(itemsPerGroup * 2)
-    }
-  }
+// 页面加载
+onLoad((options) => {
+  loadCategories()
 })
-
-// 返回按钮处理
-const handleBack = () => {
-  router.back()
-}
 </script>
 
 <template>
   <layout>
     <template #left>
-      <view class="flex items-center h-full" @tap="handleBack">
-        <WdIcon name="arrow-left" size="40rpx" color="#333"/>
+      <view class="flex items-center h-full" @tap="showSubCategories ? goBackToCategories() : router.back()">
+        <WdIcon
+          name="arrow-left"
+          size="40rpx"
+          color="#333"
+        />
       </view>
     </template>
     <template #center>
-      <view class="text-32rpx font-medium text-#333">选择宝贝分类</view>
+      <view class="text-32rpx font-medium text-#333">
+        {{ showSubCategories ? `选择${selectedCategory?.name}子分类` : '选择商品分类' }}
+      </view>
     </template>
 
-    <!-- 加载中 -->
-    <view v-if="loading" class="w-full h-100vh flex items-center justify-center">
-      <WdIcon name="loading" size="60rpx" custom-style="color:#f43f5e" class="animate-spin"/>
-    </view>
-
-    <view v-else class="flex h-100vh">
-      <!-- 左侧分类导航 -->
-      <scroll-view scroll-y class="left-nav bg-gray-50 w-180rpx h-full">
-        <!-- 最近使用 -->
-        <template v-if="hasRecentCategories">
-          <view class="category-group py-20rpx">
-            <view class="px-20rpx py-10rpx">
-              <text class="text-24rpx text-#4fc08d font-medium">最近使用</text>
-            </view>
-          </view>
-        </template>
-        
-        <!-- 工作分类组 -->
-        <view class="category-group py-15rpx">
-          <view class="px-20rpx py-10rpx">
-            <text class="text-24rpx text-blue-500 font-medium">{{ groupedCategories.work.title }}</text>
-          </view>
-          
-          <view 
-            v-for="item in groupedCategories.work.items" 
-            :key="item.id"
-            class="py-30rpx px-20rpx text-center transition-colors duration-200"
-            :class="selectedCategoryId === item.id ? 'bg-white text-#333' : 'text-gray-600'"
-            @tap="selectCategory(item.id)"
-          >
-            <text class="text-26rpx">{{ item.name }}</text>
-          </view>
-        </view>
-        
-        <!-- 娱乐分类组 -->
-        <view class="category-group py-15rpx">
-          <view class="px-20rpx py-10rpx">
-            <text class="text-24rpx text-pink-500 font-medium">{{ groupedCategories.fun.title }}</text>
-          </view>
-          
-          <view 
-            v-for="item in groupedCategories.fun.items" 
-            :key="item.id"
-            class="py-30rpx px-20rpx text-center transition-colors duration-200"
-            :class="selectedCategoryId === item.id ? 'bg-white text-#333' : 'text-gray-600'"
-            @tap="selectCategory(item.id)"
-          >
-            <text class="text-26rpx">{{ item.name }}</text>
-          </view>
-        </view>
-        
-        <!-- 生活分类组 -->
-        <view class="category-group py-15rpx">
-          <view class="px-20rpx py-10rpx">
-            <text class="text-24rpx text-orange-500 font-medium">{{ groupedCategories.life.title }}</text>
-          </view>
-          
-          <view 
-            v-for="item in groupedCategories.life.items" 
-            :key="item.id"
-            class="py-30rpx px-20rpx text-center transition-colors duration-200"
-            :class="selectedCategoryId === item.id ? 'bg-white text-#333' : 'text-gray-600'"
-            @tap="selectCategory(item.id)"
-          >
-            <text class="text-26rpx">{{ item.name }}</text>
-          </view>
-        </view>
-      </scroll-view>
-      
-      <!-- 右侧内容区域 -->
-      <view class="right-content flex-1 bg-white h-full">
-        <scroll-view scroll-y class="h-full">
-          <!-- 最近使用 -->
-          <view v-if="hasRecentCategories" class="p-30rpx">
-            <view class="mb-20rpx">
-              <text class="text-28rpx font-medium text-#333">最近使用</text>
-            </view>
-            
-            <view class="grid grid-cols-3 gap-20rpx">
-              <view 
-                v-for="(item, index) in recentCategories" 
-                :key="index"
-                class="flex flex-col items-center py-20rpx bg-gray-50 rounded-12rpx transition-transform duration-200 active:scale-95"
-                @tap="selectFromRecent(item)"
-              >
-                <WdIcon :name="item.icon" size="60rpx" custom-style="color:#f43f5e" class="mb-10rpx"/>
-                <text class="text-26rpx text-#333 truncate w-90%">{{ item.name }}</text>
-              </view>
-            </view>
-          </view>
-          
-          <!-- 二级分类 -->
-          <view class="p-30rpx" v-if="subCategoriesData.length > 0">
-            <view class="mb-20rpx">
-              <text class="text-28rpx font-medium text-#333">
-                {{ categories.find(c => c.id === selectedCategoryId)?.name }}
-              </text>
-            </view>
-            
-            <view class="grid grid-cols-3 gap-y-30rpx gap-x-20rpx">
-              <view 
-                v-for="subcat in subCategoriesData" 
-                :key="subcat.id"
-                class="flex flex-col items-center py-20rpx bg-gray-50 rounded-12rpx transition-all duration-200 active:scale-95"
-                :style="{ 'animation-delay': `${subCategoriesData.indexOf(subcat) * 0.05}s` }"
-                @tap="selectSubcategory(subcat)"
-              >
-                <WdIcon :name="subcat.icon" size="70rpx" custom-style="color:#f43f5e" class="mb-10rpx"/>
-                <text class="text-26rpx text-#333 truncate w-90% text-center">{{ subcat.name }}</text>
-              </view>
-            </view>
-          </view>
-          
-          <!-- 无分类提示 -->
-          <view v-if="subCategoriesData.length === 0 && selectedCategoryId" class="p-30rpx flex flex-col items-center justify-center" style="height: 300rpx;">
-            <WdIcon name="info-circle" size="60rpx" custom-style="color:#ddd" class="mb-20rpx"/>
-            <text class="text-28rpx text-gray-400">该分类暂无子分类</text>
-          </view>
-          
-          <!-- 请选择分类提示 -->
-          <view v-if="!selectedCategoryId" class="p-30rpx flex flex-col items-center justify-center" style="height: 300rpx;">
-            <WdIcon name="info-circle" size="60rpx" custom-style="color:#ddd" class="mb-20rpx"/>
-            <text class="text-28rpx text-gray-400">请选择左侧分类</text>
-          </view>
-        </scroll-view>
+    <view class="bg-#f8f8f8 min-h-100vh">
+      <!-- 加载状态 -->
+      <view v-if="loading" class="w-full h-100vh flex items-center justify-center">
+        <WdIcon name="loading" size="60rpx" custom-style="color:#f43f5e" class="animate-spin"/>
+        <text class="ml-20rpx text-28rpx text-gray-400">加载中...</text>
       </view>
+
+      <!-- 分类选择 -->
+      <template v-else>
+        <!-- 面包屑导航 -->
+        <view v-if="selectedCategory" class="bg-white px-30rpx py-20rpx border-b border-gray-100">
+          <view class="flex items-center text-26rpx text-gray-500">
+            <text>商品分类</text>
+            <WdIcon name="arrow-right" size="24rpx" custom-style="color:#999" class="mx-10rpx"/>
+            <text :class="{ 'text-#f43f5e': showSubCategories }">{{ selectedCategory.name }}</text>
+            <template v-if="selectedSubCategory">
+              <WdIcon name="arrow-right" size="24rpx" custom-style="color:#999" class="mx-10rpx"/>
+              <text class="text-#f43f5e">{{ selectedSubCategory.name }}</text>
+            </template>
+          </view>
+        </view>
+
+        <!-- 一级分类列表 -->
+        <view v-if="!showSubCategories" class="p-30rpx">
+          <view class="grid grid-cols-2 gap-20rpx">
+            <view 
+              v-for="category in categories" 
+              :key="category.id"
+              class="bg-white rounded-16rpx p-30rpx shadow-sm transition-all duration-300 active:scale-98 active:bg-gray-50"
+              @tap="selectCategory(category)"
+            >
+              <view class="flex flex-col items-center">
+                <view 
+                  class="w-100rpx h-100rpx rounded-20rpx mb-20rpx flex items-center justify-center"
+                  :style="`background-color: ${category.color}20;`"
+                >
+                  <WdIcon 
+                    :name="category.icon" 
+                    size="60rpx" 
+                    :custom-style="`color: ${category.color}`"
+                  />
+                </view>
+                <text class="text-28rpx text-#333 font-medium text-center">{{ category.name }}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 子分类列表 -->
+        <view v-else class="p-30rpx">
+          <!-- 无子分类直接选择 -->
+          <view v-if="subCategories.length === 0" class="bg-white rounded-16rpx p-40rpx text-center">
+            <WdIcon name="info-o" size="80rpx" custom-style="color:#ddd" class="mb-20rpx"/>
+            <text class="block text-28rpx text-gray-400 mb-40rpx">该分类暂无子分类</text>
+            <view 
+              class="inline-block px-50rpx py-20rpx bg-gradient-to-r from-#f43f5e to-#ff7676 rounded-full"
+              @tap="goToPublish"
+            >
+              <text class="text-28rpx text-white">直接发布</text>
+            </view>
+          </view>
+
+          <!-- 子分类网格 -->
+          <view v-else class="grid grid-cols-1 gap-20rpx">
+            <view 
+              v-for="subCategory in subCategories" 
+              :key="subCategory.id"
+              class="bg-white rounded-16rpx p-30rpx shadow-sm flex items-center transition-all duration-300 active:scale-98 active:bg-gray-50"
+              @tap="selectSubCategory(subCategory)"
+            >
+              <image 
+                :src="subCategory.icon" 
+                class="w-80rpx h-80rpx rounded-12rpx mr-30rpx"
+                mode="aspectFit"
+              />
+              <view class="flex-1">
+                <text class="text-30rpx text-#333 font-medium">{{ subCategory.name }}</text>
+              </view>
+              <WdIcon name="arrow-right" size="32rpx" custom-style="color:#999"/>
+            </view>
+
+            <!-- 其他选项 -->
+            <view 
+              class="bg-white rounded-16rpx p-30rpx shadow-sm flex items-center transition-all duration-300 active:scale-98 active:bg-gray-50"
+              @tap="goToPublish"
+            >
+              <view class="w-80rpx h-80rpx rounded-12rpx mr-30rpx bg-gray-100 flex items-center justify-center">
+                <WdIcon name="more-o" size="40rpx" custom-style="color:#999"/>
+              </view>
+              <view class="flex-1">
+                <text class="text-30rpx text-#333 font-medium">其他</text>
+                <text class="block text-24rpx text-gray-500 mt-5rpx">不在以上分类中</text>
+              </view>
+              <WdIcon name="arrow-right" size="32rpx" custom-style="color:#999"/>
+            </view>
+          </view>
+        </view>
+
+        <!-- 提示信息 -->
+        <view class="px-30rpx pb-30rpx">
+          <view class="bg-#fff3cd rounded-12rpx p-30rpx">
+            <view class="flex items-start">
+              <WdIcon name="warning-o" size="32rpx" custom-style="color:#f59e0b" class="mr-15rpx mt-5rpx"/>
+              <view class="flex-1">
+                <text class="text-26rpx text-#92400e leading-36rpx">
+                  请选择合适的商品分类，这将帮助其他用户更好地找到您的商品。分类选择错误可能会影响商品的曝光率。
+                </text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </template>
     </view>
   </layout>
 </template>
 
-<style>
-.left-nav {
-  box-shadow: 2rpx 0 5rpx rgba(0, 0, 0, 0.05);
+<style scoped>
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out forwards;
-  opacity: 0;
-}
-
-@keyframes fadeIn {
+@keyframes spin {
   from {
-    opacity: 0;
-    transform: translateY(10rpx);
+    transform: rotate(0deg);
   }
   to {
-    opacity: 1;
-    transform: translateY(0);
+    transform: rotate(360deg);
   }
 }
 </style>

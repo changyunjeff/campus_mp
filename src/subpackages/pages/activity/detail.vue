@@ -1,15 +1,37 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import Layout from '@/layout/index.vue'
 import { useRouter } from 'uni-mini-router'
 import { useToast } from '@/composables/toast'
 import { ActivityApi } from '@/subpackages/api/activity'
 // 引入地图组件
 import Amap from '@/components/Amap.vue'
+// 引入分享功能
+import SharePopups from '@/components/share-popups.vue'
+import { useShare } from '@/subpackages/composables/share'
 
 const router = useRouter()
 const toast = useToast()
+
+// 初始化分享功能
+const {
+  showSharePopup,
+  showQrcodePopup,
+  qrcodeUrl,
+  qrcodeLoading,
+  canShareToTimeline,
+  init: initShare,
+  openSharePopup,
+  closeSharePopup,
+  shareToWechat,
+  shareToMoments,
+  generateQrCode,
+  closeQrcodePopup,
+  saveQrcodeToAlbum,
+  createShareMessageOptions,
+  createShareTimelineOptions
+} = useShare()
 
 // 路由参数
 const activityId = ref('')
@@ -25,7 +47,6 @@ const currentUserId = ref('current_user') // 模拟当前用户ID
 // 页面状态
 const showLocationMap = ref(false)
 const showParticipantsList = ref(false)
-const showQRCode = ref(false)
 const showMoreActions = ref(false)
 
 // 参与者分页
@@ -120,6 +141,11 @@ const canJoin = computed(() => {
   if (userGender === 'female' && female >= reqFemale) return false
   
   return true
+})
+
+// 初始化分享
+onMounted(() => {
+  initShare()
 })
 
 // 加载活动详情
@@ -239,37 +265,22 @@ const leaveActivity = async () => {
 
 // 分享活动
 const shareActivity = async () => {
+  showSharePopup.value = true
+
   try {
     console.log('分享活动，ID:', activityId.value)
     const response = await ActivityApi.shareActivity(activityId.value)
     console.log('分享活动API响应:', response)
-
-    uni.showActionSheet({
-      itemList: ['分享给好友', '生成海报', '复制链接', '保存二维码'],
-      success: (res) => {
-        switch (res.tapIndex) {
-          case 0:
-            toast.show('分享功能开发中')
-            break
-          case 1:
-            toast.show('海报生成功能开发中')
-            break
-          case 2:
-            uni.setClipboardData({
-              data: `活动房间号：${activity.value?.roomNumber}`,
-              success: () => toast.success('房间号已复制')
-            })
-            break
-          case 3:
-            showQRCode.value = true
-            break
-        }
-      }
-    })
+    // 可以在这里更新分享统计等
   } catch (error) {
     console.error('分享活动失败:', error)
     toast.show(error.message || '分享失败')
   }
+}
+
+// 生成二维码
+const handleGenerateQrCode = async () => {
+  await generateQrCode("activity_detail", {id: activityId.value})
 }
 
 // 管理活动
@@ -367,6 +378,27 @@ onLoad((options) => {
   }
 })
 
+// 微信分享配置
+onShareAppMessage(() => {
+  if (!activity.value) return {}
+  
+  return createShareMessageOptions({
+    title: activity.value.title,
+    desc: activity.value.description?.substring(0, 50) + '...',
+    path: `/subpackages/pages/activity/detail?id=${activityId.value}`,
+    imageUrl: activity.value.coverImage || ''
+  })
+})
+
+onShareTimeline(() => {
+  if (!activity.value) return {}
+  
+  return createShareTimelineOptions({
+    title: `${activity.value.title} - 快来参与吧！`,
+    path: `/subpackages/pages/activity/detail?id=${activityId.value}`,
+    imageUrl: activity.value.coverImage || ''
+  })
+})
 
 // 下拉刷新处理
 const onRefresherRefresh = async () => {
@@ -425,8 +457,7 @@ const onScroll = (e) => {
     <scroll-view
       scroll-y
       v-else-if="activity"
-      class="min-h-screen bg-gray-50"
-      style="height: 100vh;"
+      class="min-h-full bg-gray-50"
       :refresher-enabled="refresherEnabled"
       :refresher-triggered="refresherTriggered"
       :scroll-top="scrollTop"
@@ -722,19 +753,18 @@ const onScroll = (e) => {
       </view>
     </wd-popup>
 
-    <!-- 二维码弹窗 -->
-    <wd-popup v-model="showQRCode" custom-style="border-radius: 20rpx;">
-      <view class="p-6 text-center">
-        <text class="text-lg font-medium text-gray-800 block mb-4">活动二维码</text>
-        <image
-          :src="activity?.qrCode"
-          class="w-48 h-48 mx-auto mb-4"
-          mode="aspectFit"
-        />
-        <text class="text-sm text-gray-600 block mb-4">扫描二维码参与活动</text>
-        <text class="text-xs text-gray-400">房间号：{{ activity?.roomNumber }}</text>
-      </view>
-    </wd-popup>
+    <!-- 分享弹窗组件 -->
+    <SharePopups
+      v-model:showSharePopup="showSharePopup"
+      v-model:showQrcodePopup="showQrcodePopup"
+      :qrcodeUrl="qrcodeUrl"
+      :qrcodeLoading="qrcodeLoading"
+      :canShareToTimeline="canShareToTimeline"
+      @shareToWechat="shareToWechat"
+      @shareToMoments="shareToMoments"
+      @generateQrCode="handleGenerateQrCode"
+      @saveQrcode="saveQrcodeToAlbum"
+    />
   </Layout>
 </template>
 

@@ -5,6 +5,7 @@ import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { useRouter } from 'uni-mini-router'
 import UploadProgress from '@/components/upload-progress.vue'
 import { GoodsApi } from '@/api/goods'
+import events from '@/utils/events'
 
 const router = useRouter()
 
@@ -66,6 +67,27 @@ const canSubmit = computed(() => {
 // 动态字段值
 const customFieldValues = ref({})
 
+// 页面状态
+const isEdit = ref(false)
+const goodsId = ref('')
+
+// 表单数据
+const formData = reactive({
+  title: '',
+  description: '',
+  price: '',
+  originalPrice: '',
+  categoryId: '',
+  categoryName: '',
+  subCategoryId: '',
+  subCategoryName: '',
+  condition: '全新',
+  location: '',
+  isReal: true,
+  images: [],
+  mediaIds: []
+})
+
 // 加载页面数据
 onLoad(async (options) => {
   // 获取分类和子分类ID
@@ -99,6 +121,13 @@ onLoad(async (options) => {
     
     // 尝试从缓存读取保存的数据
     tryLoadFromCache()
+    
+    // 编辑模式
+    if (options.id && options.mode === 'edit') {
+      isEdit.value = true
+      goodsId.value = options.id
+      loadGoodsData()
+    }
     
   } catch (error) {
     console.error('加载分类数据失败', error)
@@ -207,326 +236,255 @@ const validateForm = () => {
 
 // 选择图片
 const chooseImage = () => {
+  const maxCount = 9 - imageList.value.length
+  if (maxCount <= 0) {
+    uni.showToast({ title: '最多只能上传9张图片', icon: 'none' })
+    return
+  }
+
   uni.chooseImage({
-    count: uploadMaxCount - imageList.value.length, // 限制剩余可选数量
-    sizeType: ['original', 'compressed'],
+    count: maxCount,
+    sizeType: ['compressed'],
     sourceType: ['album', 'camera'],
     success: (res) => {
-      // 直接添加图片到列表，暂不上传
-      res.tempFilePaths.forEach((filePath, index) => {
-        const imageInfo = {
-          id: Date.now().toString() + index,
-          path: filePath,
-          url: filePath, // 小程序临时地址
-          uploaded: false // 标记为未上传
-        }
-        imageList.value.push(imageInfo)
-      })
+      // 显示上传进度
+      events.emit('showUpload', 0)
       
-      uni.showToast({
-        title: '图片添加成功',
-        icon: 'success'
-      })
+      uploadImages(res.tempFilePaths)
+    }
+  })
+}
 
-      console.debug('图片选择成功', {
-        count: res.tempFilePaths.length,
-        totalImages: imageList.value.length
+// 上传图片
+const uploadImages = async (filePaths) => {
+  try {
+    const uploadPromises = filePaths.map((filePath, index) => {
+      return new Promise((resolve, reject) => {
+        // 上传到OSS
+        GoodsApi.uploadGoodsImageToOSS(filePath, goodsId.value || 'temp')
+          .then(response => {
+            // 更新进度
+            const progress = ((index + 1) / filePaths.length) * 100
+            events.emit('updateUpload', progress)
+            
+            if (response.code === 200) {
+              resolve(response.data)
+            } else {
+              reject(new Error(response.message || '上传失败'))
+            }
+          })
+          .catch(reject)
       })
-    },
-    fail: (error) => {
-      console.error('选择图片失败', error)
-      uni.showToast({
-        title: '选择图片失败',
-        icon: 'none'
+    })
+
+    const results = await Promise.all(uploadPromises)
+    
+    // 添加到图片列表
+    results.forEach(result => {
+      imageList.value.push({
+        url: result.url,
+        objectKey: result.objectKey
       })
+      formData.mediaIds.push(result.mediaId)
+    })
+
+    // 隐藏进度条
+    events.emit('hideUpload')
+    
+    uni.showToast({
+      title: '上传成功',
+      icon: 'success'
+    })
+  } catch (error) {
+    console.error('上传图片失败:', error)
+    events.emit('hideUpload')
+    uni.showToast({
+      title: '上传失败',
+      icon: 'none'
+    })
+  }
+}
+
+// 删除图片
+const deleteImage = (index) => {
+  uni.showModal({
+    title: '删除图片',
+    content: '确定要删除这张图片吗？',
+    success: (res) => {
+      if (res.confirm) {
+        const deletedImage = imageList.value[index]
+        imageList.value.splice(index, 1)
+        formData.mediaIds.splice(index, 1)
+        
+        // 如果是已上传的图片，需要删除OSS文件
+        if (deletedImage.objectKey) {
+          GoodsApi.deleteGoodsMediaFromOSS(deletedImage.objectKey)
+            .catch(error => {
+              console.error('删除OSS文件失败:', error)
+            })
+        }
+      }
     }
   })
 }
 
 // 预览图片
 const previewImage = (index) => {
-  const urls = imageList.value.map(img => img.path)
+  const urls = imageList.value.map(img => img.url)
   uni.previewImage({
-    urls,
+    urls: urls,
     current: index
   })
 }
 
-// 删除图片
-const deleteImage = (index) => {
-  uni.showModal({
-    title: '提示',
-    content: '确定要删除这张图片吗？',
+// 选择商品状况
+const selectCondition = () => {
+  uni.showActionSheet({
+    itemList: conditionOptions.map(option => option.value),
     success: (res) => {
-      if (res.confirm) {
-        imageList.value.splice(index, 1)
-        
-        // 更新缓存
-        try {
-          uni.setStorageSync('goodsPublishImages', JSON.stringify(imageList.value))
-        } catch (e) {
-          console.error('保存图片缓存失败', e)
-        }
+      formData.condition = conditionOptions[res.tapIndex].value
+    }
+  })
+}
+
+// 选择位置
+const selectLocation = () => {
+  uni.chooseLocation({
+    success: (res) => {
+      formData.location = res.address || res.name
+    },
+    fail: (err) => {
+      if (err.errMsg.includes('denied')) {
+        uni.showModal({
+          title: '提示',
+          content: '需要获取位置权限才能选择发货地址',
+          success: (modalRes) => {
+            if (modalRes.confirm) {
+              uni.openSetting()
+            }
+          }
+        })
       }
     }
   })
 }
 
-// 设置主图
-const setMainImage = (index) => {
-  if (index === 0) return
-  
-  const temp = imageList.value[0]
-  imageList.value[0] = imageList.value[index]
-  imageList.value[index] = temp
-  
-  // 更新缓存
-  try {
-    uni.setStorageSync('goodsPublishImages', JSON.stringify(imageList.value))
-  } catch (e) {
-    console.error('保存图片缓存失败', e)
-  }
-  
-  uni.showToast({
-    title: '已设为主图',
-    icon: 'success'
-  })
-}
-
-// 根据字段名获取适当的输入类型
-const getInputType = (fieldType) => {
-  switch (fieldType) {
-    case 'number':
-      return 'digit'
-    case 'date':
-      return 'date'
-    case 'text':
-    default:
-      return 'text'
-  }
-}
-
-// 分组显示的表单项
-const basicFields = computed(() => {
-  return [
-    { field: 'title', label: '标题', placeholder: '请输入宝贝标题', required: true },
-    { field: 'price', label: '售价', placeholder: '请输入售价', required: true, type: 'digit' },
-    { field: 'originPrice', label: '原价', placeholder: '请输入原价，不填则与售价相同', type: 'digit' },
-    { field: 'location', label: '交易地点', placeholder: '请输入交易地点，如宿舍楼下、图书馆等', required: true }
-  ]
-})
-
-const specFields = computed(() => {
-  return specConfig.value.specs || []
-})
-
-const detailFields = computed(() => {
-  return specConfig.value.details || []
-})
-
-// 选择成色
-const selectCondition = (condition) => {
-  setFieldValue('condition', condition.value)
-}
-
-// 渲染表单项
-const renderFormField = (field) => {
-  if (field.field_type === 'select') {
-    return 'select'
-  }
-  return 'input'
-}
-
-// 提交商品
+// 发布或更新商品
 const submitGoods = async () => {
-  // 先验证表单
-  validateForm()
+  if (!validateForm()) return
   
-  // 验证图片数量
-  if (!hasEnoughImages.value) {
-    uni.showToast({
-      title: `请至少上传${uploadMinCount}张图片`,
-      icon: 'none'
-    })
-    activeTab.value = 'images' // 切换到图片上传标签
-    return
-  }
-  
-  // 如果表单无效
-  if (!isFormValid.value) {
-    uni.showToast({
-      title: '请完善必填信息',
-      icon: 'none'
-    })
-    activeTab.value = 'params' // 切换到商品参数标签
-    return
-  }
-  
-  // 显示提交进度
-  showUploadProgress.value = true
-  uploadPercentage.value = 0
+  loading.value = true
   
   try {
-    // Step 1: 先创建商品（不含媒体）
-    uni.showLoading({ title: '创建商品中...' })
-    
-    // 整合商品数据
-    const createGoodsData = {
-      title: goodsParams.title,
+    const requestData = {
+      title: goodsParams.title.trim(),
       description: goodsParams.desc || '',
       price: parseFloat(goodsParams.price) || 0,
-      original_price: parseFloat(goodsParams.originPrice) || parseFloat(goodsParams.price) || 0,
-      category_id: subcategoryId.value || categoryId.value,
+      originalPrice: goodsParams.originPrice ? parseFloat(goodsParams.originPrice) : parseFloat(goodsParams.price) || 0,
+      categoryId: subcategoryId.value || categoryId.value,
       location: goodsParams.location || '',
-      condition: '全新', // 默认为全新，后续可以让用户选择
-      is_real: true,
-      media_ids: [], // 先创建商品，后续关联媒体
+      condition: goodsParams.condition || '全新',
+      isReal: true,
+      mediaIds: formData.mediaIds
     }
-    
-    // 添加动态字段
-    Object.keys(customFieldValues.value).forEach(key => {
-      if (!['title', 'description', 'price', 'original_price', 'category_id', 'location', 'condition', 'is_real', 'media_ids'].includes(key)) {
-        createGoodsData[key] = customFieldValues.value[key]
-      }
-    })
 
-    console.debug('创建商品数据', { createGoodsData })
-
-    const goodsResult = await GoodsApi.createGoods(createGoodsData)
-    uploadPercentage.value = 30
-    
-    // Step 2: 上传图片到OSS
-    if (imageList.value.length > 0) {
-      uni.showLoading({ title: '上传图片中...' })
-      
-      const filePaths = imageList.value.map(img => img.path)
-      
-      // 使用批量上传
-      const uploadResults = await GoodsApi.batchUploadGoodsImages(
-        filePaths, 
-        goodsResult.id,
-        (progress) => {
-          // 更新上传进度：30% + 上传进度的40%
-          uploadPercentage.value = 30 + Math.round(progress.progress * 0.4)
-        }
-      )
-      
-      uploadPercentage.value = 70
-      
-      // Step 3: 创建媒体记录关联到商品
-      uni.showLoading({ title: '关联图片中...' })
-      
-      // 处理批量上传结果
-      const mediaInfoList = []
-      if (Array.isArray(uploadResults)) {
-        // 所有上传成功
-        uploadResults.forEach(result => {
-          mediaInfoList.push({
-            object_key: result.object_key,
-            url: result.url,
-            type: result.type || 'goods_image'
-          })
-        })
-      } else if (uploadResults.success) {
-        // 部分成功的情况
-        uploadResults.success.forEach(result => {
-          mediaInfoList.push({
-            object_key: result.object_key,
-            url: result.url,
-            type: result.type || 'goods_image'
-          })
-        })
-        
-        if (uploadResults.failed && uploadResults.failed.length > 0) {
-          console.warn('部分图片上传失败', uploadResults.failed)
-        }
-      }
-      
-      if (mediaInfoList.length > 0) {
-        await GoodsApi.createGoodsMediaRecords({
-          goods_id: goodsResult.id,
-          media_list: mediaInfoList
-        })
-      }
+    let response
+    if (isEdit.value) {
+      response = await GoodsApi.updateGoods(goodsId.value, requestData)
+    } else {
+      response = await GoodsApi.createGoods(requestData)
     }
-    
-    uploadPercentage.value = 100
-    uni.hideLoading()
-    showUploadProgress.value = false
-    
-    // 发布成功
-    uni.showToast({
-      title: '发布成功！',
-      icon: 'success',
-      duration: 2000
-    })
-    
-    // 清除本地数据
-    clearFormData()
-    
-    // 延迟跳转到商品详情页
-    setTimeout(() => {
-      router.replace(`/subpackages/pages/goods/goods-details?id=${goodsResult.id}`)
-    }, 2000)
 
-    console.debug('商品发布成功', { goodsId: goodsResult.id, mediaCount: imageList.value.length })
-    
+    if (response.code === 200) {
+      uni.showToast({
+        title: isEdit.value ? '更新成功' : '发布成功',
+        icon: 'success'
+      })
+      
+      setTimeout(() => {
+        // 返回到个人中心
+        router.reLaunch({
+          name: 'goods_personal_center'
+        })
+      }, 1500)
+    } else {
+      throw new Error(response.message || '操作失败')
+    }
   } catch (error) {
-    uploadPercentage.value = 0
-    showUploadProgress.value = false
-    uni.hideLoading()
-    
-    console.error('商品发布失败', error)
+    console.error('提交失败:', error)
+    uni.showToast({
+      title: error.message || '操作失败',
+      icon: 'none'
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+// 保存草稿
+const saveDraft = async () => {
+  if (!goodsParams.title.trim()) {
+    uni.showToast({ title: '请至少输入商品标题', icon: 'none' })
+    return
+  }
+
+  loading.value = true
+  
+  try {
+    const draftData = {
+      ...goodsParams,
+      status: 'draft'
+    }
+
+    await GoodsApi.saveDraft(draftData)
     
     uni.showToast({
-      title: error.message || '发布失败，请重试',
-      icon: 'none',
-      duration: 3000
+      title: '草稿保存成功',
+      icon: 'success'
     })
+    
+    setTimeout(() => {
+      router.back()
+    }, 1500)
+  } catch (error) {
+    console.error('保存草稿失败:', error)
+    uni.showToast({
+      title: '保存失败',
+      icon: 'none'
+    })
+  } finally {
+    loading.value = false
   }
 }
 
-// 返回上一步
-const prevStep = () => {
-  // 保存当前数据到缓存中
+// 加载商品数据（编辑模式）
+const loadGoodsData = async () => {
   try {
-    uni.setStorageSync('goodsPublishParams', JSON.stringify(goodsParams))
-    if (imageList.value.length > 0) {
-      uni.setStorageSync('goodsPublishImages', JSON.stringify(imageList.value))
+    loading.value = true
+    const response = await GoodsApi.getGoodsDetail(goodsId.value)
+    
+    if (response.code === 200) {
+      const goods = response.data
+      Object.assign(goodsParams, {
+        title: goods.title,
+        price: goods.price.toString(),
+        originPrice: goods.originalPrice ? goods.originalPrice.toString() : '',
+        desc: goods.description || '',
+        location: goods.location || '',
+        condition: goods.condition || '全新',
+        isReal: goods.isReal || true
+      })
+      imageList.value = goods.images || []
+      formData.mediaIds = goods.mediaIds || []
     }
-  } catch (e) {
-    console.error('保存参数失败', e)
-  }
-  
-  router.back()
-}
-
-// 清除表单数据
-const clearFormData = () => {
-  // 清除基本参数
-  goodsParams.title = ''
-  goodsParams.price = ''
-  goodsParams.originPrice = ''
-  goodsParams.desc = ''
-  goodsParams.location = ''
-  
-  // 清除动态字段
-  customFieldValues.value = {}
-  
-  // 清除图片
-  imageList.value = []
-  
-  // 清除分类信息
-  categoryId.value = ''
-  subcategoryId.value = ''
-  
-  // 清除本地缓存
-  try {
-    uni.removeStorageSync('goodsPublishParams')
-    uni.removeStorageSync('goodsPublishImages')
-    uni.removeStorageSync('goodsPublishCategory')
-  } catch (e) {
-    console.error('清除缓存失败', e)
+  } catch (error) {
+    console.error('加载商品数据失败:', error)
+    uni.showToast({
+      title: '加载失败',
+      icon: 'none'
+    })
+  } finally {
+    loading.value = false
   }
 }
 </script>
@@ -534,7 +492,7 @@ const clearFormData = () => {
 <template>
   <layout>
     <template #left>
-      <view class="flex items-center h-full" @tap="prevStep">
+      <view class="flex items-center h-full" @tap="saveDraft">
         <WdIcon name="arrow-left" size="40rpx" color="#333"/>
       </view>
     </template>
@@ -763,7 +721,7 @@ const clearFormData = () => {
                 class="relative w-full aspect-square bg-gray-100 rounded-12rpx overflow-hidden border border-gray-200"
               >
                 <image 
-                  :src="image.path" 
+                  :src="image.url" 
                   class="w-full h-full object-cover" 
                   mode="aspectFill"
                   @tap="previewImage(index)"
@@ -837,9 +795,9 @@ const clearFormData = () => {
       <view class="flex-1 mr-20rpx">
         <button 
           class="h-90rpx flex items-center justify-center border border-gray-300 rounded-full bg-white text-#333"
-          @tap="prevStep"
+          @tap="saveDraft"
         >
-          <text class="text-30rpx">返回</text>
+          <text class="text-30rpx">保存草稿</text>
         </button>
       </view>
       <view class="flex-1">

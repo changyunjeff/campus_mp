@@ -357,8 +357,8 @@ onMounted(() => {
       <!-- 活动列表 - 使用scroll-view包装 -->
       <scroll-view
         scroll-y
-        class="px-4 pb-20"
-        style="height: calc(100vh - 240rpx);"
+        class="px-4 bg-red-500"
+        style="height: calc(68vh);"
         :refresher-enabled="refresherEnabled"
         :refresher-triggered="refresherTriggered"
         :scroll-top="scrollTop"

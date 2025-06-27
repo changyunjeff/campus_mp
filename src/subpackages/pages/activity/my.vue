@@ -380,7 +380,7 @@ onMounted(() => {
       </view>
     </template>
 
-    <view class="min-h-screen bg-gray-50">
+    <view class="min-h-full bg-gray-50">
       <!-- 统计卡片 -->
       <view class="bg-white mx-4 mt-3 mb-3 rounded-lg p-4">
         <view class="grid grid-cols-2 gap-4">
@@ -443,8 +443,8 @@ onMounted(() => {
       <!-- 活动列表 -->
       <scroll-view
         scroll-y
-        class="px-4 pb-20"
-        style="height: calc(100vh - 340rpx);"
+        class="px-4 bg-red-500"
+        style="height: calc(58vh);"
         :refresher-enabled="refresherEnabled"
         :refresher-triggered="refresherTriggered"
         :scroll-top="scrollTop"

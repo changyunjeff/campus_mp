@@ -199,86 +199,103 @@ export default defineUniPages({
                         title: '个人中心'
                     }
                 },
+                // ==================== 商品模块页面配置 ====================
                 {
-                    path: 'pages/goods/categories',
-                    name: 'categories',
+                    path: 'pages/goods/goods-personal-center',
+                    name: 'goods_personal_center',
                     style: {
-                        navigationBarTitleText: '分类'
+                        navigationBarTitleText: '我的商品'
                     },
                     meta: {
-                        title: '分类'
+                        title: '我的商品',
+                        verify: true,
+                    }
+                },
+                {
+                    path: 'pages/goods/goods-publish-category',
+                    name: 'goods_publish_category',
+                    style: {
+                        navigationBarTitleText: '选择分类'
+                    },
+                    meta: {
+                        title: '选择分类',
+                        verify: true,
+                    }
+                },
+                {
+                    path: 'pages/goods/goods-publish-submit',
+                    name: 'goods_publish_submit',
+                    style: {
+                        navigationBarTitleText: '发布商品'
+                    },
+                    meta: {
+                        title: '发布商品',
+                        verify: true,
+                    }
+                },
+                {
+                    path: 'pages/goods/order-confirm',
+                    name: 'goods_order_confirm',
+                    style: {
+                        navigationBarTitleText: '确认订单'
+                    },
+                    meta: {
+                        title: '确认订单',
+                        verify: true,
+                    }
+                },
+                {
+                    path: 'pages/goods/pay-confirm',
+                    name: 'goods_pay_confirm',
+                    style: {
+                        navigationBarTitleText: '支付订单'
+                    },
+                    meta: {
+                        title: '支付订单',
+                        verify: true,
+                    }
+                },
+                {
+                    path: 'pages/goods/addresses',
+                    name: 'goods_addresses',
+                    style: {
+                        navigationBarTitleText: '地址管理'
+                    },
+                    meta: {
+                        title: '地址管理',
+                        verify: true,
+                    }
+                },
+                {
+                    path: 'pages/goods/favorites',
+                    name: 'goods_favorites',
+                    style: {
+                        navigationBarTitleText: '我的收藏'
+                    },
+                    meta: {
+                        title: '我的收藏',
+                        verify: true,
+                    }
+                },
+                {
+                    path: 'pages/goods/categories',
+                    name: 'goods_categories',
+                    style: {
+                        navigationBarTitleText: '商品分类'
+                    },
+                    meta: {
+                        title: '商品分类'
                     }
                 },
                 {
                     path: 'pages/goods/goods-details',
-                    name: 'goods-details',
+                    name: 'goods_details',
                     style: {
                         navigationBarTitleText: '商品详情'
                     },
                     meta: {
                         title: '商品详情',
                         footer: true,
-                    }
-                },
-                {
-                    path: 'pages/goods/order-confirm',
-                    name: 'order_confirm',
-                    style: {
-                        navigationBarTitleText: '确认订单'
-                    },
-                    meta: {
-                        title: '确认订单'
-                    }
-                },
-                {
-                    path: 'pages/goods/addresses',
-                    name: 'addresses',
-                    style: {
-                        navigationBarTitleText: '地址管理'
-                    },
-                    meta: {
-                        title: '地址管理'
-                    }
-                },
-                {
-                    path: 'pages/goods/pay-confirm',
-                    name: 'pay_confirm',
-                    style: {
-                        navigationBarTitleText: '确认支付'
-                    },
-                    meta: {
-                        title: '确认支付'
-                    }
-                },
-                {
-                    path: 'pages/goods/goods-publish-category',
-                    name: 'publish_goods_category',
-                    style: {
-                        navigationBarTitleText: '发布商品-选择类别'
-                    },
-                    meta: {
-                        title: '发布商品-选择类别'
-                    }
-                },
-                {
-                    path: 'pages/goods/goods-publish-submit',
-                    name: 'publish_goods_submit',
-                    style: {
-                        navigationBarTitleText: '发布商品-填写参数'
-                    },
-                    meta: {
-                        title: '发布商品-填写参数'
-                    }
-                },
-                {
-                    path: 'pages/goods/goods-personal-center',
-                    name: 'goods_personal_center',
-                    style: {
-                        navigationBarTitleText: '个人中心'
-                    },
-                    meta: {
-                        title: '个人中心',
-                        verify: true
                     }
                 },
                 {
