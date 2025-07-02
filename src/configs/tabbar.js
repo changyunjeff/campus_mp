@@ -21,9 +21,15 @@ const list = [
         icon: 'shopping',
         name: 'goods',
         iconActive: 'shopping-fill',
+        style: {
+            navigationBarTitleText: '首页',
+            enablePullDownRefresh: true,
+            onReachBottomDistance: 100,
+        },
         meta: {
             title: '商品闲置',
             footer: true,
+            pageScroll: true, // 启用页面级滚动
         }
     },
     {

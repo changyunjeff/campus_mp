@@ -88,6 +88,11 @@ export const useNewFans = defineStore('newFans', () => {
     return fanMessages.value.length > 0 ? fanMessages.value[0] : null
   })
   
+  const clearAllData = () => {
+    fanMessages.value = []
+    console.log('NewFans: 已清除所有数据')
+  }
+
   return {
     fanMessages,
     getLatestFanMessage,
@@ -98,7 +103,8 @@ export const useNewFans = defineStore('newFans', () => {
     unfollowUser,
     getUnreadCount,
     addFanMessage,
-    batchMarkAsRead
+    batchMarkAsRead,
+    clearAllData
   }
 }, {
   persist: {

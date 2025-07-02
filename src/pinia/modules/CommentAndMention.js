@@ -62,6 +62,11 @@ export const useCommentAndMention = defineStore('commentAndMention', () => {
     ids.forEach(id => deleteMessage(id))
   }
   
+  const clearAllData = () => {
+    commentMessages.value = []
+    console.log('CommentAndMention: 已清除所有数据')
+  }
+
   return {
     commentMessages,
     markAsRead,
@@ -70,7 +75,8 @@ export const useCommentAndMention = defineStore('commentAndMention', () => {
     getUnreadCount,
     addCommentMessage,
     replyComment,
-    batchDeleteMessages
+    batchDeleteMessages,
+    clearAllData
   }
 }, {
   persist: {

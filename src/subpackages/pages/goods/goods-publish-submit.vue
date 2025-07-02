@@ -1,244 +1,202 @@
 <script setup>
 import Layout from "@/layout/index.vue"
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { useRouter } from 'uni-mini-router'
-import UploadProgress from '@/components/upload-progress.vue'
 import { GoodsApi } from '@/api/goods'
 import events from '@/utils/events'
+import { useToast } from '@/composables/toast'
+import { getFullFieldConfig, FIELD_TYPES } from '@/subpackages/configs/goods/specs.config'
+import { getCategoryById, getSubcategoryById } from '@/subpackages/pages/goods/category.config.js'
+// 引入地图组件
+import Amap from '@/components/Amap.vue'
 
 const router = useRouter()
+const toast = useToast()
 
-// 加载状态
+// 页面状态
 const loading = ref(true)
+const isSubmitting = ref(false)
 
 // 分类信息
 const categoryId = ref('')
 const subcategoryId = ref('')
-const subcategoryName = ref('')
 const categoryInfo = ref(null)
 const subcategoryInfo = ref(null)
-const specConfig = ref({})
 
-// 当前激活的步骤标签 (params: 参数信息, images: 图片上传)
-const activeTab = ref('params')
-
-// 商品参数和价格
-const goodsParams = reactive({
-  title: '',
-  price: '',
-  originPrice: '',
-  desc: '',
-  location: '' // 新增交易地点字段
+// 字段配置
+const fieldConfig = ref({
+  basic: [],
+  specs: [],
+  all: []
 })
 
-// 表单验证状态
+// 表单数据
+const formData = reactive({})
+
+// 表单验证错误
 const formErrors = ref({})
-const isFormValid = ref(false)
 
 // 图片上传相关
 const imageList = ref([])
-const showUploadProgress = ref(false)
-const uploadPercentage = ref(0)
-const uploadMaxCount = 9  // 最大上传数量
-const uploadMinCount = 3  // 最小上传数量
+const isUploading = ref(false)
+const uploadMaxCount = 9
+const uploadMinCount = 1
 
-// 成色选项
-const conditionOptions = [
-  { value: '全新', label: '全新', desc: '全新未拆封或未使用过的物品' },
-  { value: '几乎全新', label: '几乎全新', desc: '使用时间极短，外观和功能几乎全新' },
-  { value: '9成新', label: '9成新', desc: '轻微使用痕迹，功能完好，外观近乎全新' },
-  { value: '8成新', label: '8成新', desc: '有使用痕迹，但功能完好，整体状况良好' },
-  { value: '7成新', label: '7成新', desc: '明显使用痕迹，但功能正常，无明显缺陷' },
-  { value: '6成新', label: '6成新', desc: '有磨损或缺陷，但不影响基本功能的使用' },
-  { value: '5成新及以下', label: '5成新及以下', desc: '明显磨损或有一定功能问题' }
-]
-
-// 商品图片至少需要上传的数量判断
-const hasEnoughImages = computed(() => {
-  return imageList.value.length >= uploadMinCount
-})
-
-// 是否可提交
-const canSubmit = computed(() => {
-  return hasEnoughImages.value && isFormValid.value
-})
-
-// 动态字段值
-const customFieldValues = ref({})
-
-// 页面状态
+// 编辑模式
 const isEdit = ref(false)
 const goodsId = ref('')
 
-// 表单数据
-const formData = reactive({
-  title: '',
-  description: '',
-  price: '',
-  originalPrice: '',
-  categoryId: '',
-  categoryName: '',
-  subCategoryId: '',
-  subCategoryName: '',
-  condition: '全新',
-  location: '',
-  isReal: true,
-  images: [],
-  mediaIds: []
+// 位置选择相关
+const showLocationPicker = ref(false)
+const locationDetail = ref({
+  address: '',
+  latitude: 0,
+  longitude: 0
 })
 
-// 加载页面数据
+// 计算属性
+const isFormValid = computed(() => {
+  return Object.keys(formErrors.value).length === 0 && 
+         imageList.value.length >= uploadMinCount
+})
+
+const canSubmit = computed(() => {
+  return isFormValid.value && !isSubmitting.value && !isUploading.value
+})
+
+// 页面加载
 onLoad(async (options) => {
-  // 获取分类和子分类ID
-  categoryId.value = options.categoryId || ''
-  subcategoryId.value = options.subcategoryId || ''
-  subcategoryName.value = options.subcategoryName || ''
-  
+  console.debug("传入的参数：", options)
   try {
     loading.value = true
     
+    // 获取传递的参数
+    categoryId.value = options.categoryId || ''
+    subcategoryId.value = options.subcategoryId || ''
+    
     // 获取分类信息
-    if (categoryId.value) {
-      const categoryResponse = await GoodsApi.getAllCategories()
-      categoryInfo.value = categoryResponse.find(cat => cat.id === categoryId.value)
-    }
-    
-    // 获取子分类信息
-    if (categoryId.value && subcategoryId.value) {
-      const subcategoriesResponse = await GoodsApi.getSubcategories(categoryId.value)
-      subcategoryInfo.value = subcategoriesResponse.find(subcat => subcat.id === subcategoryId.value)
-    }
-    
-    // 获取分类规格配置
+    categoryInfo.value = getCategoryById(categoryId.value)
     if (subcategoryId.value) {
-      const specsResponse = await GoodsApi.getCategorySpecs(subcategoryId.value)
-      specConfig.value = specsResponse
+      subcategoryInfo.value = getSubcategoryById(categoryId.value, subcategoryId.value)
     }
     
-    // 初始化商品参数
-    initGoodsParams()
+    // 获取字段配置
+    fieldConfig.value = getFullFieldConfig(categoryId.value, subcategoryId.value)
     
-    // 尝试从缓存读取保存的数据
-    tryLoadFromCache()
+    // 初始化表单数据
+    initFormData()
     
     // 编辑模式
     if (options.id && options.mode === 'edit') {
       isEdit.value = true
       goodsId.value = options.id
-      loadGoodsData()
+      await loadGoodsData()
     }
     
   } catch (error) {
-    console.error('加载分类数据失败', error)
-    uni.showToast({
-      title: '加载分类数据失败',
-      icon: 'none'
-    })
+    console.error('页面初始化失败:', error)
+    toast.show('页面加载失败')
   } finally {
     loading.value = false
   }
 })
 
-// 初始化商品参数
-const initGoodsParams = () => {
-  // 合并规格字段和详情字段
-  const allFields = [
-    ...(specConfig.value.specs || []),
-    ...(specConfig.value.details || [])
-  ]
+// 初始化表单数据
+const initFormData = () => {
+  // 确保fieldConfig已加载
+  if (!fieldConfig.value.all || fieldConfig.value.all.length === 0) {
+    console.warn('字段配置未正确加载')
+    return
+  }
   
-  // 初始化表单字段
-  allFields.forEach(field => {
-    goodsParams[field.field_name] = ''
+  // 初始化所有字段
+  fieldConfig.value.all.forEach(field => {
+    if (field && field.field) {
+      formData[field.field] = field.defaultValue || ''
+    }
   })
   
-  // 如果有分类名称，自动填充到标题中
-  if (subcategoryInfo.value) {
-    goodsParams.title = subcategoryInfo.value.name
+  // 设置默认标题
+  if (subcategoryInfo.value && subcategoryInfo.value.name) {
+    formData.title = subcategoryInfo.value.name
+  }
+  
+  // 确保商品状况有默认值
+  if (!formData.condition) {
+    formData.condition = '全新'
+  }
+  
+  console.log('初始化表单数据:', formData)
+}
+
+// 获取输入框类型
+const getInputType = (fieldType) => {
+  switch (fieldType) {
+    case FIELD_TYPES.NUMBER:
+      return 'number'
+    case FIELD_TYPES.DATE:
+      return 'date'
+    default:
+      return 'text'
   }
 }
 
-// 尝试从缓存中加载数据
-const tryLoadFromCache = () => {
-  try {
-    const paramsStr = uni.getStorageSync('goodsPublishParams')
-    if (paramsStr) {
-      const cachedParams = JSON.parse(paramsStr)
-      // 合并缓存数据到当前表单
-      Object.keys(cachedParams).forEach(key => {
-        if (key in goodsParams) {
-          goodsParams[key] = cachedParams[key]
-        }
-      })
-      
-      // 如果有缓存的图片数据，也加载
-      const imagesStr = uni.getStorageSync('goodsPublishImages')
-      if (imagesStr) {
-        try {
-          imageList.value = JSON.parse(imagesStr)
-        } catch (e) {
-          console.error('解析图片缓存失败', e)
-        }
-      }
-    }
-  } catch (e) {
-    console.error('获取缓存数据失败', e)
-  }
-}
-
-// 切换标签页
-const switchTab = (tab) => {
-  activeTab.value = tab
-}
-
-// 设置字段值
-const setFieldValue = (fieldName, value) => {
-  customFieldValues.value[fieldName] = value
-  validateForm()
-}
-
-// 验证表单
+// 表单验证 - 修复时机问题
 const validateForm = () => {
-  // 重置错误信息
+  if (!fieldConfig.value.all || fieldConfig.value.all.length === 0) {
+    return // 如果字段配置还未加载，暂不验证
+  }
+  
   formErrors.value = {}
   
-  // 验证必填字段
-  const requiredFields = ['title', 'price', 'desc']
-  if (specConfig.value.specs) {
-    // 添加规格中的必填字段
-    specConfig.value.specs.forEach(spec => {
-      if (spec.is_required) {
-        requiredFields.push(spec.field_name)
+  // 验证所有必填字段
+  fieldConfig.value.all.forEach(field => {
+    if (!field || !field.field) return // 防御性检查
+    
+    if (field.required && !formData[field.field]) {
+      formErrors.value[field.field] = `${field.label}不能为空`
+    }
+    
+    // 验证数字类型
+    if (field.type === FIELD_TYPES.NUMBER && formData[field.field]) {
+      const value = parseFloat(formData[field.field])
+      if (isNaN(value)) {
+        formErrors.value[field.field] = '请输入有效数字'
+      } else {
+        if (field.min && value < field.min) {
+          formErrors.value[field.field] = `最小值为${field.min}`
+        }
+        if (field.max && value > field.max) {
+          formErrors.value[field.field] = `最大值为${field.max}`
+        }
       }
-    })
-  }
-  
-  // 检查必填字段
-  requiredFields.forEach(field => {
-    if (!goodsParams[field]) {
-      formErrors.value[field] = '此项为必填项'
+    }
+    
+    // 验证文本长度
+    if (field.maxLength && formData[field.field] && formData[field.field].length > field.maxLength) {
+      formErrors.value[field.field] = `最多输入${field.maxLength}个字符`
     }
   })
   
-  // 验证价格
-  if (goodsParams.price && isNaN(parseFloat(goodsParams.price))) {
-    formErrors.value.price = '请输入有效价格'
+  // 验证图片
+  if (imageList.value.length < uploadMinCount) {
+    formErrors.value.images = `至少上传${uploadMinCount}张图片`
   }
-  
-  if (goodsParams.originPrice && isNaN(parseFloat(goodsParams.originPrice))) {
-    formErrors.value.originPrice = '请输入有效原价'
-  }
-  
-  // 表单是否有效
-  isFormValid.value = Object.keys(formErrors.value).length === 0
 }
+
+// 输入事件直接调用 validateForm
 
 // 选择图片
 const chooseImage = () => {
-  const maxCount = 9 - imageList.value.length
+  const maxCount = uploadMaxCount - imageList.value.length
   if (maxCount <= 0) {
-    uni.showToast({ title: '最多只能上传9张图片', icon: 'none' })
+    toast.show(`最多只能上传${uploadMaxCount}张图片`)
+    return
+  }
+
+  if (isUploading.value) {
+    toast.show('正在上传图片，请稍后')
     return
   }
 
@@ -246,11 +204,8 @@ const chooseImage = () => {
     count: maxCount,
     sizeType: ['compressed'],
     sourceType: ['album', 'camera'],
-    success: (res) => {
-      // 显示上传进度
-      events.emit('showUpload', 0)
-      
-      uploadImages(res.tempFilePaths)
+    success: async (res) => {
+      await uploadImages(res.tempFilePaths)
     }
   })
 }
@@ -258,23 +213,18 @@ const chooseImage = () => {
 // 上传图片
 const uploadImages = async (filePaths) => {
   try {
-    const uploadPromises = filePaths.map((filePath, index) => {
-      return new Promise((resolve, reject) => {
-        // 上传到OSS
-        GoodsApi.uploadGoodsImageToOSS(filePath, goodsId.value || 'temp')
-          .then(response => {
-            // 更新进度
-            const progress = ((index + 1) / filePaths.length) * 100
-            events.emit('updateUpload', progress)
-            
-            if (response.code === 200) {
-              resolve(response.data)
-            } else {
-              reject(new Error(response.message || '上传失败'))
-            }
-          })
-          .catch(reject)
-      })
+    isUploading.value = true
+    events.emit('showUpload', 0)
+    
+    const uploadPromises = filePaths.map(async (filePath, index) => {
+      const response = await GoodsApi.uploadGoodsImageToOSS(filePath, goodsId.value || 'temp')
+      console.debug("上传图片:", response)
+      
+      // 更新进度
+      const progress = ((index + 1) / filePaths.length) * 100
+      events.emit('updateUpload', progress)
+      
+      return response
     })
 
     const results = await Promise.all(uploadPromises)
@@ -283,25 +233,23 @@ const uploadImages = async (filePaths) => {
     results.forEach(result => {
       imageList.value.push({
         url: result.url,
-        objectKey: result.objectKey
+        object_key: result.object_key || result.objectKey,
+        type: result.type || 'image'
       })
-      formData.mediaIds.push(result.mediaId)
     })
 
-    // 隐藏进度条
     events.emit('hideUpload')
+    toast.show('图片上传成功')
     
-    uni.showToast({
-      title: '上传成功',
-      icon: 'success'
-    })
+    // 重新验证表单
+    validateForm()
+    
   } catch (error) {
     console.error('上传图片失败:', error)
     events.emit('hideUpload')
-    uni.showToast({
-      title: '上传失败',
-      icon: 'none'
-    })
+    toast.show('图片上传失败')
+  } finally {
+    isUploading.value = false
   }
 }
 
@@ -314,15 +262,17 @@ const deleteImage = (index) => {
       if (res.confirm) {
         const deletedImage = imageList.value[index]
         imageList.value.splice(index, 1)
-        formData.mediaIds.splice(index, 1)
         
-        // 如果是已上传的图片，需要删除OSS文件
+        // 删除OSS文件
         if (deletedImage.objectKey) {
           GoodsApi.deleteGoodsMediaFromOSS(deletedImage.objectKey)
             .catch(error => {
               console.error('删除OSS文件失败:', error)
             })
         }
+        
+        // 重新验证表单
+        validateForm()
       }
     }
   })
@@ -337,156 +287,191 @@ const previewImage = (index) => {
   })
 }
 
-// 选择商品状况
-const selectCondition = () => {
-  uni.showActionSheet({
-    itemList: conditionOptions.map(option => option.value),
-    success: (res) => {
-      formData.condition = conditionOptions[res.tapIndex].value
-    }
-  })
-}
-
-// 选择位置
-const selectLocation = () => {
-  uni.chooseLocation({
-    success: (res) => {
-      formData.location = res.address || res.name
-    },
-    fail: (err) => {
-      if (err.errMsg.includes('denied')) {
-        uni.showModal({
-          title: '提示',
-          content: '需要获取位置权限才能选择发货地址',
-          success: (modalRes) => {
-            if (modalRes.confirm) {
-              uni.openSetting()
-            }
-          }
-        })
-      }
-    }
-  })
-}
-
-// 发布或更新商品
-const submitGoods = async () => {
-  if (!validateForm()) return
+// 设置主图
+const setMainImage = (index) => {
+  if (index === 0) return
   
-  loading.value = true
+  const mainImage = imageList.value[index]
+  imageList.value.splice(index, 1)
+  imageList.value.unshift(mainImage)
+}
+
+// 打开地图选择器
+const openLocationPicker = () => {
+  showLocationPicker.value = true
+}
+
+// 处理地图选择位置
+const handleLocationSelect = (selectedLocation) => {
+  console.log('选择的位置:', selectedLocation)
+  
+  // 存储完整的位置信息
+  const location = {
+    address: selectedLocation.address || selectedLocation.name || '未知位置',
+    latitude: selectedLocation.latitude,
+    longitude: selectedLocation.longitude
+  }
+
+  locationDetail.value = location
+  
+  formData.location = location.address
+  formData.latitude = location.latitude
+  formData.longitude = location.longitude
+  
+  // 关闭位置选择器
+  showLocationPicker.value = false
+  validateForm()
+  
+  toast.show('位置选择成功')
+}
+
+// 处理选择器变化 - 修复函数绑定问题
+const handlePickerChange = (field, e) => {
+  if (!field || !field.options) {
+    console.warn('字段或选项不存在:', field)
+    return
+  }
+  
+  const selectedIndex = e.detail.value
+  if (field.options[selectedIndex]) {
+    formData[field.field] = field.options[selectedIndex]
+    validateForm()
+  }
+}
+
+// 获取选择器当前值的索引
+const getPickerValue = (field) => {
+  if (!field || !field.options || !formData[field.field]) {
+    return 0
+  }
+  const currentValue = formData[field.field]
+  const index = field.options.indexOf(currentValue)
+  return index >= 0 ? index : 0
+}
+
+// 注意：选择器直接在模板中使用内联函数处理事件
+
+// 提交表单
+const submitForm = async () => {
+  validateForm()
+  
+  if (!isFormValid.value) {
+    toast.show('请检查表单输入')
+    return
+  }
   
   try {
-    const requestData = {
-      title: goodsParams.title.trim(),
-      description: goodsParams.desc || '',
-      price: parseFloat(goodsParams.price) || 0,
-      originalPrice: goodsParams.originPrice ? parseFloat(goodsParams.originPrice) : parseFloat(goodsParams.price) || 0,
-      categoryId: subcategoryId.value || categoryId.value,
-      location: goodsParams.location || '',
-      condition: goodsParams.condition || '全新',
-      isReal: true,
-      mediaIds: formData.mediaIds
+    isSubmitting.value = true
+    
+    // 准备提交数据
+    const submitData = {
+      title: formData.title.trim(),
+      description: formData.description || '',
+      price: parseFloat(formData.price) || 0,
+      original_price: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
+      category_id: subcategoryId.value || categoryId.value,
+      location: formData.location || '未知',
+      longitude: formData.longitude || 0,
+      latitude: formData.latitude || 0,
+      condition: formData.condition || '全新',
+      is_real: true,
+      media_list: imageList.value || [],
     }
+    
+    // 添加规格参数
+    fieldConfig.value.specs.forEach(field => {
+      if (formData[field.field]) {
+        submitData.specs[field.field] = formData[field.field]
+      }
+    })
 
     let response
     if (isEdit.value) {
-      response = await GoodsApi.updateGoods(goodsId.value, requestData)
+      response = await GoodsApi.updateGoods(goodsId.value, submitData)
     } else {
-      response = await GoodsApi.createGoods(requestData)
+      response = await GoodsApi.createGoods(submitData)
     }
 
-    if (response.code === 200) {
-      uni.showToast({
-        title: isEdit.value ? '更新成功' : '发布成功',
-        icon: 'success'
+    console.debug('提交成功:', response)
+
+    toast.show(isEdit.value ? '更新成功' : '发布成功')
+
+    // 清理本地缓存
+    uni.removeStorageSync('goodsPublishDraft')
+
+    setTimeout(() => {
+      router.replace({
+        name: 'goods_personal_center'
       })
-      
-      setTimeout(() => {
-        // 返回到个人中心
-        router.reLaunch({
-          name: 'goods_personal_center'
-        })
-      }, 1500)
-    } else {
-      throw new Error(response.message || '操作失败')
-    }
+    }, 1500)
   } catch (error) {
     console.error('提交失败:', error)
-    uni.showToast({
-      title: error.message || '操作失败',
-      icon: 'none'
-    })
+    toast.show(error.message || '操作失败')
   } finally {
-    loading.value = false
+    isSubmitting.value = false
   }
 }
 
 // 保存草稿
-const saveDraft = async () => {
-  if (!goodsParams.title.trim()) {
-    uni.showToast({ title: '请至少输入商品标题', icon: 'none' })
-    return
+const saveDraft = () => {
+  const draftData = {
+    categoryId: categoryId.value,
+    subcategoryId: subcategoryId.value,
+    formData: formData,
+    imageList: imageList.value,
+    timestamp: Date.now()
   }
-
-  loading.value = true
   
-  try {
-    const draftData = {
-      ...goodsParams,
-      status: 'draft'
-    }
-
-    await GoodsApi.saveDraft(draftData)
-    
-    uni.showToast({
-      title: '草稿保存成功',
-      icon: 'success'
-    })
-    
-    setTimeout(() => {
-      router.back()
-    }, 1500)
-  } catch (error) {
-    console.error('保存草稿失败:', error)
-    uni.showToast({
-      title: '保存失败',
-      icon: 'none'
-    })
-  } finally {
-    loading.value = false
-  }
+  uni.setStorageSync('goodsPublishDraft', JSON.stringify(draftData))
+  toast.show('草稿已保存')
+  router.back()
 }
 
 // 加载商品数据（编辑模式）
 const loadGoodsData = async () => {
   try {
-    loading.value = true
     const response = await GoodsApi.getGoodsDetail(goodsId.value)
     
     if (response.code === 200) {
       const goods = response.data
-      Object.assign(goodsParams, {
-        title: goods.title,
-        price: goods.price.toString(),
-        originPrice: goods.originalPrice ? goods.originalPrice.toString() : '',
-        desc: goods.description || '',
-        location: goods.location || '',
-        condition: goods.condition || '全新',
-        isReal: goods.isReal || true
+      
+      // 填充基础数据
+      Object.keys(formData).forEach(key => {
+        if (goods[key] !== undefined) {
+          formData[key] = goods[key]
+        }
       })
-      imageList.value = goods.images || []
-      formData.mediaIds = goods.mediaIds || []
+      
+      // 填充规格数据
+      if (goods.specs) {
+        Object.keys(goods.specs).forEach(key => {
+          if (formData[key] !== undefined) {
+            formData[key] = goods.specs[key]
+          }
+        })
+      }
+      
+      // 填充图片数据
+      if (goods.images) {
+        imageList.value = goods.images.map(img => ({
+          url: img.url,
+          object_key: img.object_key,
+          type: img.type || 'image'
+        }))
+      }
     }
   } catch (error) {
     console.error('加载商品数据失败:', error)
-    uni.showToast({
-      title: '加载失败',
-      icon: 'none'
-    })
-  } finally {
-    loading.value = false
+    toast.show('加载商品数据失败')
   }
 }
+
+// 页面卸载时保存草稿
+onUnload(() => {
+  if (!isEdit.value && (formData.title || imageList.value.length > 0)) {
+    saveDraft()
+  }
+})
 </script>
 
 <template>
@@ -497,294 +482,252 @@ const loadGoodsData = async () => {
       </view>
     </template>
     <template #center>
-      <view class="text-32rpx font-medium text-#333">发布商品</view>
+      <view class="text-32rpx font-medium text-#333">
+        {{ isEdit ? '编辑商品' : '发布商品' }}
+      </view>
     </template>
 
     <view class="bg-#f8f8f8 min-h-100vh pb-150rpx">
-      <!-- 加载中 -->
+      <!-- 加载状态 -->
       <view v-if="loading" class="w-full h-100vh flex items-center justify-center">
         <WdIcon name="loading" size="60rpx" custom-style="color:#f43f5e" class="animate-spin"/>
+        <text class="ml-20rpx text-28rpx text-gray-500">加载中...</text>
       </view>
       
       <template v-else>
         <!-- 分类信息 -->
-        <view class="bg-white px-30rpx py-20rpx flex items-center">
+        <view class="bg-white px-30rpx py-20rpx flex items-center border-b border-gray-100">
           <WdIcon name="apps" size="40rpx" custom-style="color:#f43f5e" class="mr-15rpx"/>
-          <text class="text-28rpx text-#333">{{ categoryInfo?.name }} > {{ subcategoryInfo?.name }}</text>
+          <text class="text-28rpx text-#333">
+            {{ categoryInfo?.name }}
+            <text v-if="subcategoryInfo"> > {{ subcategoryInfo.name }}</text>
+          </text>
         </view>
         
-        <!-- 步骤标签页 -->
-        <view class="bg-white mt-20rpx px-30rpx py-20rpx">
-          <view class="flex border-b border-gray-100">
-            <view 
-              class="flex-1 text-center py-20rpx relative transition-all"
-              :class="activeTab === 'params' ? 'text-#f43f5e font-medium' : 'text-gray-500'"
-              @tap="switchTab('params')"
-            >
-              <text class="text-30rpx">商品信息</text>
-              <view v-if="activeTab === 'params'" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-80rpx h-4rpx bg-#f43f5e rounded-full"></view>
+        <!-- 商品图片上传 -->
+        <view class="bg-white p-30rpx mb-20rpx">
+          <view class="mb-20rpx flex items-center justify-between">
+            <view class="flex items-center">
+              <text class="text-30rpx font-medium text-#333">商品图片</text>
+              <text class="text-red-500 ml-5rpx">*</text>
+              <text class="text-24rpx text-gray-500 ml-15rpx">
+                至少上传{{ uploadMinCount }}张，第一张为主图
+              </text>
             </view>
-            <view 
-              class="flex-1 text-center py-20rpx relative transition-all"
-              :class="activeTab === 'images' ? 'text-#f43f5e font-medium' : 'text-gray-500'"
-              @tap="switchTab('images')"
-            >
-              <text class="text-30rpx">上传图片</text>
-              <view v-if="activeTab === 'images'" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-80rpx h-4rpx bg-#f43f5e rounded-full"></view>
-            </view>
+            <text class="text-24rpx text-gray-500">{{ imageList.length }}/{{ uploadMaxCount }}</text>
           </view>
           
-          <!-- 进度指示器 -->
-          <view class="flex items-center justify-center mt-20rpx mb-10rpx">
-            <view class="flex items-center w-500rpx">
-              <view class="flex flex-col items-center">
-                <view class="w-40rpx h-40rpx rounded-full bg-#f43f5e text-white flex items-center justify-center">
-                  <text class="text-22rpx">1</text>
-                </view>
-                <text class="text-24rpx text-#f43f5e mt-8rpx">选择分类</text>
+          <view class="grid grid-cols-3 gap-20rpx">
+            <!-- 已上传图片 -->
+            <view
+              v-for="(image, index) in imageList"
+              :key="index"
+              class="aspect-square bg-gray-100 rounded-12rpx overflow-hidden border border-gray-200"
+            >
+              <image 
+                :src="image.url" 
+                class="w-full h-full object-cover" 
+                mode="aspectFill"
+                @tap="previewImage(index)"
+              />
+              
+              <!-- 主图标识 -->
+              <view v-if="index === 0" class="absolute top-10rpx left-10rpx bg-#f43f5e bg-opacity-90 rounded-4rpx px-8rpx py-4rpx z-1">
+                <text class="text-20rpx text-white">主图</text>
               </view>
               
-              <view class="flex-1 h-2rpx bg-gray-200 mx-10rpx">
-                <view class="h-full bg-#f43f5e" style="width: 100%;"></view>
-              </view>
-              
-              <view class="flex flex-col items-center">
-                <view class="w-40rpx h-40rpx rounded-full bg-#f43f5e text-white flex items-center justify-center">
-                  <text class="text-22rpx">2</text>
-                </view>
-                <text class="text-24rpx text-#f43f5e mt-8rpx">填写信息</text>
-              </view>
-            </view>
-          </view>
-        </view>
-        
-        <!-- 商品参数表单 -->
-        <view v-show="activeTab === 'params'" class="fade-in">
-          <scroll-view scroll-y class="form-container">
-            <!-- 基本信息 -->
-            <view class="form-section">
-              <view class="section-title">
-                <text class="text-30rpx font-medium text-#333">基本信息</text>
-              </view>
-              
-              <view class="form-group">
-                <view v-for="field in basicFields" :key="field.field" class="form-item">
-                  <view class="form-label">
-                    <text class="text-28rpx text-#333">{{ field.label }}</text>
-                    <text v-if="field.required" class="text-red-500 ml-5rpx">*</text>
-                  </view>
-                  <view class="form-input-wrap">
-                    <input 
-                      :type="field.type || 'text'" 
-                      v-model="goodsParams[field.field]" 
-                      :placeholder="field.placeholder" 
-                      class="form-input"
-                      @input="validateForm"
-                    />
-                    <view v-if="formErrors[field.field]" class="form-error">
-                      {{ formErrors[field.field] }}
-                    </view>
-                  </view>
-                </view>
-              </view>
-            </view>
-            
-            <!-- 商品规格 -->
-            <view class="form-section" v-if="specFields.length > 0">
-              <view class="section-title">
-                <text class="text-30rpx font-medium text-#333">商品规格</text>
-              </view>
-              
-              <view class="form-group">
-                <view v-for="field in specFields" :key="field.field_name" class="form-item">
-                  <view class="form-label">
-                    <text class="text-28rpx text-#333">{{ field.field_label }}</text>
-                    <text v-if="field.is_required" class="text-red-500 ml-5rpx">*</text>
-                  </view>
-                  <view class="form-input-wrap">
-                    <!-- 下拉选择 -->
-                    <view v-if="field.field_type === 'select'" class="condition-selector">
-                      <picker 
-                        mode="selector" 
-                        :range="field.options || []"
-                        @change="(e) => setFieldValue(field.field_name, field.options[e.detail.value])"
-                      >
-                        <view class="picker-view">
-                          <text v-if="customFieldValues[field.field_name]" class="text-28rpx text-#333">{{ customFieldValues[field.field_name] }}</text>
-                          <text v-else class="text-28rpx text-gray-400">{{ field.placeholder || `请选择${field.field_label}` }}</text>
-                          <WdIcon name="chevron-down" size="24rpx" custom-style="color:#999" class="ml-10rpx"/>
-                        </view>
-                      </picker>
-                    </view>
-                    <!-- 输入框 -->
-                    <input 
-                      v-else
-                      :type="getInputType(field.field_type)" 
-                      v-model="customFieldValues[field.field_name]" 
-                      :placeholder="field.placeholder || `请输入${field.field_label}`" 
-                      class="form-input"
-                      @input="validateForm"
-                    />
-                    <view v-if="formErrors[field.field_name]" class="form-error">
-                      {{ formErrors[field.field_name] }}
-                    </view>
-                  </view>
-                </view>
-              </view>
-            </view>
-            
-            <!-- 详细信息 -->
-            <view class="form-section" v-if="detailFields.length > 0">
-              <view class="section-title">
-                <text class="text-30rpx font-medium text-#333">详细信息</text>
-              </view>
-              
-              <view class="form-group">
-                <view v-for="field in detailFields" :key="field.field_name" class="form-item">
-                  <view class="form-label">
-                    <text class="text-28rpx text-#333">{{ field.field_label }}</text>
-                    <text v-if="field.is_required" class="text-red-500 ml-5rpx">*</text>
-                  </view>
-                  <view class="form-input-wrap">
-                    <input 
-                      :type="getInputType(field.field_type)" 
-                      v-model="customFieldValues[field.field_name]" 
-                      :placeholder="field.placeholder || `请输入${field.field_label}`" 
-                      class="form-input"
-                      @input="validateForm"
-                    />
-                    <view v-if="formErrors[field.field_name]" class="form-error">
-                      {{ formErrors[field.field_name] }}
-                    </view>
-                  </view>
-                </view>
-              </view>
-            </view>
-            
-            <!-- 商品描述 -->
-            <view class="form-section">
-              <view class="section-title">
-                <text class="text-30rpx font-medium text-#333">商品描述</text>
-                <text class="text-red-500 ml-5rpx">*</text>
-              </view>
-              
-              <view class="form-group">
-                <view class="form-item">
-                  <textarea 
-                    v-model="goodsParams.desc" 
-                    placeholder="请详细描述宝贝的品牌、型号、规格、成色、使用感受等信息，让买家更了解宝贝..." 
-                    class="form-textarea"
-                    maxlength="500"
-                    @input="validateForm"
-                  />
-                  <view class="text-right text-24rpx text-gray-400 mt-10rpx">
-                    {{ goodsParams.desc.length }}/500
-                  </view>
-                  <view v-if="formErrors.desc" class="form-error">
-                    {{ formErrors.desc }}
-                  </view>
-                </view>
-              </view>
-            </view>
-            
-            <!-- 按钮跳转图片上传 -->
-            <view class="p-30rpx flex justify-center mb-30rpx">
-              <view 
-                class="h-90rpx w-400rpx flex items-center justify-center bg-gradient-to-r from-#f43f5e to-#ff7676 text-white rounded-full shadow-md shadow-pink-200"
-                @tap="activeTab = 'images'"
-              >
-                <text class="text-30rpx">下一步：上传图片</text>
-                <WdIcon name="arrow-right" size="28rpx" color="#fff" class="ml-10rpx"/>
-              </view>
-            </view>
-          </scroll-view>
-        </view>
-        
-        <!-- 图片上传内容 -->
-        <view v-show="activeTab === 'images'" class="fade-in">
-          <!-- 商品图片上传 -->
-          <view class="bg-white p-30rpx mb-20rpx">
-            <view class="mb-20rpx flex items-center justify-between">
-              <view class="flex items-center">
-                <text class="text-30rpx font-medium text-#333">商品图片</text>
-                <text class="text-red-500 ml-5rpx">*</text>
-                <text class="text-24rpx text-gray-500 ml-15rpx">至少上传{{ uploadMinCount }}张，第一张为主图</text>
-              </view>
-              <text class="text-24rpx text-gray-500">{{ imageList.length }}/{{ uploadMaxCount }}</text>
-            </view>
-            
-            <view class="grid grid-cols-3 gap-20rpx">
-              <!-- 已上传图片 -->
-              <view
-                v-for="(image, index) in imageList"
-                :key="image.id"
-                class="relative w-full aspect-square bg-gray-100 rounded-12rpx overflow-hidden border border-gray-200"
-              >
-                <image 
-                  :src="image.url" 
-                  class="w-full h-full object-cover" 
-                  mode="aspectFill"
-                  @tap="previewImage(index)"
-                />
-                
-                <!-- 主图标识 -->
-                <view v-if="index === 0" class="absolute top-10rpx left-10rpx bg-#f43f5e bg-opacity-90 rounded-4rpx px-8rpx py-4rpx">
+              <!-- 操作按钮 -->
+              <view class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 flex justify-between p-10rpx z-1">
+                <view class="flex items-center" @tap.stop="setMainImage(index)">
+                  <WdIcon name="star" size="24rpx" color="#fff" class="mr-4rpx"/>
                   <text class="text-20rpx text-white">主图</text>
                 </view>
-                
-                <!-- 操作按钮 -->
-                <view class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 flex justify-between p-10rpx">
-                  <view class="flex items-center" @tap.stop="setMainImage(index)">
-                    <WdIcon name="star" size="24rpx" color="#fff" class="mr-4rpx"/>
-                    <text class="text-20rpx text-white">主图</text>
-                  </view>
-                  <view class="flex items-center" @tap.stop="deleteImage(index)">
-                    <WdIcon name="delete" size="24rpx" color="#fff" class="mr-4rpx"/>
-                    <text class="text-20rpx text-white">删除</text>
-                  </view>
+                <view class="flex items-center" @tap.stop="deleteImage(index)">
+                  <WdIcon name="delete" size="24rpx" color="#fff" class="mr-4rpx"/>
+                  <text class="text-20rpx text-white">删除</text>
                 </view>
-              </view>
-              
-              <!-- 添加图片按钮 -->
-              <view 
-                v-if="imageList.length < uploadMaxCount"
-                class="w-full aspect-square bg-gray-100 rounded-12rpx flex flex-col items-center justify-center"
-                @tap="chooseImage"
-              >
-                <WdIcon name="plus" size="40rpx" custom-style="color:#999"/>
-                <text class="text-24rpx text-gray-500 mt-10rpx">添加图片</text>
               </view>
             </view>
             
-            <!-- 上传提示 -->
-            <view class="mt-20rpx">
-              <text class="text-24rpx text-gray-500">提示：图片清晰度越高，成交率越高。上传真实图片，请勿上传侵权或违规图片。</text>
-            </view>
-          </view>
-          
-          <!-- 按钮返回商品信息 -->
-          <view class="p-30rpx flex justify-center mb-30rpx">
+            <!-- 添加图片按钮 -->
             <view 
-              class="h-90rpx w-400rpx flex items-center justify-center bg-white border border-gray-300 text-gray-700 rounded-full"
-              @tap="activeTab = 'params'"
+              v-if="imageList.length < uploadMaxCount"
+              class="aspect-square bg-gray-100 rounded-12rpx flex flex-col items-center justify-center border-2rpx border-dashed border-gray-300"
+              :class="{ 'opacity-50': isUploading }"
+              @tap="chooseImage"
             >
-              <WdIcon name="arrow-left" size="28rpx" custom-style="color:#666" class="mr-10rpx"/>
-              <text class="text-30rpx">返回：编辑商品信息</text>
+              <WdIcon 
+                :name="isUploading ? 'loading' : 'plus'" 
+                size="40rpx" 
+                custom-style="color:#999"
+                :class="{ 'animate-spin': isUploading }"
+              />
+              <text class="text-24rpx text-gray-500 mt-10rpx">
+                {{ isUploading ? '上传中...' : '添加图片' }}
+              </text>
             </view>
           </view>
           
-          <!-- 提交须知 -->
-          <view class="bg-white p-30rpx mb-30rpx">
-            <view class="flex items-center mb-20rpx">
-              <WdIcon name="info-o" size="32rpx" custom-style="color:#f43f5e" class="mr-10rpx"/>
-              <text class="text-30rpx font-medium text-#333">发布须知</text>
+          <!-- 错误提示 -->
+          <view v-if="formErrors.images" class="mt-20rpx text-24rpx text-red-500">
+            {{ formErrors.images }}
+          </view>
+          
+          <!-- 上传提示 -->
+          <view class="mt-20rpx p-20rpx bg-blue-50 rounded-12rpx">
+            <text class="text-24rpx text-blue-600 block">📝 上传提示</text>
+            <text class="text-24rpx text-blue-600 mt-6rpx block">
+              • 图片清晰度越高，成交率越高
+            </text>
+            <text class="text-24rpx text-blue-600 mt-6rpx block">
+              • 上传真实图片，请勿上传侵权或违规图片
+            </text>
+          </view>
+        </view>
+        
+        <!-- 基础信息表单 -->
+        <view class="bg-white p-30rpx mb-20rpx">
+          <view class="mb-30rpx border-l-6rpx border-#f43f5e pl-15rpx">
+            <text class="text-30rpx font-medium text-#333">基础信息</text>
+          </view>
+          
+          <view class="space-y-25rpx">
+            <view v-for="field in fieldConfig.basic" :key="field.field" class="form-item">
+              <view class="form-label">
+                <text class="text-28rpx text-#333">{{ field.label }}</text>
+                <text v-if="field.required" class="text-red-500 ml-5rpx">*</text>
+              </view>
+              
+              <!-- 文本输入框 -->
+              <input 
+                v-if="field.type === FIELD_TYPES.TEXT || field.type === FIELD_TYPES.NUMBER"
+                :type="getInputType(field.type)" 
+                v-model="formData[field.field]" 
+                :placeholder="field.placeholder" 
+                class="form-input"
+                @blur="validateForm"
+              />
+              
+              <!-- 文本域 -->
+              <textarea 
+                v-else-if="field.type === FIELD_TYPES.TEXTAREA"
+                v-model="formData[field.field]" 
+                :placeholder="field.placeholder" 
+                class="form-textarea"
+                :maxlength="field.maxLength || 500"
+                @blur="validateForm"
+              />
+              
+              <!-- 选择器 -->
+              <picker 
+                v-else-if="field.type === FIELD_TYPES.SELECT"
+                mode="selector" 
+                :range="field.options || []"
+                :value="getPickerValue(field)"
+                @change="(e) => handlePickerChange(field, e)"
+              >
+                <view class="picker-view">
+                  <text v-if="formData[field.field]" class="text-28rpx text-#333">
+                    {{ formData[field.field] }}
+                  </text>
+                  <text v-else class="text-28rpx text-gray-400">
+                    {{ field.placeholder || `请选择${field.label}` }}
+                  </text>
+                  <WdIcon name="chevron-down" size="24rpx" custom-style="color:#999" class="ml-10rpx"/>
+                </view>
+              </picker>
+              
+              <!-- 位置选择特殊处理 -->
+              <view 
+                v-if="field.field === 'location'" 
+                class="picker-view location-picker" 
+                @tap="openLocationPicker"
+              >
+                <view class="flex items-center flex-1">
+                  <WdIcon name="location" size="24rpx" custom-style="color:#f43f5e" class="mr-10rpx"/>
+                  <text v-if="formData.location" class="text-28rpx text-#333">
+                    {{ formData.location }}
+                  </text>
+                  <text v-else class="text-28rpx text-gray-400">点击选择交易地点</text>
+                </view>
+                <view class="flex items-center gap-10rpx">
+                  <WdIcon name="chevron-down" size="24rpx" custom-style="color:#999"/>
+                </view>
+              </view>
+              
+              <!-- 字符计数 -->
+              <view v-if="field.type === FIELD_TYPES.TEXTAREA && field.maxLength" class="text-right text-24rpx text-gray-400 mt-10rpx">
+                {{ (formData[field.field] || '').length }}/{{ field.maxLength }}
+              </view>
+              
+              <!-- 错误提示 -->
+              <view v-if="formErrors[field.field]" class="form-error">
+                {{ formErrors[field.field] }}
+              </view>
             </view>
-            <view class="text-26rpx text-gray-600 leading-40rpx">
-              <view>· 上传商品真实图片，保证商品信息的真实性和准确性</view>
-              <view>· 禁止发布侵权、违禁、违法商品</view>
-              <view>· 商品发布后，平台将对商品信息进行审核</view>
-              <view>· 商品成功售出后，平台将收取一定比例的服务费</view>
+          </view>
+        </view>
+        
+        <!-- 规格参数表单 -->
+        <view v-if="fieldConfig.specs.length > 0" class="bg-white p-30rpx mb-20rpx">
+          <view class="mb-30rpx border-l-6rpx border-#f43f5e pl-15rpx">
+            <text class="text-30rpx font-medium text-#333">规格参数</text>
+          </view>
+          
+          <view class="space-y-25rpx">
+            <view v-for="field in fieldConfig.specs" :key="field.field" class="form-item">
+              <view class="form-label">
+                <text class="text-28rpx text-#333">{{ field.label }}</text>
+                <text v-if="field.required" class="text-red-500 ml-5rpx">*</text>
+              </view>
+              
+              <!-- 文本输入框 -->
+              <input 
+                v-if="field.type === FIELD_TYPES.TEXT || field.type === FIELD_TYPES.NUMBER"
+                :type="getInputType(field.type)" 
+                v-model="formData[field.field]" 
+                :placeholder="field.placeholder" 
+                class="form-input"
+              />
+              
+              <!-- 选择器 -->
+              <picker 
+                v-else-if="field.type === FIELD_TYPES.SELECT"
+                mode="selector" 
+                :range="field.options || []"
+                :value="getPickerValue(field)"
+                @change="(e) => handlePickerChange(field, e)"
+              >
+                <view class="picker-view">
+                  <text v-if="formData[field.field]" class="text-28rpx text-#333">
+                    {{ formData[field.field] }}
+                  </text>
+                  <text v-else class="text-28rpx text-gray-400">
+                    {{ field.placeholder || `请选择${field.label}` }}
+                  </text>
+                  <WdIcon name="chevron-down" size="24rpx" custom-style="color:#999" class="ml-10rpx"/>
+                </view>
+              </picker>
+              
+              <!-- 错误提示 -->
+              <view v-if="formErrors[field.field]" class="form-error">
+                {{ formErrors[field.field] }}
+              </view>
             </view>
+          </view>
+        </view>
+        
+        <!-- 发布须知 -->
+        <view class="bg-white p-30rpx mb-30rpx">
+          <view class="flex items-center mb-20rpx">
+            <WdIcon name="info-o" size="32rpx" custom-style="color:#f43f5e" class="mr-10rpx"/>
+            <text class="text-30rpx font-medium text-#333">发布须知</text>
+          </view>
+          <view class="text-26rpx text-gray-600 leading-40rpx space-y-8rpx">
+            <view>• 上传商品真实图片，保证商品信息的真实性和准确性</view>
+            <view>• 禁止发布侵权、违禁、违法商品</view>
+            <view>• 商品发布后，平台将对商品信息进行审核</view>
+            <view>• 商品成功售出后，平台将收取一定比例的服务费</view>
           </view>
         </view>
       </template>
@@ -804,40 +747,80 @@ const loadGoodsData = async () => {
         <button 
           class="h-90rpx flex items-center justify-center rounded-full transition-all duration-300"
           :class="canSubmit ? 'bg-gradient-to-r from-#f43f5e to-#ff7676 text-white shadow-md shadow-pink-200' : 'bg-gray-200 text-gray-500'"
-          @tap="canSubmit && submitGoods()"
+          @tap="canSubmit && submitForm()"
         >
-          <text class="text-30rpx" :class="canSubmit ? 'font-medium' : ''">立即发布</text>
+          <WdIcon 
+            v-if="isSubmitting" 
+            name="loading" 
+            size="28rpx" 
+            color="#fff" 
+            class="animate-spin mr-10rpx"
+          />
+          <text class="text-30rpx" :class="canSubmit ? 'font-medium' : ''">
+            {{ isSubmitting ? '发布中...' : (isEdit ? '保存修改' : '立即发布') }}
+          </text>
         </button>
       </view>
     </view>
     
-    <!-- 上传进度组件 -->
-    <UploadProgress 
-      :show="showUploadProgress" 
-      :percentage="uploadPercentage" 
-    />
+    <!-- 位置选择弹窗 - 集成地图组件 -->
+    <view v-if="showLocationPicker" class="location-picker-modal">
+      <!-- 顶部导航栏 -->
+      <view class="location-picker-header">
+        <view @tap="showLocationPicker = false" class="p-10rpx active:opacity-60 transition-opacity">
+          <WdIcon name="arrow-left" size="36rpx" color="#333"/>
+        </view>
+        <text class="text-32rpx font-medium text-#333">选择交易地点</text>
+        <view class="w-56rpx"></view> <!-- 占位元素保持居中 -->
+      </view>
+      
+      <!-- 地图组件区域 -->
+      <view class="location-picker-map">
+        <Amap
+          :show-search="true"
+          :show-controls="true"
+          :show-center-pin="true"
+          :show-location="true"
+          @select="handleLocationSelect"
+        />
+      </view>
+      
+      <!-- 底部提示 -->
+      <view class="location-picker-footer">
+        <text class="text-26rpx text-gray-500 text-center block">
+          点击地图任意位置或搜索地点来选择交易地点
+        </text>
+      </view>
+    </view>
   </layout>
 </template>
 
-<style>
+<style scoped>
 .aspect-square {
-  aspect-ratio: 1 / 1;
+  width: 100%;
+  height: 0;
+  padding-bottom: 100%;
+  position: relative;
 }
 
-.form-container {
-  height: calc(100vh - 310rpx);
+.aspect-square image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.form-section {
-  margin-top: 20rpx;
-  background-color: #ffffff;
-  padding: 30rpx;
+/* 添加图片按钮的特殊样式 */
+.aspect-square.flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.section-title {
-  margin-bottom: 30rpx;
-  border-left: 6rpx solid #f43f5e;
-  padding-left: 15rpx;
+.aspect-square.flex::before {
+  content: '';
+  padding-bottom: 100%;
 }
 
 .form-item {
@@ -850,10 +833,6 @@ const loadGoodsData = async () => {
   margin-bottom: 15rpx;
 }
 
-.form-input-wrap {
-  position: relative;
-}
-
 .form-input {
   width: 100%;
   height: 80rpx;
@@ -861,6 +840,13 @@ const loadGoodsData = async () => {
   background-color: #f8f8f8;
   padding: 0 20rpx;
   font-size: 28rpx;
+  border: 2rpx solid #f8f8f8;
+  transition: border-color 0.3s;
+}
+
+.form-input:focus {
+  border-color: #f43f5e;
+  background-color: #fff;
 }
 
 .form-textarea {
@@ -870,6 +856,41 @@ const loadGoodsData = async () => {
   background-color: #f8f8f8;
   padding: 20rpx;
   font-size: 28rpx;
+  border: 2rpx solid #f8f8f8;
+  transition: border-color 0.3s;
+}
+
+.form-textarea:focus {
+  border-color: #f43f5e;
+  background-color: #fff;
+}
+
+.picker-view {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 80rpx;
+  border-radius: 8rpx;
+  background-color: #f8f8f8;
+  padding: 0 20rpx;
+  border: 2rpx solid #f8f8f8;
+  transition: all 0.3s;
+}
+
+.picker-view:active {
+  border-color: #f43f5e;
+  background-color: #fff;
+}
+
+.location-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.location-picker .flex {
+  display: flex;
 }
 
 .form-error {
@@ -878,18 +899,16 @@ const loadGoodsData = async () => {
   margin-top: 10rpx;
 }
 
-.condition-selector {
-  width: 100%;
+.space-y-25rpx .form-item + .form-item {
+  margin-top: 25rpx;
 }
 
-.picker-view {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 80rpx;
-  border-radius: 8rpx;
-  background-color: #f8f8f8;
-  padding: 0 20rpx;
+.space-y-8rpx view + view {
+  margin-top: 8rpx;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -901,22 +920,41 @@ const loadGoodsData = async () => {
   }
 }
 
-.animate-spin {
-  animation: spin 1s linear infinite;
+/* 位置选择器样式 */
+.location-picker-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
 }
 
-.fade-in {
-  animation: fadeIn 0.3s ease-out;
+.location-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 30rpx;
+  background: white;
+  border-bottom: 1px solid #f0f0f0;
+  padding-top: calc(20rpx + constant(safe-area-inset-top));
+  padding-top: calc(20rpx + env(safe-area-inset-top));
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10rpx);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.location-picker-map {
+  flex: 1;
+  height: 0; /* 强制flex子元素使用flex高度 */
+  position: relative;
+}
+
+.location-picker-footer {
+  padding: 20rpx 30rpx;
+  background: white;
+  border-top: 1px solid #f0f0f0;
+  padding-bottom: calc(20rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
 }
 </style>

@@ -5,12 +5,30 @@ import { useRouter } from 'uni-mini-router'
 import { useToast } from '@/composables/toast'
 import { useSettingsStore } from '@/subpackages/pinia/settings'
 import { useSchoolStore } from '@/pinia/modules/school'
+import { usePrivateChat } from '@/pinia/modules/PrivateChat'
+import { useSystemNotification } from '@/pinia/modules/SystemNotification'
+import { useNewFans } from '@/pinia/modules/NewFans'
+import { useLikeAndFavorite } from '@/pinia/modules/LikeAndFavorite'
+import { useCommentAndMention } from '@/pinia/modules/CommentAndMention'
+import { useUserStore } from '@/pinia/modules/user'
+import { useChatSettings } from '@/composables/chat-settings'
 import { UserApi } from '@/api/user'
 
 const router = useRouter()
 const toast = useToast()
 const settingsStore = useSettingsStore()
 const schoolStore = useSchoolStore()
+
+// 消息相关的 stores
+const privateChatStore = usePrivateChat()
+const systemNotificationStore = useSystemNotification()
+const newFansStore = useNewFans()
+const likeAndFavoriteStore = useLikeAndFavorite()
+const commentAndMentionStore = useCommentAndMention()
+const userStore = useUserStore()
+
+// 聊天设置缓存
+const chatSettings = useChatSettings()
 
 // 账户相关设置项
 const accountSettings = [
@@ -143,7 +161,7 @@ const handleClearCache = async () => {
     const res = await new Promise((resolve) => {
       uni.showModal({
         title: '确认清空缓存',
-        content: '清空缓存后需要重新登录，是否继续？',
+        content: '清空缓存后将清除所有聊天记录、消息通知等数据，需要重新登录，是否继续？',
         showCancel: true,
         cancelText: '取消',
         confirmText: '确认',
@@ -164,27 +182,106 @@ const handleClearCache = async () => {
       mask: true
     })
     
-    // 清空所有本地缓存
-    uni.clearStorageSync()
-    
-    // 重置Pinia状态
-    settingsStore.$reset()
-    schoolStore.resetAll()
+    try {
+      console.log('开始清理缓存...')
+      
+      // 1. 重置所有 Pinia stores（在清空存储之前）
+      console.log('重置 Pinia stores...')
+      
+      // 重置设置和学校相关 stores
+      try {
+        if (settingsStore.$reset) {
+          settingsStore.$reset()
+        }
+        if (schoolStore.resetAll) {
+          schoolStore.resetAll()
+        }
+        console.log('已重置设置和学校stores')
+      } catch (error) {
+        console.warn('重置设置stores失败:', error)
+      }
+      
+      // 使用各个 store 提供的清除函数
+      console.log('清除各个store数据...')
+      
+      try {
+        privateChatStore.clearAllData()
+      } catch (error) {
+        console.warn('清除私聊数据失败:', error)
+      }
+      
+      try {
+        systemNotificationStore.clearAllData()
+      } catch (error) {
+        console.warn('清除系统通知数据失败:', error)
+      }
+      
+      try {
+        newFansStore.clearAllData()
+      } catch (error) {
+        console.warn('清除新粉丝数据失败:', error)
+      }
+      
+      try {
+        likeAndFavoriteStore.clearAllData()
+      } catch (error) {
+        console.warn('清除点赞收藏数据失败:', error)
+      }
+      
+      try {
+        commentAndMentionStore.clearAllData()
+      } catch (error) {
+        console.warn('清除评论提及数据失败:', error)
+      }
+      
+      // 2. 清空聊天设置缓存
+      console.log('清空聊天设置缓存...')
+      chatSettings.clearCache()
+      
+      // 3. 清空所有本地存储
+      console.log('清空本地存储...')
+      uni.clearStorageSync()
+      
+      // 4. 额外清理可能遗留的特定存储项
+              const storageKeysToRemove = [
+          'message_history',
+          'private-chat',
+          'system-notifications',
+          'newFans',
+          'likeAndFavorite',
+          'commentAndMention',
+          'userInfo',
+          'chat_settings_cache_v2',
+          'school_selection'
+        ]
+      
+      console.log('清理特定存储项...')
+      storageKeysToRemove.forEach(key => {
+        try {
+          uni.removeStorageSync(key)
+        } catch (error) {
+          console.warn(`清理存储项 ${key} 失败:`, error)
+        }
+      })
+      
+      console.log('缓存清理完成')
+      
+    } catch (error) {
+      console.error('清理过程中出现错误:', error)
+      throw error
+    }
     
     uni.hideLoading()
     
     // 提示成功
-    toast.success('缓存清理完成')
+    toast.success('缓存清理完成，即将重新启动应用')
     
     // 延迟跳转到学校选择页面
     setTimeout(() => {
-      // router.replace({
-      //   path: '/pages/choose-school'
-      // })
       uni.reLaunch({
         url: '/pages/choose-school'
       })
-    }, 1000)
+    }, 1500)
     
   } catch (error) {
     console.error('清空缓存失败:', error)

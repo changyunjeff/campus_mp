@@ -13,6 +13,7 @@ const route = useRoute()
 // 获取当前页面标题
 const pageTitle = ref('')
 const showFotter = ref(false)
+const enablePageScroll = ref(false)
 
 // 返回上一页
 const goBack = () => {
@@ -95,6 +96,8 @@ onMounted(() => {
   console.log(route)
   pageTitle.value = route?.meta?.title || '未知标题'
   showFotter.value = route?.meta?.footer || false
+  enablePageScroll.value = route?.meta?.pageScroll || false
+  console.log('页面滚动模式:', enablePageScroll.value ? '页面级滚动' : '容器滚动')
 })
 
 onShow(() => {
@@ -122,7 +125,7 @@ const statusBarHeight = computed(() => {
 </script>
 
 <template>
-  <view class="app-container">
+  <view :class="['app-container', { 'page-scroll-mode': enablePageScroll }]">
     <view class="status-bar"/>
 
     <view class="header">
@@ -154,7 +157,7 @@ const statusBarHeight = computed(() => {
       </custom-status-bar>
     </view>
 
-    <view class="content">
+    <view :class="['content', { 'page-scroll-content': enablePageScroll }]">
       <slot></slot>
     </view>
 
@@ -207,5 +210,17 @@ const statusBarHeight = computed(() => {
 .footer {
   width: 100%;
   min-height: calc($uni-input-area-height + var(--safe-area-inset-bottom));
+}
+
+/* 页面级滚动模式样式 */
+.app-container.page-scroll-mode {
+  overflow: visible; /* 允许页面滚动 */
+  height: auto; /* 取消固定高度 */
+  min-height: 100vh; /* 保证最小高度 */
+}
+
+.content.page-scroll-content {
+  overflow-y: visible; /* 取消容器滚动限制 */
+  flex: none; /* 取消flex布局限制 */
 }
 </style>

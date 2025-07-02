@@ -172,6 +172,11 @@ export const useSystemNotification = defineStore('system-notification', () => {
     return colorMap[type] || '#3b82f6'
   }
   
+  const clearAllData = () => {
+    notifications.value = []
+    console.log('SystemNotification: 已清除所有数据')
+  }
+
   return {
     notifications,
     getSortedNotifications,
@@ -187,6 +192,7 @@ export const useSystemNotification = defineStore('system-notification', () => {
     clearAllNotifications,
     getNotificationIcon,
     getNotificationIconBg,
-    getNotificationIconColor
+    getNotificationIconColor,
+    clearAllData
   }
 })

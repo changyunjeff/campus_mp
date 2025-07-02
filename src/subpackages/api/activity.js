@@ -88,6 +88,16 @@ export const ActivityApi = {
     getMyActivities: (params) => get('/activity/my', params),
 
     /**
+     * getOtherActivities 获取其他活动列表
+     * @param {Object} params 查询参数
+     * @param {String} params.user_id 用户ID
+     * @param {Number} params.page 页码
+     * @param {Number} params.page_size 每页数量
+     * @returns {Promise<Object>} 其他活动列表
+     */
+    getOtherActivities: (params) => get('/activity/other', params),
+
+    /**
      * getActivityStats 获取活动统计信息
      * @returns {Promise<Object>} 活动统计
      */

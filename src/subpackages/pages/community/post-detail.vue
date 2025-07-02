@@ -77,7 +77,7 @@ const post = reactive({
 // 评论数据
 const comments = ref([])
 const commentPage = ref(1)
-const commentPageSize = ref(20)
+const commentPageSize = ref(10)
 const commentTotal = ref(0)
 const isLoadingComments = ref(false)
 
@@ -139,9 +139,6 @@ const loadPostDetail = async () => {
       isLiked: res.is_liked,
       isFavorited: res.is_favorited
     })
-
-    // 加载评论
-    await loadComments()
   } catch (err) {
     console.error('加载帖子详情失败:', err)
     toast.show('加载失败')
@@ -609,11 +606,6 @@ const viewTopicDetail = throttle((topicName) => {
   })
 }, 1000)
 
-// 返回上一页
-const goBack = () => {
-  uni.navigateBack()
-}
-
 // 页面标题
 const pageTitle = ref('帖子详情')
 
@@ -695,12 +687,14 @@ onLoad((options) => {
   postId.value = options.id || ''
 
   if (postId.value) {
-    // 加载帖子详情
-    loadPostDetail()
+    // 加载帖子详情和评论列表
+    Promise.all([
+        loadPostDetail(),
+        loadComments(),
+    ])
   } else {
     toast.show('参数错误，请传入帖子ID')
     setTimeout(() => {
-      uni.navigateBack()
       router.back()
     }, 1500)
   }

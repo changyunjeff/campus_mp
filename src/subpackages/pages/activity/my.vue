@@ -5,6 +5,7 @@ import Layout from '@/layout/index.vue'
 import { useRouter } from 'uni-mini-router'
 import { useToast } from '@/composables/toast'
 import { ActivityApi } from '@/subpackages/api/activity'
+import { debounce } from 'lodash'
 
 const router = useRouter()
 const toast = useToast()
@@ -123,7 +124,6 @@ const formatRelativeTime = (timeStr) => {
 
 // 在现有变量声明后添加以下变量
 const refresherTriggered = ref(false) // 下拉刷新状态
-const scrollTop = ref(0) // 滚动位置
 const refresherEnabled = ref(true) // 是否启用下拉刷新
 
 // 当前显示的活动列表
@@ -354,11 +354,13 @@ const onScrollToLower = async () => {
 }
 
 // 滚动事件处理
-const onScroll = (e) => {
-  scrollTop.value = e.detail.scrollTop
+const handleScroll = (e) => {
   // 当滚动位置大于50rpx时禁用下拉刷新，避免滚动冲突
-  refresherEnabled.value = scrollTop.value <= 50
+  refresherEnabled.value = e.detail.scrollTop <= 50
 }
+
+// 使用防抖的滚动处理
+const onScroll = debounce(handleScroll, 16) // 约60fps
 
 // 页面初始化
 onMounted(() => {
@@ -443,11 +445,10 @@ onMounted(() => {
       <!-- 活动列表 -->
       <scroll-view
         scroll-y
-        class="px-4 bg-red-500"
+        class="px-4"
         style="height: calc(58vh);"
         :refresher-enabled="refresherEnabled"
         :refresher-triggered="refresherTriggered"
-        :scroll-top="scrollTop"
         refresher-background="#f5f5f5"
         lower-threshold="100"
         @refresherrefresh="onRefresherRefresh"

@@ -108,6 +108,12 @@ export const useLikeAndFavorite = defineStore('likeAndFavorite', () => {
     }
   }
   
+  const clearAllData = () => {
+    likeMessages.value = []
+    favoriteMessages.value = []
+    console.log('LikeAndFavorite: 已清除所有数据')
+  }
+
   return {
     likeMessages,
     favoriteMessages,
@@ -119,7 +125,8 @@ export const useLikeAndFavorite = defineStore('likeAndFavorite', () => {
     getUnreadCount,
     addLikeMessage,
     addFavoriteMessage,
-    handleNotification // 新增：处理消息系统通知
+    handleNotification, // 新增：处理消息系统通知
+    clearAllData
   }
 }, {
   persist: {

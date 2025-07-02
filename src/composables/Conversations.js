@@ -251,6 +251,71 @@ export function useConversations()  {
         }
     }
 
+    /**
+     * clearConversationMessages 清空特定会话的所有消息
+     * @param {string} userId - 用户ID
+     * @returns {boolean} 清空是否成功
+     */
+    const clearConversationMessages = (userId) => {
+        if (!userId) {
+            console.warn('clearConversationMessages: 用户ID不能为空');
+            return false;
+        }
+
+        console.log(`清空会话 ${userId} 的所有消息`);
+
+        try {
+            const success = privateChat.clearConversationMessages(userId);
+            if (success) {
+                console.log(`已清空会话 ${userId} 的所有消息`);
+                // 触发会话列表重新计算
+                refreshConversations();
+                return true;
+            } else {
+                console.warn(`清空会话 ${userId} 失败：会话不存在`);
+                return false;
+            }
+        } catch (error) {
+            console.error(`清空会话 ${userId} 消息失败:`, error);
+            return false;
+        }
+    }
+
+    /**
+     * toggleConversationPin 切换会话置顶状态
+     * @param {string} userId - 用户ID
+     * @returns {boolean} 当前的置顶状态
+     */
+    const toggleConversationPin = async (userId) => {
+        if (!userId) {
+            console.warn('toggleConversationPin: 用户ID不能为空');
+            return false;
+        }
+
+        try {
+            // 获取当前设置
+            const currentSettings = await getChatSettings(userId);
+            const newPinnedState = !currentSettings.isPinned;
+            
+            // 更新聊天设置
+            const success = updateChatSettings(userId, {
+                ...currentSettings,
+                isPinned: newPinnedState
+            });
+
+            if (success) {
+                console.log(`会话 ${userId} 置顶状态已${newPinnedState ? '开启' : '关闭'}`);
+                return newPinnedState;
+            } else {
+                console.warn(`会话 ${userId} 置顶状态切换失败`);
+                return currentSettings.isPinned;
+            }
+        } catch (error) {
+            console.error(`切换会话 ${userId} 置顶状态失败:`, error);
+            return false;
+        }
+    }
+
     instance = {
         conversations,
         totalUnreadCount,
@@ -273,7 +338,10 @@ export function useConversations()  {
         markSystemNotificationAsRead: systemNotification.markAsRead,
         deletePrivateChat: privateChat.deleteConversation,
         deleteSystemNotification: systemNotification.deleteNotification,
-        clearUnreadCount
+        clearUnreadCount,
+        // 新增：会话操作方法
+        clearConversationMessages,
+        toggleConversationPin
     }
     return instance;
 }

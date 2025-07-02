@@ -18,8 +18,8 @@ emitter.on = function(type, handler) {
   handlersMap.get(type).add(handler)
   
   originalOn.call(this, type, handler)
-  console.log('🎯 添加事件监听:', type)
-  console.log('📋 当前所有事件:', Array.from(this.all.keys()))
+  // console.log('🎯 添加事件监听:', type)
+  // console.log('📋 当前所有事件:', Array.from(this.all.keys()))
 }
 
 // 重写 off 方法
@@ -35,8 +35,8 @@ emitter.off = function(type, handler) {
   }
   
   originalOff.call(this, type, handler)
-  console.log('🎯 移除事件监听:', type)
-  console.log('📋 当前所有事件:', Array.from(this.all.keys()))
+  // console.log('🎯 移除事件监听:', type)
+  // console.log('📋 当前所有事件:', Array.from(this.all.keys()))
 }
 
 /**

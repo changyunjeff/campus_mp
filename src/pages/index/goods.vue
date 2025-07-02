@@ -1,16 +1,19 @@
 <script setup>
 import Layout from '@/layout/index.vue'
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'uni-mini-router'
-import { formatTime } from '@/utils/time'
+import {ref, reactive, onMounted} from 'vue'
+import {useRouter} from 'uni-mini-router'
+import {formatTime} from '@/utils/time'
 import User from '/static/images/user.png'
 import events from '@/utils/events'
-import { debounce, throttle } from 'lodash'
+import {debounce, throttle} from 'lodash'
 import {onLoad, onPullDownRefresh, onReachBottom} from '@dcloudio/uni-app'
-import { GoodsApi } from '@/api/goods'
+import {GoodsApi} from '@/api/goods'
+import {useToast} from "@/composables/toast";
+import {useTabbar} from '@/composables/tabbar'
 
-const { show } = useTabbar()
+const {show} = useTabbar()
 const router = useRouter()
+const toast = useToast()
 
 // 数据状态
 const loading = ref(false)
@@ -37,25 +40,6 @@ const filters = reactive({
 // 搜索关键词
 const searchKeyword = ref('')
 
-// 分类图标和颜色映射（用于美化显示）
-const categoryIconMap = {
-  '手机': { icon: 'phone-o', color: '#ff7043' },
-  '数码': { icon: 'watch-o', color: '#26a69a' },
-  '美妆': { icon: 'gift-o', color: '#ec407a' },
-  '四级': { icon: 'bookmark-o', color: '#5c6bc0' },
-  '明星周边': { icon: 'star-o', color: '#ffc107' },
-  '母婴': { icon: 'cart-o', color: '#8d6e63' },
-  '游戏交易': { icon: 'play-circle-o', color: '#7e57c2' },
-  '潮玩动漫': { icon: 'smile-o', color: '#42a5f5' },
-  '交通工具': { icon: 'logistics', color: '#ef5350' },
-  '家电': { icon: 'bulb-o', color: '#66bb6a' },
-  '电脑': { icon: 'desktop-o', color: '#9c27b0' },
-  '服装': { icon: 'shirt-o', color: '#ff9800' },
-  '图书': { icon: 'book-o', color: '#795548' },
-  '运动': { icon: 'medal-o', color: '#4caf50' },
-  '其他': { icon: 'more-o', color: '#607d8b' }
-}
-
 // ==================== 数据加载函数 ====================
 
 // 加载分类数据
@@ -65,26 +49,22 @@ const loadCategories = async () => {
     const rawCategories = response || []
     // 为分类添加图标和颜色
     categories.value = rawCategories.map(category => {
-      const mapping = categoryIconMap[category.name] || categoryIconMap['其他']
       return {
         ...category,
-        icon: category.icon || mapping.icon,
-        color: category.color || mapping.color
+        icon: category.icon,
+        color: category.color
       }
     })
   } catch (error) {
     console.error('加载分类失败:', error)
-    uni.showToast({
-      title: '加载分类失败',
-      icon: 'none'
-    })
+    toast.show('加载分类失败')
   }
 }
 
 // 加载商品列表
 const loadGoodsList = async (isRefresh = false) => {
   if (loading.value && !isRefresh) return
-  
+
   try {
     if (isRefresh) {
       refreshing.value = true
@@ -110,30 +90,42 @@ const loadGoodsList = async (isRefresh = false) => {
     }
 
     const response = await GoodsApi.getGoodsList(params)
-    
-    if (response.code === 200) {
-      const { items, total, hasMore } = response.data
-      
-      if (isRefresh || pagination.page === 1) {
-        goods.length = 0
-        goods.push(...items)
-      } else {
-        goods.push(...items)
+
+    // 修改响应码判断：实际返回的是 code: 0
+    const {items, total, page, page_size, has_more} = response
+
+    // 处理商品数据，添加前端需要的字段
+    const processedItems = items.map(item => ({
+      ...item,
+      // 添加is_liked字段，默认为false（后续可以从用户收藏列表中获取）
+      is_liked: false,
+      // 处理卖家信息，因为API只返回seller_open_id
+      seller: {
+        nickname: '用户', // 默认昵称，可以后续通过seller_open_id获取详细信息
+        avatar_url: null
       }
-      
-      pagination.total = total
-      pagination.hasMore = hasMore
-      
-      if (items.length > 0) {
-        pagination.page++
-      }
+    }))
+
+    console.log('处理商品数据:', processedItems)
+
+    if (isRefresh || pagination.page === 1) {
+      goods.length = 0
+      goods.push(...processedItems)
+    } else {
+      goods.push(...processedItems)
     }
+
+    pagination.total = total
+    pagination.hasMore = has_more
+
+    if (processedItems.length > 0) {
+      pagination.page++
+    }
+    
+    console.log('分页信息更新 - 当前页:', pagination.page, '总数:', pagination.total, '是否有更多:', pagination.hasMore)
   } catch (error) {
     console.error('加载商品列表失败:', error)
-    uni.showToast({
-      title: '加载商品失败',
-      icon: 'none'
-    })
+    toast.show('加载商品失败')
   } finally {
     loading.value = false
     refreshing.value = false
@@ -146,10 +138,10 @@ const loadGoodsList = async (isRefresh = false) => {
 // 处理分类点击
 const handleCategoryClick = throttle(async (category) => {
   console.log('选择分类:', category.name)
-  
+
   // 更新筛选条件
   filters.categoryId = filters.categoryId === category.id ? null : category.id
-  
+
   // 重新加载商品列表
   pagination.page = 1
   await loadGoodsList(true)
@@ -158,17 +150,17 @@ const handleCategoryClick = throttle(async (category) => {
 // 处理商品点击
 const viewGoodsDetail = throttle(async (goodsId) => {
   console.log('查看商品详情:', goodsId)
-  
+
   try {
     // 记录浏览
     await GoodsApi.viewGoods(goodsId)
   } catch (error) {
     console.error('记录浏览失败:', error)
   }
-  
+
   // 跳转到商品详情页
   router.push({
-    name: 'goods-details',
+    name: 'goods_details',
     params: {
       id: goodsId
     }
@@ -178,31 +170,22 @@ const viewGoodsDetail = throttle(async (goodsId) => {
 // 收藏商品
 const handleLike = throttle(async (goodsItem, event) => {
   event.stopPropagation()
-  
+
   try {
     if (goodsItem.is_liked) {
       await GoodsApi.unlikeGoods(goodsItem.id)
       goodsItem.is_liked = false
       goodsItem.likes = Math.max(0, goodsItem.likes - 1)
-      uni.showToast({
-        title: '取消收藏成功',
-        icon: 'success'
-      })
+      toast.show('取消收藏成功')
     } else {
       await GoodsApi.likeGoods(goodsItem.id)
       goodsItem.is_liked = true
       goodsItem.likes = goodsItem.likes + 1
-      uni.showToast({
-        title: '收藏成功',
-        icon: 'success'
-      })
+      toast.show('收藏成功')
     }
   } catch (error) {
     console.error('操作失败:', error)
-    uni.showToast({
-      title: '操作失败，请重试',
-      icon: 'none'
-    })
+    toast.show('操作失败，请重试')
   }
 }, 1000)
 
@@ -240,21 +223,25 @@ const handleLongPress = (goodsItem) => {
 
 // 页面加载
 onMounted(async () => {
+  console.log('商品页面已挂载')
   show()
   await Promise.all([
     loadCategories(),
     loadGoodsList()
   ])
+  console.log('初始数据加载完成，商品数量:', goods.length)
 })
 
 // 下拉刷新
 onPullDownRefresh(async () => {
+  console.log('下拉刷新触发')
   await loadGoodsList(true)
   uni.stopPullDownRefresh()
 })
 
 // 上拉加载更多
 onReachBottom(async () => {
+  console.log('触底加载更多 - hasMore:', pagination.hasMore, 'loadingMore:', loadingMore.value)
   if (pagination.hasMore && !loadingMore.value) {
     await loadGoodsList()
   }
@@ -269,7 +256,8 @@ onReachBottom(async () => {
     <template #center>
       <!-- 搜索框 -->
       <view class="p-20rpx">
-        <view class="relative flex items-center bg-white rounded-full p-20rpx px-30rpx border border-gray-200 shadow-sm">
+        <view
+            class="relative flex items-center bg-white rounded-full p-20rpx px-30rpx border border-gray-200 shadow-sm">
           <WdIcon name="search" size="40rpx" color="#999"/>
           <input
               type="text"
@@ -283,7 +271,7 @@ onReachBottom(async () => {
       </view>
     </template>
 
-    <view class="bg-#f8f8f8 min-h-100vh">
+    <view class="bg-#f8f8f8">
       <!-- 免责声明 -->
       <view class="px-20rpx mb-20rpx">
         <view class="w-full py-10rpx text-center text-24rpx text-gray-500 bg-gray-100 bg-opacity-70 rounded-full">
@@ -297,19 +285,20 @@ onReachBottom(async () => {
           加载中...
         </view>
         <view v-else class="grid grid-cols-5 gap-20rpx">
-          <view 
-            v-for="category in categories" 
-            :key="category.id" 
-            class="flex flex-col items-center transition-all duration-300 active:scale-95"
-            :class="{ 'bg-blue-50 rounded-12rpx': filters.categoryId === category.id }"
-            @tap="handleCategoryClick(category)"
+          <view
+              v-for="category in categories"
+              :key="category.id"
+              class="flex flex-col items-center transition-all duration-300 active:scale-95"
+              :class="{ 'bg-blue-50 rounded-12rpx': filters.categoryId === category.id }"
+              @tap="handleCategoryClick(category)"
           >
-            <view class="w-80rpx h-80rpx rounded-full mb-10rpx flex items-center justify-center" :style="`background-color: ${category.color}20;`">
-              <WdIcon 
-                custom-class="iconfont" class-prefix="icon"
-                :name="category.icon" 
-                size="40rpx" 
-                :custom-style="`color: ${category.color}`"
+            <view class="w-80rpx h-80rpx rounded-full mb-10rpx flex items-center justify-center"
+                  :style="`background-color: ${category.color}20;`">
+              <WdIcon
+                  custom-class="iconfont" class-prefix="icon"
+                  :name="category.icon"
+                  size="40rpx"
+                  :custom-style="`color: ${category.color}`"
               />
             </view>
             <text class="text-24rpx text-#333 truncate w-full text-center">{{ category.name }}</text>
@@ -323,66 +312,69 @@ onReachBottom(async () => {
         <view v-if="loading && goods.length === 0" class="text-center py-80rpx">
           <view class="text-gray-400">加载中...</view>
         </view>
-        
+
         <!-- 空状态 -->
         <view v-else-if="goods.length === 0" class="text-center py-80rpx">
           <view class="text-gray-400 mb-20rpx">暂无商品</view>
           <view class="text-gray-300 text-24rpx">试试切换分类或刷新页面</view>
         </view>
-        
+
         <!-- 商品网格 -->
         <view v-else class="grid grid-cols-2 gap-20rpx">
-          <view 
-            v-for="item in goods" 
-            :key="item.id" 
-            class="bg-white rounded-16rpx overflow-hidden shadow-sm transition-all duration-300 active:scale-98 active:bg-gray-50"
-            @tap="viewGoodsDetail(item.id)"
-            @longpress="handleLongPress(item)"
+          <view
+              v-for="item in goods"
+              :key="item.id"
+              class="bg-white rounded-16rpx overflow-hidden shadow-sm transition-all duration-300 active:scale-98 active:bg-gray-50"
+              @tap="viewGoodsDetail(item.id)"
+              @longpress="handleLongPress(item)"
           >
             <!-- 商品主图 -->
             <view class="relative">
-              <image 
-                :src="item.images && item.images.length > 0 ? item.images[0].url : User" 
-                mode="aspectFill" 
-                class="w-full h-240rpx object-cover"
-                :lazy-load="true"
+              <image
+                  :src="item.images && item.images.length > 0 ? item.images[0].url : User"
+                  mode="aspectFill"
+                  class="w-full h-240rpx object-cover"
+                  :lazy-load="true"
               ></image>
-              
+
               <!-- 实拍标签 -->
-              <view v-if="item.is_real" class="absolute top-10rpx left-10rpx bg-black bg-opacity-60 rounded-8rpx px-10rpx py-4rpx">
+              <view v-if="item.is_real"
+                    class="absolute top-10rpx left-10rpx bg-black bg-opacity-60 rounded-8rpx px-10rpx py-4rpx">
                 <text class="text-20rpx text-white font-medium">实拍</text>
               </view>
-              
+
               <!-- 收藏按钮 -->
-              <view 
-                class="absolute top-10rpx right-10rpx w-60rpx h-60rpx rounded-full bg-black bg-opacity-40 flex items-center justify-center transition-all duration-300 active:scale-90 active:bg-opacity-60"
-                @tap.stop="handleLike(item, $event)"
+              <view
+                  class="absolute top-10rpx right-10rpx w-60rpx h-60rpx rounded-full bg-black bg-opacity-40 flex items-center justify-center transition-all duration-300 active:scale-90 active:bg-opacity-60"
+                  @tap.stop="handleLike(item, $event)"
               >
-                <WdIcon 
-                  custom-class="iconfont" class-prefix="icon"
-                  :name="item.is_liked ? 'like' : 'like-o'" 
-                  size="32rpx" 
-                  :custom-style="item.is_liked ? 'color:#f43f5e' : 'color:#fff'"
+                <WdIcon
+                    custom-class="iconfont" class-prefix="icon"
+                    :name="item.is_liked ? 'like' : 'like-o'"
+                    size="32rpx"
+                    :custom-style="item.is_liked ? 'color:#f43f5e' : 'color:#fff'"
                 />
               </view>
             </view>
-            
+
             <!-- 商品信息 -->
             <view class="p-16rpx">
               <!-- 标题和价格 -->
               <text class="text-26rpx text-#333 line-clamp-2 h-72rpx">{{ item.title }}</text>
               <view class="flex items-center mt-10rpx">
                 <text class="text-28rpx font-600 text-#f43f5e mr-8rpx">¥{{ item.price }}</text>
-                <text v-if="item.original_price && item.original_price > item.price" class="text-22rpx text-gray-400 line-through">¥{{ item.original_price }}</text>
+                <text v-if="item.original_price && item.original_price > item.price"
+                      class="text-22rpx text-gray-400 line-through">¥{{ item.original_price }}
+                </text>
               </view>
-              
+
               <!-- 卖家信息和位置 -->
               <view class="flex justify-between items-center mt-10rpx">
                 <view class="flex items-center">
-                  <image 
-                    :src="item.seller && item.seller.avatar_url ? item.seller.avatar_url : User" 
-                    class="w-32rpx h-32rpx rounded-full mr-8rpx"
-                    mode="aspectFill"
+                  <image
+                      :src="item.seller && item.seller.avatar_url ? item.seller.avatar_url : User"
+                      class="w-32rpx h-32rpx rounded-full mr-8rpx"
+                      mode="aspectFill"
                   ></image>
                   <text class="text-22rpx text-gray-500 truncate max-w-120rpx">
                     {{ item.seller && item.seller.nickname ? item.seller.nickname : '匿名用户' }}
@@ -397,7 +389,7 @@ onReachBottom(async () => {
                   <text class="text-22rpx text-gray-500">{{ item.location || '未知' }}</text>
                 </view>
               </view>
-              
+
               <!-- 统计信息 -->
               <view class="flex justify-between items-center mt-8rpx text-gray-400 text-20rpx">
                 <view class="flex items-center">
@@ -412,12 +404,12 @@ onReachBottom(async () => {
             </view>
           </view>
         </view>
-        
+
         <!-- 加载更多 -->
         <view v-if="loadingMore" class="text-center py-40rpx">
           <view class="text-gray-400">加载更多...</view>
         </view>
-        
+
         <!-- 没有更多 -->
         <view v-else-if="goods.length > 0 && !pagination.hasMore" class="text-center py-40rpx">
           <view class="text-gray-400">没有更多了</view>

@@ -250,6 +250,35 @@ export const usePrivateChat = defineStore('private-chat', () => {
     }
   }
 
+  const clearAllData = () => {
+    conversations.value = {}
+    currentChatUserId.value = ''
+    console.log('PrivateChat: 已清除所有数据')
+  }
+
+  const clearConversationMessages = (userId) => {
+    if (!userId) {
+      console.warn('clearConversationMessages: 用户ID不能为空')
+      return false
+    }
+
+    if (conversations.value[userId]) {
+      // 清空该会话的所有消息，但保留会话基本信息
+      const conv = { ...conversations.value[userId] }
+      conv.messages = []
+      conv.lastMessage = null
+      conv.lastMessageTime = 0
+      conv.unreadCount = 0
+      
+      conversations.value[userId] = conv
+      console.log(`PrivateChat: 已清空用户 ${userId} 的聊天记录`)
+      return true
+    } else {
+      console.warn(`PrivateChat: 会话 ${userId} 不存在`)
+      return false
+    }
+  }
+
   return {
     conversations,
     currentChatUserId,
@@ -267,7 +296,9 @@ export const usePrivateChat = defineStore('private-chat', () => {
     setUserOnlineStatus,
     setCurrentChatUser,
     updateMessageStatus,
-    initConversations
+    initConversations,
+    clearAllData,
+    clearConversationMessages
   }
 }, {
   persist: {

@@ -1,10 +1,16 @@
 <template>
   <view class="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50" @tap.self="cancel">
     <view class="w-full bg-white rounded-t-8 overflow-hidden transition-transform duration-300 ease-out" @tap.stop>
+      <!-- 当前选择预览 -->
+      <view class="px-4 py-3 bg-blue-50 border-b border-blue-100">
+        <text class="text-sm text-blue-600">当前选择：</text>
+        <text class="text-lg font-medium text-blue-700 ml-2">{{ currentSelectionDisplay }}</text>
+      </view>
+
       <!-- 选项卡切换 -->
       <view class="flex border-b border-gray-100">
         <view
-          class="flex-1 h-12 flex items-center justify-center text-sm transition-all duration-200"
+          class="flex-1 h-12 flex items-center justify-center text-sm transition-all duration-200 relative"
           :class="activeTab === 'date' ? 'text-blue-600 font-medium' : 'text-gray-600'"
           @tap.stop="activeTab = 'date'"
         >
@@ -27,24 +33,42 @@
         </view>
       </view>
 
-              <!-- 日期选择面板 -->
-        <view v-show="activeTab === 'date'" class="p-4" @tap.stop>
+      <!-- 日期选择面板 -->
+      <view v-show="activeTab === 'date'" class="p-4" @tap.stop>
         <!-- 年月导航 -->
         <view class="flex items-center justify-between mb-4">
-                      <view 
-              class="w-10 h-10 flex items-center justify-center rounded-2 hover:bg-gray-100 active:bg-gray-200 transition-colors duration-200"
-              @tap.stop="changeMonth(-1)"
-            >
+          <view 
+            class="w-10 h-10 flex items-center justify-center rounded-2 hover:bg-gray-100 active:bg-gray-200 transition-colors duration-200"
+            @tap.stop="changeMonth(-1)"
+          >
             <wd-icon name="arrow-left" size="16" color="#666"/>
           </view>
           <view class="text-lg font-medium text-gray-800">
             {{currentYear}}年{{currentMonth + 1}}月
           </view>
-                      <view 
-              class="w-10 h-10 flex items-center justify-center rounded-2 hover:bg-gray-100 active:bg-gray-200 transition-colors duration-200"
-              @tap.stop="changeMonth(1)"
-            >
+          <view 
+            class="w-10 h-10 flex items-center justify-center rounded-2 hover:bg-gray-100 active:bg-gray-200 transition-colors duration-200"
+            @tap.stop="changeMonth(1)"
+          >
             <wd-icon name="arrow-right" size="16" color="#666"/>
+          </view>
+        </view>
+
+        <!-- 快捷日期选择 -->
+        <view class="flex gap-2 mb-4">
+          <view 
+            class="px-3 py-1 text-xs rounded-full transition-colors duration-200"
+            :class="isSelectedDateToday() ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 active:bg-gray-200'"
+            @tap.stop="selectToday"
+          >
+            今天
+          </view>
+          <view 
+            class="px-3 py-1 text-xs rounded-full transition-colors duration-200"
+            :class="isSelectedDateTomorrow() ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 active:bg-gray-200'"
+            @tap.stop="selectTomorrow"
+          >
+            明天
           </view>
         </view>
 
@@ -61,46 +85,59 @@
 
         <!-- 日期网格 -->
         <view class="grid grid-cols-7 gap-1">
-                      <view
-              v-for="(date, index) in dateList"
-              :key="index"
-              class="aspect-square flex items-center justify-center text-sm rounded-2 transition-all duration-200"
-              :class="[
-                date.otherMonth ? 'text-gray-400' : 'text-gray-800',
-                isDateSelected(date) ? 'bg-blue-600 text-white font-medium' : '',
-                isDateDisabled(date) ? 'text-gray-300 bg-gray-50 cursor-not-allowed' : 'hover:bg-blue-50 active:bg-blue-100',
-                isToday(date) && !isDateSelected(date) ? 'text-blue-600 font-medium' : ''
-              ]"
-              @tap.stop="selectDate(date)"
-            >
+          <view
+            v-for="(date, index) in dateList"
+            :key="index"
+            class="aspect-square flex items-center justify-center text-sm rounded-2 transition-all duration-200"
+            :class="[
+              date.otherMonth ? 'text-gray-400' : 'text-gray-800',
+              isDateSelected(date) ? 'bg-blue-600 text-white font-medium' : '',
+              isDateDisabled(date) ? 'text-gray-300 bg-gray-50 cursor-not-allowed' : 'hover:bg-blue-50 active:bg-blue-100',
+              isToday(date) && !isDateSelected(date) ? 'text-blue-600 font-medium' : ''
+            ]"
+            @tap.stop="selectDate(date)"
+          >
             {{date.day}}
           </view>
         </view>
       </view>
 
-              <!-- 时间选择面板 -->
-        <view v-show="activeTab === 'time'" class="p-4 h-80" @tap.stop>
-          <view class="flex items-center justify-center h-full">
-                      <!-- 小时选择 -->
-            <scroll-view
-              class="flex-1 h-full"
-              scroll-y
-              :scroll-into-view="'hour-' + selectedHour"
-              :show-scrollbar="false"
-              @tap.stop
-            >
+      <!-- 时间选择面板 -->
+      <view v-show="activeTab === 'time'" class="p-4 h-80" @tap.stop>
+        <!-- 快捷时间选择 -->
+        <view class="flex flex-wrap gap-2 mb-4">
+          <view 
+            v-for="quickTime in quickTimeOptions"
+            :key="quickTime.label"
+            class="px-3 py-1 text-xs rounded-full transition-colors duration-200"
+            :class="isQuickTimeSelected(quickTime) ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 active:bg-gray-200'"
+            @tap.stop="selectQuickTime(quickTime)"
+          >
+            {{ quickTime.label }}
+          </view>
+        </view>
+
+        <view class="flex items-center justify-center h-full">
+          <!-- 小时选择 -->
+          <scroll-view
+            class="flex-1 h-full"
+            scroll-y
+            :scroll-into-view="'hour-' + selectedHour"
+            :show-scrollbar="false"
+            @tap.stop
+          >
             <view class="py-16">
-                              <view
-                  v-for="hour in 24"
-                  :key="hour-1"
-                  :id="'hour-' + (hour-1)"
-                  class="h-12 flex items-center justify-center text-lg transition-all duration-200"
-                  :class="[
-                    selectedHour === hour-1 ? 'text-blue-600 font-semibold scale-110' : 'text-gray-600',
-                    isTimeDisabled(hour-1, selectedMinute) ? 'text-gray-300 cursor-not-allowed' : 'hover:text-blue-500'
-                  ]"
-                  @tap.stop="selectHour(hour-1)"
-                >
+              <view
+                v-for="hour in 24"
+                :key="hour-1"
+                :id="'hour-' + (hour-1)"
+                class="h-12 flex items-center justify-center text-lg transition-all duration-200"
+                :class="[
+                  selectedHour === hour-1 ? 'text-blue-600 font-semibold scale-110' : 'text-gray-600',
+                  isTimeDisabled(hour-1, selectedMinute) ? 'text-gray-300 cursor-not-allowed' : 'hover:text-blue-500 active:text-blue-600'
+                ]"
+                @tap.stop="selectTime(hour-1, selectedMinute)"
+              >
                 {{(hour-1).toString().padStart(2, '0')}}
               </view>
             </view>
@@ -108,26 +145,26 @@
 
           <text class="text-2xl text-gray-400 font-light mx-6">:</text>
 
-                      <!-- 分钟选择 -->
-            <scroll-view
-              class="flex-1 h-full"
-              scroll-y
-              :scroll-into-view="'minute-' + selectedMinute"
-              :show-scrollbar="false"
-              @tap.stop
-            >
+          <!-- 分钟选择 -->
+          <scroll-view
+            class="flex-1 h-full"
+            scroll-y
+            :scroll-into-view="'minute-' + selectedMinute"
+            :show-scrollbar="false"
+            @tap.stop
+          >
             <view class="py-16">
-                              <view
-                  v-for="minute in 60"
-                  :key="minute-1"
-                  :id="'minute-' + (minute-1)"
-                  class="h-12 flex items-center justify-center text-lg transition-all duration-200"
-                  :class="[
-                    selectedMinute === minute-1 ? 'text-blue-600 font-semibold scale-110' : 'text-gray-600',
-                    isTimeDisabled(selectedHour, minute-1) ? 'text-gray-300 cursor-not-allowed' : 'hover:text-blue-500'
-                  ]"
-                  @tap.stop="selectMinute(minute-1)"
-                >
+              <view
+                v-for="minute in 60"
+                :key="minute-1"
+                :id="'minute-' + (minute-1)"
+                class="h-12 flex items-center justify-center text-lg transition-all duration-200"
+                :class="[
+                  selectedMinute === minute-1 ? 'text-blue-600 font-semibold scale-110' : 'text-gray-600',
+                  isTimeDisabled(selectedHour, minute-1) ? 'text-gray-300 cursor-not-allowed' : 'hover:text-blue-500 active:text-blue-600'
+                ]"
+                @tap.stop="selectTime(selectedHour, minute-1)"
+              >
                 {{(minute-1).toString().padStart(2, '0')}}
               </view>
             </view>
@@ -190,18 +227,44 @@ const emit = defineEmits(['confirm', 'cancel', 'update:show'])
 // 当前选中的面板
 const activeTab = ref(props.defaultTab)
 
-// 初始化时间
-const initializeDateTime = () => {
-  const currentDate = new Date(props.value)
-  return {
-    date: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()),
-    hour: currentDate.getHours(),
-    minute: currentDate.getMinutes()
+// 快捷时间选项
+const quickTimeOptions = [
+  { label: '09:00', hour: 9, minute: 0 },
+  { label: '12:00', hour: 12, minute: 0 },
+  { label: '14:00', hour: 14, minute: 0 },
+  { label: '16:00', hour: 16, minute: 0 },
+  { label: '18:00', hour: 18, minute: 0 },
+  { label: '20:00', hour: 20, minute: 0 }
+]
+
+// 智能初始化时间 - 如果没有传入有效值或值过期，使用当前时间
+const getSmartInitialTime = () => {
+  const now = new Date()
+  const inputDate = new Date(props.value)
+  
+  // 如果传入的时间是过去的时间或无效时间，使用当前时间
+  if (!props.value || inputDate.getTime() < now.getTime()) {
+    // 设置为当前时间后30分钟，分钟数向上取整到最近的15分钟倍数
+    const futureTime = new Date(now.getTime() + 30 * 60 * 1000)
+    const minutes = Math.ceil(futureTime.getMinutes() / 15) * 15
+    futureTime.setMinutes(minutes, 0, 0)
+    
+    return {
+      date: new Date(futureTime.getFullYear(), futureTime.getMonth(), futureTime.getDate()),
+      hour: futureTime.getHours(),
+      minute: futureTime.getMinutes()
+    }
+  } else {
+    return {
+      date: new Date(inputDate.getFullYear(), inputDate.getMonth(), inputDate.getDate()),
+      hour: inputDate.getHours(),
+      minute: inputDate.getMinutes()
+    }
   }
 }
 
 // 状态管理
-const { date: initialDate, hour: initialHour, minute: initialMinute } = initializeDateTime()
+const { date: initialDate, hour: initialHour, minute: initialMinute } = getSmartInitialTime()
 
 // 日期相关状态
 const currentYear = ref(initialDate.getFullYear())
@@ -212,15 +275,50 @@ const selectedDate = ref(new Date(initialDate))
 const selectedHour = ref(initialHour)
 const selectedMinute = ref(initialMinute)
 
+// 当前选择显示
+const currentSelectionDisplay = computed(() => {
+  const formatted = getFormattedDateTime()
+  return formatted.dateTime
+})
+
 // 监听props.value变化，更新内部状态
 watch(() => props.value, (newValue) => {
-  const { date, hour, minute } = initializeDateTime()
+  const { date, hour, minute } = getSmartInitialTime()
   currentYear.value = date.getFullYear()
   currentMonth.value = date.getMonth()
   selectedDate.value = new Date(date)
   selectedHour.value = hour
   selectedMinute.value = minute
 })
+
+// 获取今天信息
+const getTodayInfo = () => {
+  const today = new Date()
+  return {
+    year: today.getFullYear(),
+    month: today.getMonth(),
+    day: today.getDate()
+  }
+}
+
+// 获取明天信息
+const getTomorrowInfo = () => {
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  return {
+    year: tomorrow.getFullYear(),
+    month: tomorrow.getMonth(),
+    day: tomorrow.getDate()
+  }
+}
+
+// 判断是否是明天
+const isTomorrow = (date) => {
+  const tomorrow = getTomorrowInfo()
+  return date.year === tomorrow.year &&
+         date.month === tomorrow.month &&
+         date.day === tomorrow.day
+}
 
 // 计算日期网格
 const dateList = computed(() => {
@@ -340,14 +438,47 @@ const selectDate = (date) => {
   selectedDate.value = new Date(date.year, date.month, date.day)
 }
 
-const selectHour = (hour) => {
-  if (isTimeDisabled(hour, selectedMinute.value)) return
+const selectTime = (hour, minute) => {
+  if (isTimeDisabled(hour, minute)) return
   selectedHour.value = hour
+  selectedMinute.value = minute
 }
 
-const selectMinute = (minute) => {
-  if (isTimeDisabled(selectedHour.value, minute)) return
-  selectedMinute.value = minute
+const selectToday = () => {
+  const today = new Date()
+  selectedDate.value = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+}
+
+const selectTomorrow = () => {
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  selectedDate.value = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate())
+}
+
+const isQuickTimeSelected = (quickTime) => {
+  return selectedHour.value === quickTime.hour && selectedMinute.value === quickTime.minute
+}
+
+const selectQuickTime = (quickTime) => {
+  if (isTimeDisabled(quickTime.hour, quickTime.minute)) return
+  selectedHour.value = quickTime.hour
+  selectedMinute.value = quickTime.minute
+}
+
+// 判断选中的日期是否是今天
+const isSelectedDateToday = () => {
+  const today = getTodayInfo()
+  return selectedDate.value.getFullYear() === today.year &&
+         selectedDate.value.getMonth() === today.month &&
+         selectedDate.value.getDate() === today.day
+}
+
+// 判断选中的日期是否是明天
+const isSelectedDateTomorrow = () => {
+  const tomorrow = getTomorrowInfo()
+  return selectedDate.value.getFullYear() === tomorrow.year &&
+         selectedDate.value.getMonth() === tomorrow.month &&
+         selectedDate.value.getDate() === tomorrow.day
 }
 
 const confirm = () => {

@@ -10,13 +10,13 @@ import {useErrorHandler} from '@/subpackages/utils/error-handler'
 import {onLoad, onUnload} from "@dcloudio/uni-app"
 import {generateID} from '@/utils/id'
 import GoodsPreview from '@/subpackages/components/goods/goods-preview.vue'
-import {UserApi} from "@/api/user"
 import User from "/static/images/user.png"
 import Anonymous from "/static/images/anonymous.png"
 import AnonymousMale from "/static/images/anonymous_male.png"
 import AnonymousFemale from "/static/images/anonymous_female.png"
 import {useConversations} from "@/composables/Conversations";
 import {useToast} from "@/composables/toast";
+import {UserApi} from "@/api/user";
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -73,11 +73,18 @@ onLoad(async (options) => {
     try {
       const conversation = privateChatStore.getConversation(targetId.value)
       console.debug('conversation:', conversation)
+
       // 匿名会话不获取用户信息，直接使用匿名信息
       if (!isAnonymousChat.value) {
+        let res = null
+        if (!conversation) {
+          // 如果会话不存在，就使用API获取用户信息
+          res = await UserApi.getUserProfile(targetId.value)
+          console.debug('res:', res)
+        }
         userInfo.value = {
-          nickname: conversation.lastMessage?.nickname || conversation.nickname,
-          avatar: conversation.lastMessage?.avatar || conversation.avatar || User,
+          nickname: conversation?.lastMessage?.nickname || conversation?.nickname || res?.nickname || '未知用户',
+          avatar: conversation?.lastMessage?.avatar || conversation?.avatar || res?.avatar[0]?.url || User,
           openid: targetId.value
         }
       } else {
@@ -86,9 +93,9 @@ onLoad(async (options) => {
           1: AnonymousMale,
           2: AnonymousFemale,
         }
-        const gender = conversation.lastMessage?.gender || conversation.gender || 0
+        const gender = conversation?.lastMessage?.gender || conversation?.gender || 0
         userInfo.value = {
-          nickname: conversation.lastMessage?.anonymous_nickname || conversation.nickname,
+          nickname: conversation?.lastMessage?.anonymous_nickname || conversation?.nickname || '匿名用户',
           avatar: avatars[gender] || Anonymous,
           openid: targetId.value
         }

@@ -43,7 +43,11 @@ const topicSearchLoading = ref(false)
 
 // 位置相关 - 优化后的位置管理
 const location = ref('')
-const locationDetail = ref(null) // 存储完整的位置信息
+const locationDetail = ref({
+  address: '',
+  latitude: 0,
+  longitude: 0
+}) // 存储完整的位置信息
 const showLocationPicker = ref(false)
 const isLoadingLocation = ref(false)
 
@@ -424,7 +428,11 @@ const handleLocationSelect = (selectedLocation) => {
   console.log('🗺️ 选择位置:', selectedLocation)
   
   // 存储完整的位置信息
-  locationDetail.value = selectedLocation
+  locationDetail.value = {
+    address: `${selectedLocation.address}-${selectedLocation.name}`,
+    latitude: selectedLocation.latitude,
+    longitude: selectedLocation.longitude
+  }
   
   // 显示信息优先级：POI名称 > 地址描述
   let displayText = selectedLocation.address || '未知位置'

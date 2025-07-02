@@ -51,21 +51,8 @@ export function useMessage() {
     // 注册消息接收处理
     connect.registerHandler(MSG_TYPE.Chat, async (msg) => {
       console.log('收到私聊消息', msg);
-      console.log('🔍 消息处理开始:', {
-        messageId: msg.id,
-        from: msg.from,
-        to: msg.to,
-        anonymous: msg.anonymous,
-        avatar: msg.avatar,
-        nickname: msg.nickname,
-        gender: msg.gender,
-        currentUserOpenid: userStore.openid,
-        hasOriginalTo: !!msg.original_to,
-        hasStatus: !!msg.status
-      });
 
       // 检查是否是状态反馈消息（发送给自己的状态更新）
-      console.debug("if statement: ", !!msg.original_to && msg.status)
       if (!!msg.original_to && msg.status) {
         // 这是状态反馈消息，更新对应消息的状态
         // 使用 original_to 字段确定原始接收者
@@ -89,6 +76,24 @@ export function useMessage() {
 
         if (msg.status === 'success') {
           privateChat.updateMessageStatus(targetConversationId, msg.id, MESSAGE_STATUS.SUCCESS);
+          // 消息发送成功，如果还有没有会话，则创建会话
+          let conv = privateChat.getConversation(targetConversationId)
+          if (!conv) {
+            conv = await privateChat.addConversation(targetConversationId);
+          }
+          if (!conv.nickname) {
+            const res = await UserApi.getUserProfile(msg.original_to)
+            const userStore = useUserStore()
+            const anonymous_nickname = userStore.getAnonymousNickname(res.grade, res.college, res.gender)
+
+            userInfo = {
+              avatar: res.avatar[0]?.url,
+              gender: res.gender,
+              nickname: res.nickname,
+              anonymous_nickname: anonymous_nickname
+            }
+            privateChat.setUserInfo(targetConversationId, userInfo)
+          }
         } else if (msg.status === 'failed') {
           privateChat.updateMessageStatus(targetConversationId, msg.id, MESSAGE_STATUS.FAILED);
         } else if (msg.status === 'blocked') {
@@ -122,8 +127,10 @@ export function useMessage() {
 
       // 获取发送者用户信息（如果还没有的话）
       let conversation = privateChat.getConversation(conversationId);
+      let userInfo = {}
       if (!conversation) {
         console.log(`还没有来自${conversationId}的会话，创建新会话`);
+
         conversation = await privateChat.addConversation(conversationId);
         
         // 为匿名会话设置特殊信息
@@ -402,7 +409,7 @@ export function useMessage() {
       anonymous: anonymous,
       avatar: avatar,
       nickname: nickname,
-      anonymous_nickname: '大二计算机男生',
+      anonymous_nickname: userStore.getAnonymousNickname(),
       gender: gender,
     };
 

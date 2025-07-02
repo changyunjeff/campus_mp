@@ -69,6 +69,16 @@ async function handleEnter() {
           userStore.setGender(res.user.gender)
         }
 
+        // 设置年级
+        if (res.user?.grade) {
+          userStore.setGrade(res.user.grade)
+        }
+
+        // 设置学院
+        if (res.user?.college) {
+          userStore.setCollege(res.user.college)
+        }
+
         // 登录成功后直接跳转到社区页面
         router.pushTab('/pages/index/community')
       } catch (err) {

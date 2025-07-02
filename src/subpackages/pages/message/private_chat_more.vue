@@ -8,6 +8,8 @@ import { UserApi } from "@/api/user";
 import {useMessage} from "@/composables/message";
 import { useConversations } from '@/composables/Conversations'
 import { useChatSettings } from '@/composables/chat-settings'
+import { usePrivateChat } from '@/pinia/modules/PrivateChat'
+import User from "/static/images/user.png"
 import events, { 
   CHAT_SETTINGS_UPDATED, 
   CHAT_PINNED, 
@@ -22,6 +24,7 @@ const toast = useToast()
 const router = useRouter()
 const conversations = useConversations()
 const chatSettings = useChatSettings()
+const privateChatStore = usePrivateChat()
 
 // 用户信息
 const userInfo = ref({
@@ -58,7 +61,12 @@ const fetchUserInfo = async () => {
   try {
     const res = await UserApi.getUserProfile(targetId.value)
     console.debug('用户信息:', res)
-    userInfo.value = res
+    console.debug('avatar:', res.avatar[0]?.url)
+    userInfo.value = {
+      avatar: res.avatar[0]?.url || User,
+      nickname: res.nickname || '未知用户',
+      isFollowing: res.relationship >= 1
+    }
     settings.value = {
       doNotDisturb: res.chat_settings.do_not_disturb,
       pinChat: res.chat_settings.set_top,
@@ -235,14 +243,14 @@ const toggleFollow = async () => {
   if (!targetId.value) return
   
   try {
-    if (userInfo.value.is_following) {
+    if (userInfo.value.isFollowing) {
       await UserApi.unfollowUser(targetId.value)
-      userInfo.value.is_following = false
+      userInfo.value.isFollowing = false
       toast.show('已取消关注')
     } else {
       const messageComposable = useMessage()
       await messageComposable.sendFollowMessage(targetId.value)
-      userInfo.value.is_following = true
+      userInfo.value.isFollowing = true
       toast.show('关注成功')
     }
   } catch (e) {
@@ -260,14 +268,29 @@ const reportUser = () => {
 }
 
 const clearChatHistory = () => {
+  console.debug("清空聊天记录")
   uni.showModal({
     title: '确认清空',
-    content: '确定要清空与该用户的聊天记录吗？',
+    content: '确定要清空与该用户的聊天记录吗？此操作不可恢复。',
+    cancelText: '取消',
+    confirmText: '确认清空',
+    confirmColor: '#ff4444',
     success: (res) => {
       if (res.confirm && targetId.value) {
-        // TODO 清空聊天记录
-        // 显示成功提示
-        toast.show('聊天记录已清空')
+        try {
+          // 调用Conversations提供的清空聊天记录方法
+          const success = conversations.clearConversationMessages(targetId.value)
+          
+          if (success) {
+            toast.show('聊天记录已清空')
+            console.log(`已清空与用户 ${targetId.value} 的聊天记录`)
+          } else {
+            toast.error('清空失败：会话不存在')
+          }
+        } catch (error) {
+          console.error('清空聊天记录失败:', error)
+          toast.error('清空失败，请重试')
+        }
       }
     }
   })
@@ -279,11 +302,11 @@ const clearChatHistory = () => {
     <template #center></template>
     <div class="p-4 flex flex-col items-center mb-3">
       <div class="mb-4 relative">
-        <image :src="userInfo.avatar[0]?.url" alt="avatar" class="w-20 h-20 rounded-full object-cover border-2 border-gray-100" mode="aspectFill" />
+        <image :src="userInfo.avatar" alt="avatar" class="w-20 h-20 rounded-full object-cover border-2 border-gray-100" mode="aspectFill" />
       </div>
       <div class="mb-4 text-lg font-medium">{{ userInfo.nickname }}</div>
       <wd-button :type="userInfo.is_following ? 'info' : 'error'" size="medium" custom-class="px-8 py-2 rounded-full text-sm" @click="toggleFollow">
-        {{ userInfo.is_following ? '已关注' : '关注' }}
+        {{ userInfo.isFollowing ? '已关注' : '关注' }}
       </wd-button>
     </div>
 
@@ -304,7 +327,7 @@ const clearChatHistory = () => {
     </wd-cell-group>
 
     <wd-cell-group border custom-class="m-3 rounded-lg overflow-hidden shadow-sm">
-      <wd-cell title="清空聊天记录" center custom-class="text-center text-red-500 py-2" @click="clearChatHistory" />
+      <wd-cell title="清空聊天记录" center custom-class="text-center text-red-500 py-2" @tap.stop="clearChatHistory" />
     </wd-cell-group>
 
   </Layout>

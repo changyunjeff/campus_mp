@@ -78,21 +78,24 @@ export default defineUniPages({
                     path: 'pages/message/likesAndFavorite',
                     name: 'likesAndFavorite',
                     meta: {
-                        title: '喜欢和收藏'
+                        title: '喜欢和收藏',
+                        verify: true,
                     }
                 },
                 {
                     path: 'pages/message/NewFans',
                     name: 'NewFans',
                     meta: {
-                        title: '新增关注'
+                        title: '新增关注',
+                        verify: true
                     }
                 },
                 {
                     path: 'pages/message/CommentAndMention',
                     name: 'CommentAndMention',
                     meta: {
-                        title: '评论和@'
+                        title: '评论和@',
+                        verify: true,
                     }
                 },
                 {
@@ -186,7 +189,8 @@ export default defineUniPages({
                         navigationBarTitleText: '举报'
                     },
                     meta: {
-                        title: '举报'
+                        title: '举报',
+                        verify: true,
                     }
                 },
                 {
@@ -196,7 +200,8 @@ export default defineUniPages({
                         navigationBarTitleText: '个人中心'
                     },
                     meta: {
-                        title: '个人中心'
+                        title: '个人中心',
+                        verify: true,
                     }
                 },
                 // ==================== 商品模块页面配置 ====================
@@ -305,7 +310,8 @@ export default defineUniPages({
                         navigationBarTitleText: '编辑资料'
                     },
                     meta: {
-                        title: '编辑资料'
+                        title: '编辑资料',
+                        verify: true,
                     }
                 },
                 {
@@ -315,7 +321,8 @@ export default defineUniPages({
                         navigationBarTitleText: '用户资料'
                     },
                     meta: {
-                        title: '用户资料'
+                        title: '用户资料',
+                        verify: true,
                     }
                 },
                 {
@@ -326,6 +333,7 @@ export default defineUniPages({
                     },
                     meta: {
                         title: '通讯录',
+                        verify: true,
                     }
                 },
                 {
@@ -345,7 +353,8 @@ export default defineUniPages({
                         navigationBarTitleText: '我的屏蔽'
                     },
                     meta: {
-                        title: '我的屏蔽'
+                        title: '我的屏蔽',
+                        verify: true,
                     }
                 },
                 {
@@ -395,7 +404,8 @@ export default defineUniPages({
                         navigationBarTitleText: '发布活动'
                     },
                     meta: {
-                        title: '发布活动'
+                        title: '发布活动',
+                        verify: true,
                     },
                 },
                 {
@@ -405,7 +415,8 @@ export default defineUniPages({
                         navigationBarTitleText: '我的活动'
                     },
                     meta: {
-                        title: '我的活动'
+                        title: '我的活动',
+                        verify: true,
                     },
                 },
                 {
@@ -415,7 +426,8 @@ export default defineUniPages({
                         navigationBarTitleText: '活动详情'
                     },
                     meta: {
-                        title: '活动详情'
+                        title: '活动详情',
+                        verify: true,
                     },
                 },
                 {

@@ -3,6 +3,7 @@ import {AuthApi} from '@/api/auth'
 import { useConnection } from '@/composables/connection'
 import {useMessage} from "@/composables/message";
 import DefaultAvatar from "/static/images/user.png"
+import {gradeText, gradeOptions} from "@/configs/grade.config"
 
 export const useUserStore = defineStore('user', () => {
 
@@ -14,12 +15,28 @@ export const useUserStore = defineStore('user', () => {
     })
     const nickname = ref('')
     const gender = ref(0)
+    const grade = ref(0)
+    const college = ref('')
 
     const setNickname = (_nickname) => {
         nickname.value = _nickname
     }
     const getNickname = () => {
         return nickname.value || '未知用户'
+    }
+
+    const setGrade = (_grade) => {
+        grade.value = _grade
+    }
+    const getGrade = () => {
+        return grade.value
+    }
+
+    const setCollege = (_college) => {
+        college.value = _college
+    }
+    const getCollege = () => {
+        return college.value
     }
 
     /**
@@ -98,6 +115,28 @@ export const useUserStore = defineStore('user', () => {
         }
     }
 
+    /**
+     * getAnonymousNickname 获得匿名昵称
+     * @param {number} _grade 年级
+     * @param {string} _college 学院
+     * @param {number} _gender 性别
+     * @returns {string} 匿名昵称
+     * */
+    const getAnonymousNickname = (_grade=0, _college='', _gender=0) => {
+        const grade_ = gradeText[_grade || grade.value]
+        const college_ = _college || college.value || '未知学院'
+        const tmp_gender = (_gender || gender.value) & 3;
+
+        let gender_ = ''
+        switch(tmp_gender) {
+            case 1: gender_ = '男生'; break;
+            case 2: gender_ = '女生'; break
+            default: gender_ =  '未知'; break;
+        }
+
+        return `${grade_}${college_}${gender_}`
+    }
+
     return {
         openid,
         avatar,
@@ -106,12 +145,17 @@ export const useUserStore = defineStore('user', () => {
         login,
         setNickname,
         getNickname,
+        setGrade,
+        getGrade,
+        setCollege,
+        getCollege,
         setAvatar,
         getAvatarUrl,
         getAvatarObjectKey,
         setGender,
         getGender,
         genderDisplayText,
+        getAnonymousNickname,
     }
 }, {
     persist: {

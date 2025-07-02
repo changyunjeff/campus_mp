@@ -13,7 +13,7 @@ export default [
     subtitle: '闲置变现，轻松赚钱',
     icon: 'goods',
     bgImage: 'https://picsum.photos/40/30?random=2',
-    path: 'publish_goods_category'
+    path: 'goods_publish_category'
   },
   {
     id: 3,

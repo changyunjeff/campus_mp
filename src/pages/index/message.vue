@@ -11,6 +11,7 @@ import {useLikeAndFavorite} from "@/pinia/modules/LikeAndFavorite";
 import {useNewFans} from "@/pinia/modules/NewFans";
 import {useCommentAndMention} from "@/pinia/modules/CommentAndMention";
 import {useMessage} from "@/composables/message";
+import { useToast } from '@/composables/toast'
 
 const messageComposable = useMessage()
 const { hiddened, show, hide } = useTabbar()
@@ -19,6 +20,7 @@ const conversationsManager = useConversations()
 const likeAndFavoriteStore = useLikeAndFavorite()
 const newFansStore = useNewFans()
 const commentAndMentionStore = useCommentAndMention()
+const toast = useToast()
 
 onMounted(() => {
   show()
@@ -65,14 +67,52 @@ const goToChat = (type, item) => {
   }
 }
 
-const actions = [
-  { name: '选项1', callback: () => console.log('选择了选项1') },
-  { name: '选项2', callback: () => console.log('选择了选项2') },
-  { name: '选项3', callback: () => console.log('选择了选项3') },
-]
-
 const handleLongPress = (item) => {
-  console.log("item:", item)
+  console.log("长按会话:", item)
+  
+  // 系统通知不支持操作
+  if (item.type === 'system') {
+    return
+  }
+  
+  const actions = [
+    {
+      name: item.pinned ? '取消置顶' : '置顶聊天',
+      callback: async () => {
+        try {
+          const newPinnedState = await conversationsManager.toggleConversationPin(item.id)
+          toast.show(newPinnedState ? '已置顶聊天' : '已取消置顶')
+        } catch (error) {
+          console.error('切换置顶状态失败:', error)
+          toast.error('操作失败')
+        }
+      }
+    },
+    {
+      name: '删除会话',
+      callback: () => {
+        uni.showModal({
+          title: '确认删除',
+          content: '删除后聊天记录将无法恢复，确定要删除吗？',
+          cancelText: '取消',
+          confirmText: '删除',
+          confirmColor: '#ff4444',
+          success: (res) => {
+            if (res.confirm) {
+              try {
+                conversationsManager.deletePrivateChat(item.id)
+                toast.show('已删除会话')
+              } catch (error) {
+                console.error('删除会话失败:', error)
+                toast.error('删除失败')
+              }
+            }
+          }
+        })
+      }
+    }
+  ]
+  
   events.emit('openActionSheet', actions)
 }
 
@@ -102,7 +142,7 @@ const unreadOfCommentAndMention = computed(()=>commentAndMentionStore.getUnreadC
           {{ unreadOfLikeAndFavorite > 99 ? '99+' : unreadOfLikeAndFavorite }}
         </div>
         <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-2">
-          <WdIcon custom-class="iconfont" class-prefix="icon" name="heart" :size="24" custom-style="color:#ef4444" />
+          <WdIcon custom-class="iconfont" class-prefix="icon" name="heart" size="24" custom-style="color:#ef4444" />
         </div>
         <div class="text-xs">赞和收藏</div>
       </div>
@@ -115,7 +155,7 @@ const unreadOfCommentAndMention = computed(()=>commentAndMentionStore.getUnreadC
           {{ unreadOfNewFans > 99 ? '99+' : unreadOfNewFans }}
         </div>
         <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-2">
-          <WdIcon custom-class="iconfont" class-prefix="icon" name="user" :size="24" custom-style="color:#3b82f6" />
+          <WdIcon custom-class="iconfont" class-prefix="icon" name="user" size="24" custom-style="color:#3b82f6" />
         </div>
         <div class="text-xs">新增关注</div>
       </div>
@@ -128,7 +168,7 @@ const unreadOfCommentAndMention = computed(()=>commentAndMentionStore.getUnreadC
           {{ unreadOfCommentAndMention > 99 ? '99+' : unreadOfCommentAndMention }}
         </div>
         <div class="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-2">
-          <WdIcon custom-class="iconfont" class-prefix="icon" name="message" :size="24" custom-style="color:#22c55e" />
+          <WdIcon custom-class="iconfont" class-prefix="icon" name="message" size="24" custom-style="color:#22c55e" />
         </div>
         <div class="text-xs">评论消息</div>
       </div>
@@ -156,7 +196,7 @@ const unreadOfCommentAndMention = computed(()=>commentAndMentionStore.getUnreadC
               v-else
               class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center"
           >
-            <WdIcon custom-class="iconfont" class-prefix="icon" name="notification" :size="18" custom-style="color:#fff" />
+            <WdIcon custom-class="iconfont" class-prefix="icon" name="notification" size="18" custom-style="color:#fff" />
           </div>
           
           <!-- 未读消息数 -->
@@ -172,7 +212,7 @@ const unreadOfCommentAndMention = computed(()=>commentAndMentionStore.getUnreadC
               v-if="item.muted"
               class="absolute bottom-0 right-0 bg-gray-400 rounded-full w-4 h-4 flex items-center justify-center"
           >
-            <WdIcon custom-class="iconfont" class-prefix="icon" name="mute" :size="10" custom-style="color:#fff" />
+            <WdIcon custom-class="iconfont" class-prefix="icon" name="mute" size="10" custom-style="color:#fff" />
           </div>
         </div>
 
@@ -186,7 +226,7 @@ const unreadOfCommentAndMention = computed(()=>commentAndMentionStore.getUnreadC
                 custom-class="iconfont mr-1" 
                 class-prefix="icon" 
                 name="pin" 
-                :size="12" 
+                size="12"
                 custom-style="color:#f59e0b" 
               />
               <div class="font-medium truncate mr-2">{{ item.name }}</div>

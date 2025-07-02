@@ -146,7 +146,7 @@ export const GoodsApi = {
    * @param {string} data.location - 商品位置
    * @param {string} data.condition - 商品成色
    * @param {boolean} data.is_real - 是否实拍
-   * @param {Array} data.media_ids - 媒体ID列表
+   * @param {Array} data.media_list - 媒体列表
    * @returns {Promise}
    */
   createGoods(data) {

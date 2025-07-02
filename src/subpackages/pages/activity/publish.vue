@@ -189,6 +189,15 @@ const handleStartTimeConfirm = (result) => {
   activityForm.startTime = result.value
   formErrors.startTime = ''
   showStartTimePicker.value = false
+  
+  // 智能调整结束时间
+  if (!activityForm.endTime || activityForm.endTime <= result.value) {
+    // 如果结束时间未设置或不合理，自动设置为开始时间后2小时
+    const autoEndTime = new Date(result.value)
+    autoEndTime.setHours(autoEndTime.getHours() + 2)
+    activityForm.endTime = autoEndTime.getTime()
+    toast.show('已自动设置结束时间为开始时间后2小时')
+  }
 }
 
 // 处理结束时间选择
@@ -196,6 +205,16 @@ const handleEndTimeConfirm = (result) => {
   activityForm.endTime = result.value
   formErrors.endTime = ''
   showEndTimePicker.value = false
+  
+  // 检查时间合理性
+  if (activityForm.startTime) {
+    const duration = (result.value - activityForm.startTime) / (1000 * 60 * 60) // 小时
+    if (duration > 12) {
+      toast.show('活动时长较长，请确认时间设置是否正确')
+    } else if (duration < 0.5) {
+      toast.show('活动时长较短，建议至少30分钟')
+    }
+  }
 }
 
 // 获取最小可选时间（当前时间+30分钟）
@@ -877,7 +896,7 @@ const loadActivityData = async () => {
     <TimePicker
       v-if="showStartTimePicker"
       :show="showStartTimePicker"
-      :value="activityForm.startTime || getMinDateTime()"
+      :value="activityForm.startTime"
       :min-date="getMinDateTime()"
       default-tab="date"
       @confirm="handleStartTimeConfirm"
@@ -889,9 +908,9 @@ const loadActivityData = async () => {
     <TimePicker
       v-if="showEndTimePicker"
       :show="showEndTimePicker"
-      :value="activityForm.endTime || getMinEndDateTime()"
+      :value="activityForm.endTime"
       :min-date="getMinEndDateTime()"
-      default-tab="date"
+      default-tab="time"
       @confirm="handleEndTimeConfirm"
       @cancel="showEndTimePicker = false"
       @update:show="showEndTimePicker = $event"

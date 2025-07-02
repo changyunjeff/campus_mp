@@ -6,6 +6,7 @@ import { useRouter } from 'uni-mini-router'
 import { useToast } from '@/composables/toast'
 import { UserApi } from '@/api/user'
 import { CommunityApi } from '@/api/community'
+import {ActivityApi} from "@/subpackages/api/activity";
 import { formatTime } from '@/utils/time'
 import User from '/static/images/user.png'
 import {useMessage} from "@/composables/message";
@@ -57,6 +58,11 @@ const hasMorePosts = ref(true)
 const hasMoreActivities = ref(true)
 const postPage = ref(1)
 const activityPage = ref(1)
+
+// scroll-view 相关状态
+const refresherTriggered = ref(false)
+const scrollTop = ref(0)
+const refresherEnabled = ref(true)
 
 // 操作状态
 const isFollowing = ref(false)
@@ -280,23 +286,34 @@ const loadUserContent = async (tab = 0, loadMore = false) => {
       postsLoading.value = false
     }
   } else {
-    // 加载活动 - 暂时使用模拟数据
     postsLoading.value = true
     try {
-      await new Promise(resolve => setTimeout(resolve, 800))
-      
+      const page = loadMore ? activityPage.value + 1 : 1
+      const res = await ActivityApi.getOtherActivities({
+        user_id: userId.value,
+        page: page,
+        page_size: 10
+      })
+      const list = res.list || []
       if (loadMore) {
-        userActivities.value.push(...mockActivities)
-        activityPage.value++
+        userActivities.value.push(...list)
+        activityPage.value = page
       } else {
-        userActivities.value = mockActivities
+        userActivities.value = list
         activityPage.value = 1
       }
       
-      userStats.activities = userActivities.value.length
-      hasMoreActivities.value = activityPage.value < 3
+      userStats.activities = res.total || userActivities.value.length
+      hasMoreActivities.value = list.length >= 10 && userActivities.value.length < res.total
     } catch (error) {
       console.error('加载活动失败:', error)
+      toast.show('加载活动失败')
+      // 如果API调用失败，尝试显示模拟数据
+      if (!loadMore) {
+        userActivities.value = mockActivities
+        hasMoreActivities.value = false
+        userStats.activities = mockActivities.length
+      }
     } finally {
       postsLoading.value = false
     }
@@ -307,6 +324,43 @@ const loadUserContent = async (tab = 0, loadMore = false) => {
 const switchTab = (index) => {
   currentTab.value = index
   loadUserContent(index)
+}
+
+// 刷新数据
+const refreshData = async () => {
+  await Promise.all([
+    loadUserInfo(),
+    loadUserContent(currentTab.value, false)
+  ])
+}
+
+// 加载更多数据
+const loadMoreData = async () => {
+  const hasMore = currentTab.value === 0 ? hasMorePosts.value : hasMoreActivities.value
+  if (!hasMore || postsLoading.value) return
+  
+  await loadUserContent(currentTab.value, true)
+}
+
+// 下拉刷新处理
+const onRefresherRefresh = async () => {
+  console.log('下拉刷新用户主页')
+  refresherTriggered.value = true
+  await refreshData()
+  refresherTriggered.value = false
+}
+
+// 触底加载处理
+const onScrollToLower = async () => {
+  console.log('触底加载更多内容')
+  await loadMoreData()
+}
+
+// 滚动事件处理
+const onScroll = (e) => {
+  scrollTop.value = e.detail.scrollTop
+  // 当滚动位置大于50rpx时禁用下拉刷新，避免滚动冲突
+  refresherEnabled.value = scrollTop.value <= 50
 }
 
 // 关注/取消关注
@@ -490,7 +544,18 @@ const handleAvatarClick = () => {
       <wd-loading>加载中...</wd-loading>
     </view>
 
-    <view v-else class="min-h-screen bg-gray-50">
+    <scroll-view 
+      v-else
+      scroll-y 
+      class="min-h-full bg-gray-50"
+      :refresher-enabled="refresherEnabled"
+      :refresher-triggered="refresherTriggered"
+      @refresherrefresh="onRefresherRefresh"
+      @scrolltolower="onScrollToLower"
+      @scroll="onScroll"
+      lower-threshold="100"
+      style="height: 100vh;"
+    >
       <!-- 用户信息卡片 -->
       <view class="relative">
         <!-- 顶部背景 -->
@@ -759,8 +824,18 @@ const handleAvatarClick = () => {
             <text class="text-gray-400 block mt-20rpx">还没有发布过活动</text>
           </view>
         </view>
+        
+        <!-- 加载更多指示器 -->
+        <view v-if="postsLoading && ((currentTab === 0 && userPosts.length > 0) || (currentTab === 1 && userActivities.length > 0))" class="text-center py-30rpx">
+          <text class="text-26rpx text-gray-500">正在加载...</text>
+        </view>
+        
+        <!-- 没有更多数据提示 -->
+        <view v-if="!postsLoading && ((currentTab === 0 && !hasMorePosts && userPosts.length > 0) || (currentTab === 1 && !hasMoreActivities && userActivities.length > 0))" class="text-center py-30rpx">
+          <text class="text-26rpx text-gray-400">没有更多数据了</text>
+        </view>
       </view>
-    </view>
+    </scroll-view>
   </Layout>
 </template>
 

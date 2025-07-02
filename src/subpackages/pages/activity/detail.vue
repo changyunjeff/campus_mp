@@ -10,9 +10,11 @@ import Amap from '@/components/Amap.vue'
 // 引入分享功能
 import SharePopups from '@/components/share-popups.vue'
 import { useShare } from '@/subpackages/composables/share'
+import {useUserStore} from '@/pinia/modules/user'
 
 const router = useRouter()
 const toast = useToast()
+const userStore = useUserStore()
 
 // 初始化分享功能
 const {
@@ -127,18 +129,47 @@ const isOrganizer = computed(() => {
 
 // 是否可以参与
 const canJoin = computed(() => {
-  if (!activity.value) return false
-  if (activity.value.isParticipated) return false
-  if (activity.value.status !== 'published') return false
-  if (activity.value.participants >= activity.value.maxParticipants) return false
+  if (!activity.value) {
+    console.debug("无法参与活动--因为activity不能为空")
+    toast.show("无法参与活动--因为activity不能为空")
+    return false
+  }
+  if (activity.value.isParticipated) {
+    console.debug("无法参与活动--因为你已经参加了活动")
+    toast.show("无法参与活动--因为你已经参加了活动")
+    return false
+  }
+  if (activity.value.status !== 'published') {
+    console.debug("无法参与活动--因为活动不是发布状态")
+    toast.show("无法参与活动--因为活动不是发布状态")
+    return false
+  }
+  if (activity.value.participants >= activity.value.maxParticipants) {
+    console.debug("无法参与活动--因为参与者数量已经超过最大要求")
+    toast.show("无法参与活动--因为参与者数量已经超过最大要求")
+    return false
+  }
   
   // 检查性别限制
-  const userGender = 'female' // 模拟当前用户性别
+  const gender = userStore.getGender()
+  if (gender<1) {
+    console.debug("无法参与活动--因为你未设置性别")
+    toast.show("无法参与活动--因为你未设置性别")
+    return false
+  }
   const { male, female } = activity.value.currentGender
   const { male: reqMale, female: reqFemale } = activity.value.genderRequirement
   
-  if (userGender === 'male' && male >= reqMale) return false
-  if (userGender === 'female' && female >= reqFemale) return false
+  if (gender === 1 && male >= reqMale) {
+    console.debug("无法参与活动--因为男性参与者已经满了")
+    toast.show("无法参与活动--因为男性参与者已经满了")
+    return false
+  }
+  if (gender === 2 && female >= reqFemale) {
+    console.debug("无法参与活动--因为女性参与者已经满了")
+    toast.show("无法参与活动--因为女性参与者已经满了")
+    return false
+  }
   
   return true
 })
@@ -359,7 +390,7 @@ const viewParticipant = (participant) => {
   if (participant.id === currentUserId.value) return
   
   router.push({
-    name: 'user_profile',
+    name: 'other_index',
     params: { id: participant.id }
   })
 }
@@ -424,6 +455,14 @@ const onScroll = (e) => {
   scrollTop.value = e.detail.scrollTop
   // 当滚动位置大于50rpx时禁用下拉刷新，避免滚动冲突
   refresherEnabled.value = scrollTop.value <= 50
+}
+
+// gotoUser 跳转到用户详情
+const gotoUser = (id) => {
+  router.push({
+    name: 'other_index',
+    params: { id: id }
+  })
 }
 </script>
 
@@ -519,6 +558,7 @@ const onScroll = (e) => {
             :src="activity.organizer.avatar"
             class="w-10 h-10 rounded-full"
             mode="aspectFill"
+            @tap.stop="gotoUser(activity.organizer.id)"
           />
           <view class="flex-1">
             <view class="flex items-center gap-2">

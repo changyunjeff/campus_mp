@@ -269,7 +269,20 @@ const handleUserAction = throttle(async (user, action) => {
       case 'unfollow':
         await UserApi.unfollowUser(user.id)
         user.relationship = user.relationship === 2 ? 0 : 0
-        toast.show('已取消关注')
+        
+        // 如果是在好友列表中取关，立即从列表中删除该好友
+        if (activeTab.value === 'friends') {
+          const index = contactData.friends.findIndex(friend => friend.id === user.id)
+          if (index > -1) {
+            contactData.friends.splice(index, 1)
+            // 更新tab计数
+            updateTabCounts()
+          }
+          toast.show('已删除好友')
+        } else {
+          // 在关注列表中取关时，不删除（防止误操作）
+          toast.show('已取消关注')
+        }
         break
       case 'message':
         router.push({
