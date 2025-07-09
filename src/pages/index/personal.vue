@@ -103,6 +103,20 @@ const entrances = [
     color: '#10b981',
     route: 'goods_personal_center'
   },
+  {
+    id: 3,
+    title: '我的订单',
+    icon: 'list',
+    color: '#f59e0b',
+    route: 'goods_order_list'
+  },
+  {
+    id: 4,
+    title: '支付设置',
+    icon: 'wallet',
+    color: '#8b5cf6',
+    route: 'goods_merchant_payment_setup'
+  },
 ]
 
 // 跳转到编辑资料页面

@@ -10,6 +10,7 @@ import {onLoad, onPullDownRefresh, onReachBottom} from '@dcloudio/uni-app'
 import {GoodsApi} from '@/api/goods'
 import {useToast} from "@/composables/toast";
 import {useTabbar} from '@/composables/tabbar'
+import {sub} from "@/utils/string"
 
 const {show} = useTabbar()
 const router = useRouter()
@@ -97,12 +98,10 @@ const loadGoodsList = async (isRefresh = false) => {
     // 处理商品数据，添加前端需要的字段
     const processedItems = items.map(item => ({
       ...item,
-      // 添加is_liked字段，默认为false（后续可以从用户收藏列表中获取）
-      is_liked: false,
-      // 处理卖家信息，因为API只返回seller_open_id
+      is_liked: item.is_liked,
       seller: {
-        nickname: '用户', // 默认昵称，可以后续通过seller_open_id获取详细信息
-        avatar_url: null
+        nickname: item.seller?.nickname,
+        avatar_url: item.seller?.avatar_url,
       }
     }))
 
@@ -150,13 +149,6 @@ const handleCategoryClick = throttle(async (category) => {
 // 处理商品点击
 const viewGoodsDetail = throttle(async (goodsId) => {
   console.log('查看商品详情:', goodsId)
-
-  try {
-    // 记录浏览
-    await GoodsApi.viewGoods(goodsId)
-  } catch (error) {
-    console.error('记录浏览失败:', error)
-  }
 
   // 跳转到商品详情页
   router.push({
@@ -349,8 +341,7 @@ onReachBottom(async () => {
                   @tap.stop="handleLike(item, $event)"
               >
                 <WdIcon
-                    custom-class="iconfont" class-prefix="icon"
-                    :name="item.is_liked ? 'like' : 'like-o'"
+                    :name="item.is_liked ? 'star-filled' : 'star'"
                     size="32rpx"
                     :custom-style="item.is_liked ? 'color:#f43f5e' : 'color:#fff'"
                 />
@@ -385,19 +376,19 @@ onReachBottom(async () => {
                   </view>
                 </view>
                 <view class="flex items-center">
-                  <WdIcon name="location-o" size="22rpx" custom-style="color:#999" class="mr-2rpx"/>
-                  <text class="text-22rpx text-gray-500">{{ item.location || '未知' }}</text>
+                  <WdIcon name="location" size="22rpx" custom-style="color:#999" class="mr-2rpx"/>
+                  <text class="text-22rpx text-gray-500">{{ sub(item.location, 10) || '未知' }}</text>
                 </view>
               </view>
 
               <!-- 统计信息 -->
               <view class="flex justify-between items-center mt-8rpx text-gray-400 text-20rpx">
                 <view class="flex items-center">
-                  <WdIcon name="eye-o" size="20rpx" custom-style="color:#999" class="mr-4rpx"/>
+                  <WdIcon name="view" size="20rpx" custom-style="color:#999" class="mr-4rpx"/>
                   <text>{{ item.views || 0 }}</text>
                 </view>
                 <view class="flex items-center">
-                  <WdIcon name="like-o" size="20rpx" custom-style="color:#999" class="mr-4rpx"/>
+                  <WdIcon name="heart" size="20rpx" custom-style="color:#999" class="mr-4rpx"/>
                   <text>{{ item.likes || 0 }}</text>
                 </view>
               </view>

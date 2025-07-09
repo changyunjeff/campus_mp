@@ -394,10 +394,11 @@ const goBack = () => {
         <text class="text-28rpx font-bold text-#333 mb-20rpx block">
           标题 <span class="text-red-500">*</span>
         </text>
-        <input
+        <WdInput
           v-model="form.title"
           class="w-full px-20rpx py-24rpx border border-gray-200 rounded-12rpx text-28rpx"
-          maxlength="50"
+          :maxlength="50"
+          placeholder="请输入标题..."
           @input="saveDraft"
         />
         <view class="flex justify-end mt-10rpx">
@@ -510,10 +511,11 @@ const goBack = () => {
       <!-- 联系方式（可选） -->
       <view class="bg-white mt-20rpx p-30rpx">
         <text class="text-28rpx font-bold text-#333 mb-20rpx block">联系方式（可选）</text>
-        <input
+        <WdInput
           v-model="form.contact"
           class="w-full px-20rpx py-24rpx border border-gray-200 rounded-12rpx text-28rpx"
-          maxlength="50"
+          :maxlength="50"
+          placeholder="请填写您的联系方式"
           @input="saveDraft"
         />
         <text class="text-24rpx text-gray-500 mt-10rpx block">

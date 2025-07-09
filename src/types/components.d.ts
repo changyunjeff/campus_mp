@@ -20,6 +20,7 @@ declare module 'vue' {
     InputEntry: typeof import('./../components/InputEntry.vue')['default']
     InputSection: typeof import('./../components/InputSection.vue')['default']
     PublishMenu: typeof import('./../components/publishMenu.vue')['default']
+    RegionPicker: typeof import('./../components/RegionPicker.vue')['default']
     SharePopups: typeof import('./../components/share-popups.vue')['default']
     TabGroup: typeof import('./../components/TabGroup.vue')['default']
     TimePicker: typeof import('./../components/TimePicker.vue')['default']

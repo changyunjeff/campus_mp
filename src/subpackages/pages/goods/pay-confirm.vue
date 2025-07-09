@@ -4,11 +4,15 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { useRouter } from 'uni-mini-router'
 import { getAvailablePaymentMethods, getDefaultPaymentMethod } from './payment.config'
+import { GoodsApi } from '@/api/goods'
+import { useToast } from '@/composables/toast'
 
 const router = useRouter()
+const toast = useToast()
 
 // 订单ID和金额
 const orderId = ref('')
+const orderNumber = ref('')
 const orderAmount = ref(0)
 
 // 倒计时相关
@@ -56,49 +60,159 @@ const selectPayment = (id) => {
 }
 
 // 确认支付
-const confirmPayment = () => {
+const confirmPayment = async () => {
   if (!selectedPaymentId.value) {
-    uni.showToast({
-      title: '请选择支付方式',
-      icon: 'none'
-    })
+    toast.show('请选择支付方式')
     return
   }
   
-  uni.showLoading({
-    title: '正在支付...'
-  })
-  
-  // 模拟支付过程
-  setTimeout(() => {
-    uni.hideLoading()
+  try {
+    uni.showLoading({
+      title: '正在支付...'
+    })
     
-    // 模拟支付结果，真实项目中应当接入真实支付API
-    const isPaymentSuccess = Math.random() > 0.2 // 模拟80%成功率
+    // 调用微信支付
+    const paymentResult = await callWeChatPay()
     
-    if (isPaymentSuccess) {
+    if (paymentResult.success) {
+      // 调用支付回调API
+      const callbackParams = {
+        order_id: orderId.value,
+        transaction_id: paymentResult.transactionId,
+        pay_amount: orderAmount.value.toString()
+      }
+      
+      console.debug('调用支付回调API:', callbackParams)
+      const result = await GoodsApi.paymentCallback(callbackParams)
+      
+      console.debug('支付回调结果:', result)
+      
+      uni.hideLoading()
+      
+      // 支付成功
       uni.showModal({
         title: '支付成功',
         content: '订单支付成功，感谢您的购买！',
         showCancel: false,
+        confirmText: '查看订单',
         success: () => {
-          // 支付成功后跳转到订单详情
+          // 清除定时器
+          clearInterval(countdownTimer.value)
+          
+          // 跳转到订单列表
           router.push({
-            name: 'order_detail',
-            query: {
-              orderId: orderId.value
-            }
+            name: 'goods_order_list'
           })
         }
       })
     } else {
-      uni.showModal({
-        title: '支付失败',
-        content: '订单支付失败，请重试或选择其他支付方式',
-        showCancel: false
-      })
+      throw new Error(paymentResult.message || '支付失败')
     }
-  }, 1500)
+    
+  } catch (error) {
+    console.error('支付失败:', error)
+    uni.hideLoading()
+    
+    let errorMessage = '支付失败，请重试'
+    if (error.message) {
+      errorMessage = error.message
+    }
+    
+    uni.showModal({
+      title: '支付失败',
+      content: errorMessage,
+      showCancel: false,
+      confirmText: '重新支付'
+    })
+  }
+}
+
+// 调用微信支付
+const callWeChatPay = () => {
+  return new Promise((resolve, reject) => {
+    // 首先调用后端获取支付参数
+    getWeChatPayParams()
+      .then(payParams => {
+        if (!payParams) {
+          reject(new Error('获取支付参数失败'))
+          return
+        }
+
+        // 调用微信支付API
+        uni.requestPayment({
+          provider: 'wxpay',
+          timeStamp: payParams.timeStamp,
+          nonceStr: payParams.nonceStr,
+          package: payParams.package,
+          signType: payParams.signType || 'MD5',
+          paySign: payParams.paySign,
+          success: (res) => {
+            console.log('微信支付成功:', res)
+            resolve({
+              success: true,
+              transactionId: payParams.transactionId || ('wx_' + Date.now()),
+              message: '支付成功'
+            })
+          },
+          fail: (err) => {
+            console.error('微信支付失败:', err)
+            if (err.errMsg.includes('cancel')) {
+              resolve({
+                success: false,
+                message: '用户取消支付'
+              })
+            } else {
+              resolve({
+                success: false,
+                message: '支付失败: ' + err.errMsg
+              })
+            }
+          }
+        })
+      })
+      .catch(error => {
+        console.error('获取支付参数失败:', error)
+        resolve({
+          success: false,
+          message: error.message || '获取支付参数失败'
+        })
+      })
+  })
+}
+
+// 获取微信支付参数
+const getWeChatPayParams = async () => {
+  try {
+    // 调用后端接口获取微信支付参数
+    const params = {
+      order_id: orderId.value,
+      order_number: orderNumber.value,
+      total_fee: Math.round(orderAmount.value * 100), // 微信支付金额以分为单位
+      body: `商品订单-${orderNumber.value}`,
+    }
+    
+    console.debug('请求微信支付参数:', params)
+    const result = await GoodsApi.getWeChatPayParams(params)
+    
+    console.debug('获取微信支付参数成功:', result)
+    return result
+
+  } catch (error) {
+    console.error('获取支付参数异常:', error)
+    // 开发环境下使用模拟数据
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('开发环境：使用模拟支付参数')
+      return {
+        timeStamp: String(Math.floor(Date.now() / 1000)),
+        nonceStr: Math.random().toString(36).substr(2, 15),
+        package: 'prepay_id=wx_mock_prepay_id_' + Date.now(),
+        signType: 'MD5',
+        paySign: 'mock_pay_sign_' + Math.random().toString(36).substr(2, 10),
+        transactionId: 'wx_mock_' + Date.now()
+      }
+    }
+    throw error
+  }
 }
 
 // 返回按钮
@@ -116,8 +230,17 @@ const handleBack = () => {
 
 onLoad((options) => {
   // 获取订单ID和金额
-  orderId.value = options.orderId || '未知订单'
-  orderAmount.value = parseFloat(options.amount) || 1538.00
+  orderId.value = options.orderId || ''
+  orderNumber.value = options.orderNumber || '未知订单'
+  orderAmount.value = parseFloat(options.amount) || 0
+  
+  if (!orderId.value || orderAmount.value <= 0) {
+    toast.show('订单信息错误')
+    setTimeout(() => {
+      router.back()
+    }, 1500)
+    return
+  }
   
   // 初始化支付方式
   paymentMethods.value = getAvailablePaymentMethods()
@@ -166,6 +289,7 @@ const selectedPayment = computed(() => {
       
       <!-- 金额显示 -->
       <view class="bg-white py-30rpx flex flex-col items-center">
+        <text class="text-24rpx text-gray-500 mb-5rpx">订单号：{{ orderNumber }}</text>
         <text class="text-28rpx text-gray-600 mb-10rpx">剩余支付时间 {{ formattedCountdown }}</text>
         <view class="flex items-baseline">
           <text class="text-32rpx text-gray-800">¥</text>

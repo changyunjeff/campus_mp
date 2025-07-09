@@ -36,8 +36,10 @@ interface NavigateToOptions {
        "/subpackages/pages/goods/goods-publish-submit" |
        "/subpackages/pages/goods/order-confirm" |
        "/subpackages/pages/goods/pay-confirm" |
+       "/subpackages/pages/goods/merchant-payment-setup" |
        "/subpackages/pages/goods/addresses" |
        "/subpackages/pages/goods/favorites" |
+       "/subpackages/pages/goods/order-list" |
        "/subpackages/pages/goods/categories" |
        "/subpackages/pages/goods/goods-details" |
        "/subpackages/pages/profile/edit-profile" |

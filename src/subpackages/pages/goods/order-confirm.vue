@@ -3,14 +3,17 @@ import Layout from "@/layout/index.vue"
 import { ref, reactive, onMounted, computed } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { useRouter } from 'uni-mini-router'
+import {useToast} from '@/composables/toast'
+import {GoodsApi} from "@/api/goods";
 
 const router = useRouter()
+const toast = useToast()
 
 // 商品ID
 const goodsId = ref(null)
 
 // 加载状态
-const loading = ref(true)
+const loading = ref(false)
 
 // 未支付订单信息
 const unpaidOrder = ref(null)
@@ -28,6 +31,7 @@ const address = reactive({
   id: 1,
   name: '刘长运',
   phone: '180****6820',
+  region: '浙江省 宁波市',
   address: '庄市大道8号同心苑小区',
   isDefault: true
 })
@@ -49,10 +53,31 @@ const goods = reactive({
 
 // 配送方式
 const deliveryOptions = reactive([
-  { id: 1, name: '快递', price: 0, selected: true },
-  { id: 2, name: '同城配送', price: 10, selected: false },
-  { id: 3, name: '自提', price: 0, selected: false }
+  { 
+    id: 1, 
+    name: '快递配送', 
+    price: 0, 
+    selected: true,
+    icon: 'truck',
+    description: '快递到付',
+    detail: '卖家发快递，买家收件时支付快递费',
+    priceNote: '快递费到付，由买家承担'
+  },
+  { 
+    id: 2, 
+    name: '校园内自提', 
+    price: 0, 
+    selected: false,
+    icon: 'school',
+    description: '校园内面交',
+    detail: '与卖家协商校园内自提地点，当面交易',
+    needCommunication: true,
+    communicationNote: '请与卖家协商具体自提地点和时间'
+  }
 ])
+
+// 配送方式选择弹窗
+const showDeliveryModal = ref(false)
 
 // 优惠券
 const coupon = ref(null)
@@ -60,15 +85,29 @@ const coupon = ref(null)
 // 红包
 const redPacket = ref(null)
 
+// 买家备注
+const buyerRemark = ref('')
+
 // 获取已选择的配送方式
 const selectedDelivery = computed(() => {
   return deliveryOptions.find(option => option.selected)
 })
 
+// 检查是否满足提交条件
+const hasAddress = computed(() => {
+  // 校园内自提时不需要收货地址，直接返回true
+  if (selectedDelivery.value && selectedDelivery.value.id === 2) {
+    return true
+  }
+  // 快递配送需要收货地址
+  return address.id && address.name && address.phone
+})
+
 // 订单金额计算
 const orderAmount = computed(() => {
   const subtotal = goods.price
-  const deliveryFee = selectedDelivery.value ? selectedDelivery.value.price : 0
+  // 校园闲置平台不收取配送费，快递费到付
+  const deliveryFee = 0
   const discountAmount = coupon.value ? coupon.value.amount : 0
   const redPacketAmount = redPacket.value ? redPacket.value.amount : 0
   
@@ -81,11 +120,69 @@ const orderAmount = computed(() => {
   }
 })
 
+// 打开配送方式选择弹窗
+const openDeliveryModal = () => {
+  showDeliveryModal.value = true
+}
+
 // 选择配送方式
 const selectDelivery = (id) => {
+  const selectedOption = deliveryOptions.find(option => option.id === id)
+  
   deliveryOptions.forEach(option => {
     option.selected = option.id === id
   })
+  
+  // 显示更具体的提示信息
+  if (selectedOption) {
+    toast.show(`已选择${selectedOption.name}`)
+    
+    // 校园内自提需要与卖家沟通
+    if (id === 2) {
+      setTimeout(() => {
+        uni.showModal({
+          title: '温馨提示',
+          content: '请主动联系卖家协商校园内自提的具体地点和时间',
+          showCancel: false,
+          confirmText: '我知道了'
+        })
+        closeDeliveryModal()
+      }, 800)
+    } else {
+      // 快递配送，自动关闭弹窗
+      setTimeout(() => {
+        closeDeliveryModal()
+      }, 800)
+    }
+  }
+}
+
+// 获取卖家信息（用于校园内自提时的联系）
+const getSellerContact = computed(() => {
+  return {
+    id: goods.seller.id,
+    name: goods.seller.nickname,
+    avatar: goods.seller.avatar
+  }
+})
+
+// 关闭配送方式弹窗
+const closeDeliveryModal = () => {
+  showDeliveryModal.value = false
+}
+
+
+
+// 确认配送方式选择
+const confirmDelivery = () => {
+  const selected = selectedDelivery.value
+  if (!selected) {
+    toast.show('请选择配送方式')
+    return
+  }
+  
+  closeDeliveryModal()
+  toast.show('配送方式设置成功')
 }
 
 // 选择优惠券
@@ -106,17 +203,39 @@ const selectRedPacket = () => {
 
 // 前往选择地址页面
 const goToAddress = () => {
+  // 将回调函数存储到全局变量中
+  const app = getApp()
+  app.globalData = app.globalData || {}
+  app.globalData.addressSelectCallback = (selectedAddress) => {
+    // 更新地址信息
+    console.debug('开始执行选择地址回调函数：', selectedAddress)
+    Object.assign(address, {
+      id: selectedAddress.id,
+      name: selectedAddress.name,
+      phone: selectedAddress.phone,
+      region: selectedAddress.region,
+      address: selectedAddress.address,
+      isDefault: selectedAddress.isDefault
+    })
+    
+    toast.show('地址选择成功')
+  }
+  
   router.push({
-    name: 'addresses',
+    name: 'goods_addresses',
+    params: {
+      from: "order",
+    }
   })
 }
 
 // 前往支付页面
 const goToPay = (orderId, amount) => {
   router.push({
-    name: 'pay_confirm',
+    name: 'goods_pay_confirm',
     params: {
       orderId: orderId,
+      orderNumber: unpaidOrder.value?.order_number || '',
       amount: amount
     }
   })
@@ -124,35 +243,144 @@ const goToPay = (orderId, amount) => {
 
 // 提交订单
 const submitOrder = () => {
-  uni.showLoading({
-    title: '提交中...'
-  })
+  // 检查配送方式
+  const delivery = selectedDelivery.value
+  if (!delivery) {
+    toast.show('请选择配送方式')
+    return
+  }
   
-  // 模拟提交订单
-  setTimeout(() => {
+  // 检查收货地址（快递配送需要收货地址）
+  if (delivery.id === 1 && !address.id) {
+    uni.showModal({
+      title: '提示',
+      content: '请先选择收货地址',
+      showCancel: false,
+      success: () => {
+        goToAddress()
+      }
+    })
+    return
+  }
+  
+  // 校园内自提确认提示
+  if (delivery.id === 2) {
+    uni.showModal({
+      title: '确认提交',
+      content: '请确认您已与卖家协商好自提地点和时间',
+      success: (res) => {
+        if (res.confirm) {
+          proceedSubmitOrder()
+        }
+      }
+    })
+    return
+  }
+  
+  // 快递配送直接提交
+  proceedSubmitOrder()
+}
+
+// 实际提交订单的函数
+const proceedSubmitOrder = async () => {
+  if (loading.value) return
+
+  try {
+    loading.value = true
+    uni.showLoading({
+      title: '提交中...'
+    })
+
+    const delivery = selectedDelivery.value
+    
+    // 构建订单数据，匹配API接口要求
+    const orderParams = {
+      goods_id: goods.id,
+      goods_title: goods.name,
+      price: goods.price,
+      seller_id: goods.seller.id,
+      deliver_method: delivery.id === 1 ? 1 : 2, // 1:快递, 2:自提
+      buyer_remark: buyerRemark.value.trim(), // 买家备注
+    }
+
+    // 添加收货地址信息（快递配送时需要）
+    if (delivery.id === 1 && address.id) {
+      orderParams.address_info = {
+        user_name: address.name,
+        phone: address.phone,
+        region: address.region,
+        address: address.address
+      }
+    } else if (delivery.id === 2) {
+      // 自提时的地址信息（可以是空或默认值）
+      orderParams.address_info = {
+        user_name: address.name || '自提',
+        phone: address.phone || '',
+        region: '校园内',
+        address: '校园内自提'
+      }
+    }
+    
+    console.debug('提交订单参数:', orderParams)
+    
+    // 调用创建订单API
+    const result = await GoodsApi.createOrder(orderParams)
+    
+    console.debug('订单创建成功:', result)
+    
     uni.hideLoading()
+    
+    // 订单创建成功，显示支付选择
     uni.showModal({
       title: '订单提交成功',
-      content: '是否前往支付？',
+      content: '是否立即支付？',
+      confirmText: '立即支付',
+      cancelText: '稍后支付',
       success: (res) => {
         if (res.confirm) {
           // 前往支付页面
           router.push({
-            name: 'pay_confirm',
+            name: 'goods_pay_confirm',
             params: {
-              orderId: Math.floor(Math.random() * 1000000),
-              amount: orderAmount.total
+              orderId: result.id,
+              orderNumber: result.order_number,
+              amount: result.pay_amount
             }
           })
         } else {
-          // 返回订单列表
-          router.push({
-            name: 'order_list'
+          // 返回订单列表或商品页面
+          uni.showToast({
+            title: '可在订单中心查看',
+            icon: 'success',
+            duration: 2000
           })
+          setTimeout(() => {
+            router.back()
+          }, 2000)
         }
       }
     })
-  }, 1500)
+    
+  } catch (error) {
+    console.error('订单提交失败:', error)
+    uni.hideLoading()
+    
+    let errorMessage = '订单提交失败'
+    if (error.message) {
+      errorMessage = error.message
+    } else if (typeof error === 'string') {
+      errorMessage = error
+    }
+    
+    uni.showModal({
+      title: '提交失败',
+      content: errorMessage,
+      showCancel: false,
+      confirmText: '我知道了'
+    })
+  } finally {
+    loading.value = false
+  }
 }
 
 // 初始化倒计时
@@ -171,30 +399,105 @@ const startCountdown = (seconds) => {
   }, 1000)
 }
 
-// 模拟检查是否有未支付订单
-const checkUnpaidOrders = () => {
-  // 50%概率出现未支付订单，实际项目中应从后端获取
-  if (Math.random() > 0.5) {
-    unpaidOrder.value = {
-      id: Math.floor(Math.random() * 1000000),
-      amount: 3899,
-      createTime: new Date(),
-      expiryTime: 15 * 60 // 15分钟倒计时
-    }
+// 检查是否有未支付订单
+const checkUnpaidOrders = async () => {
+  if (!goodsId.value) return
+
+  try {
+    const result = await GoodsApi.hasOrderUnpaid(goodsId.value)
     
-    // 开始倒计时
-    startCountdown(unpaidOrder.value.expiryTime)
+    if (result && result.id) {
+      // 有未支付订单
+      unpaidOrder.value = {
+        id: result.id,
+        order_number: result.order_number,
+        amount: parseFloat(result.pay_amount),
+        createTime: new Date(result.create_time),
+        expiryTime: Math.max(0, result.expire_time - Math.floor(Date.now()))
+      }
+      
+      // 开始倒计时
+      if (unpaidOrder.value.expiryTime > 0) {
+        startCountdown(unpaidOrder.value.expiryTime)
+      }
+      
+      console.debug('发现未支付订单:', unpaidOrder.value)
+    }
+  } catch (error) {
+    console.error('检查未支付订单失败:', error)
+    // 检查失败不影响正常流程，继续执行
+  }
+}
+
+const fetchDefaultAddress = async () => {
+  if (loading.value) return
+
+  try {
+    loading.value = true
+    const res = await GoodsApi.getDefaultAddress()
+    console.debug('获取地址成功, res:', res)
+    
+    if (res && res.id) {
+      Object.assign(address, {
+        id: res.id,
+        name: res.user_name,
+        phone: res.phone,
+        region: res.region,
+        address: res.address,
+        isDefault: res.is_default
+      })
+    } else {
+      // 如果没有默认地址，清空address对象
+      Object.assign(address, {
+        id: null,
+        name: '',
+        phone: '',
+        region: '',
+        address: '',
+        isDefault: false
+      })
+    }
+  } catch (err) {
+    console.error(err)
+    // 如果获取失败，也清空address对象
+    Object.assign(address, {
+      id: null,
+      name: '',
+      phone: '',
+      region: '',
+      address: '',
+      isDefault: false
+    })
+    toast.show('获取地址失败')
+  } finally {
+    loading.value = false
   }
 }
 
 onLoad((options) => {
-  goodsId.value = options.id
-  // 模拟加载数据
-  setTimeout(() => {
-    loading.value = false
+  console.debug("options", options)
+  if (options.id) {
+    goodsId.value = options.id
+    goods.id = options.id
+    goods.name = options.title
+    goods.price = parseFloat(options.price)
+    goods.originalPrice = parseFloat(options.original_price)
+    goods.image = options.cover
+    goods.seller.id = options.seller_id
+    goods.seller.nickname = options.seller_nickname
+    goods.seller.avatar = options.seller_avatar
+
+    // 获取默认地址
+    fetchDefaultAddress()
+    
     // 检查是否有未支付订单
     checkUnpaidOrders()
-  }, 500)
+  } else {
+    setTimeout(() => {
+      toast.show('未传入商品ID')
+      router.back()
+    }, 1500)
+  }
 })
 
 onUnload(() => {
@@ -209,9 +512,9 @@ onUnload(() => {
       <view class="text-32rpx font-medium text-#333">确认订单</view>
     </template>
 
-    <view class="bg-#f8f8f8 min-h-100vh">
+    <view class="bg-#f8f8f8 h-full">
       <!-- 加载中 -->
-      <view v-if="loading" class="w-full h-100vh flex items-center justify-center">
+      <view v-if="loading" class="w-full h-screen flex items-center justify-center">
         <WdIcon name="loading" size="60rpx" custom-style="color:#f43f5e" class="animate-spin"/>
       </view>
 
@@ -246,12 +549,12 @@ onUnload(() => {
           </view>
         </view>
         
-        <!-- 收货地址 -->
-        <view class="bg-white mt-20rpx rounded-16rpx mx-30rpx">
+        <!-- 收货地址 (快递配送时显示) -->
+        <view v-if="selectedDelivery.id === 1" class="bg-white mt-20rpx rounded-16rpx mx-30rpx">
           <view class="p-30rpx flex items-center justify-between" @tap="goToAddress">
             <!-- 地址信息 -->
             <view class="flex-1">
-              <view v-if="address" class="animate-fade-in">
+              <view v-if="address.id" class="animate-fade-in">
                 <view class="flex items-center mb-10rpx">
                   <WdIcon name="location" size="36rpx" custom-style="color:#f43f5e" class="mr-10rpx"/>
                   <text class="text-30rpx font-medium">{{ address.name }}</text>
@@ -259,9 +562,14 @@ onUnload(() => {
                 </view>
                 <view class="text-28rpx text-gray-600 pl-46rpx">{{ address.address }}</view>
               </view>
-              <view v-else class="flex items-center">
-                <WdIcon name="plus-circle" size="36rpx" custom-style="color:#f43f5e" class="mr-10rpx"/>
-                <text class="text-30rpx text-gray-600">添加收货地址</text>
+              <view v-else class="flex items-center py-20rpx">
+                <view class="flex items-center justify-center w-80rpx h-80rpx bg-pink-50 rounded-full mr-20rpx">
+                  <WdIcon name="location" size="40rpx" custom-style="color:#f43f5e"/>
+                </view>
+                <view class="flex-1">
+                  <view class="text-30rpx font-medium text-#333 mb-8rpx">选择收货地址</view>
+                  <view class="text-26rpx text-gray-400">请先添加收货地址以便配送</view>
+                </view>
               </view>
             </view>
             
@@ -285,7 +593,7 @@ onUnload(() => {
         <view class="bg-white mt-20rpx rounded-16rpx mx-30rpx overflow-hidden">
           <!-- 店铺信息 -->
           <view class="px-30rpx py-20rpx flex items-center border-b border-gray-100">
-            <image :src="goods.seller.avatar" class="w-40rpx h-40rpx rounded-full mr-15rpx"/>
+            <image :src="goods.seller.avatar" class="w-40rpx h-40rpx rounded-full mr-15rpx" mode="aspectFill" />
             <text class="text-28rpx text-#333 font-medium">{{ goods.seller.nickname }}</text>
             <WdIcon name="chevron-right" size="28rpx" custom-style="color:#ccc" class="ml-10rpx"/>
           </view>
@@ -311,13 +619,39 @@ onUnload(() => {
           </view>
           
           <!-- 配送方式 -->
-          <view class="px-30rpx py-25rpx border-t border-gray-100">
+          <view class="px-30rpx py-25rpx border-t border-gray-100" @tap="openDeliveryModal">
             <view class="flex justify-between items-center">
               <text class="text-28rpx text-gray-700">配送方式</text>
               <view class="flex items-center">
-                <text class="text-26rpx text-#333">{{ selectedDelivery.name }}</text>
+                <view class="flex items-center">
+                  <WdIcon :name="selectedDelivery.icon" size="28rpx" custom-style="color:#f43f5e" class="mr-8rpx"/>
+                  <view class="text-right">
+                    <view class="text-26rpx text-#333">{{ selectedDelivery.name }}</view>
+                    <view class="text-22rpx text-gray-500">{{ selectedDelivery.description }}</view>
+                  </view>
+                </view>
                 <WdIcon name="chevron-right" size="28rpx" custom-style="color:#ccc" class="ml-10rpx"/>
               </view>
+            </view>
+          </view>
+          
+          <!-- 配送详情 -->
+          <view class="px-30rpx py-20rpx border-t border-gray-100 bg-gray-50">
+            <view class="flex items-center text-24rpx text-gray-600">
+              <WdIcon name="info" size="24rpx" custom-style="color:#999" class="mr-8rpx"/>
+              <text>{{ selectedDelivery.detail }}</text>
+            </view>
+            
+            <!-- 快递费用说明 -->
+            <view v-if="selectedDelivery.id === 1 && selectedDelivery.priceNote" class="mt-10rpx text-24rpx text-orange-600">
+              <WdIcon name="alert-circle" size="24rpx" custom-style="color:#f97316" class="mr-8rpx"/>
+              <text>{{ selectedDelivery.priceNote }}</text>
+            </view>
+            
+            <!-- 校园内自提说明 -->
+            <view v-if="selectedDelivery.id === 2 && selectedDelivery.communicationNote" class="mt-10rpx text-24rpx text-blue-600">
+              <WdIcon name="message-circle" size="24rpx" custom-style="color:#3b82f6" class="mr-8rpx"/>
+              <text>{{ selectedDelivery.communicationNote }}</text>
             </view>
           </view>
           
@@ -344,6 +678,23 @@ onUnload(() => {
           </view>
         </view>
         
+        <!-- 买家备注 -->
+        <view class="bg-white mt-20rpx rounded-16rpx mx-30rpx">
+          <view class="px-30rpx py-25rpx">
+            <view class="text-28rpx text-gray-700 mb-20rpx">买家备注</view>
+            <textarea 
+              v-model="buyerRemark"
+              class="w-full p-20rpx bg-gray-50 rounded-12rpx text-26rpx border border-gray-100"
+              placeholder="请输入备注信息（选填）"
+              maxlength="200"
+              style="height: 120rpx; resize: none;"
+            />
+            <view class="text-right text-22rpx text-gray-400 mt-10rpx">
+              {{ buyerRemark.length }}/200
+            </view>
+          </view>
+        </view>
+
         <!-- 用户须知 -->
         <view class="mt-20rpx mx-30rpx">
           <view class="text-28rpx font-medium text-#333 mb-15rpx">用户须知</view>
@@ -363,9 +714,78 @@ onUnload(() => {
           <text class="text-26rpx text-gray-700">应付款：</text>
           <text class="text-36rpx text-#f43f5e font-bold">¥{{ orderAmount.total }}</text>
         </view>
-        
+
         <view @tap="submitOrder" class="bg-gradient-to-r from-#f43f5e to-#ff7676 h-80rpx px-50rpx rounded-full flex items-center justify-center shadow-md shadow-pink-200 transform transition-all duration-300 active-scale active-shadow">
           <text class="text-white text-32rpx font-medium">确认购买</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 配送方式选择弹窗 -->
+    <view v-if="showDeliveryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-end z-200" @tap="closeDeliveryModal">
+      <view class="w-full bg-white rounded-t-20rpx max-h-80vh overflow-hidden" @tap.stop>
+        <!-- 弹窗头部 -->
+        <view class="px-30rpx py-25rpx border-b border-gray-100 flex justify-between items-center">
+          <text class="text-32rpx font-medium text-#333">选择配送方式</text>
+          <WdIcon name="close" size="32rpx" custom-style="color:#999" @tap="closeDeliveryModal"/>
+        </view>
+        
+        <!-- 配送方式列表 -->
+        <scroll-view scroll-y class="max-h-60vh">
+          <view class="px-30rpx py-20rpx">
+                         <view 
+               v-for="delivery in deliveryOptions" 
+               :key="delivery.id"
+               class="mb-20rpx rounded-16rpx border border-gray-200 overflow-hidden delivery-option"
+               :class="{ 
+                 'border-#f43f5e bg-pink-50': delivery.selected
+               }"
+               @tap="selectDelivery(delivery.id)"
+             >
+              <view class="p-25rpx">
+                <view class="flex items-center justify-between mb-15rpx">
+                                     <view class="flex items-center">
+                     <WdIcon :name="delivery.icon" size="32rpx" custom-style="color:#f43f5e" class="mr-15rpx"/>
+                     <view>
+                       <text class="text-30rpx font-medium text-#333">{{ delivery.name }}</text>
+                       <text v-if="delivery.id === 1" class="text-24rpx text-orange-500 ml-10rpx">快递费到付</text>
+                       <text v-else class="text-24rpx text-green-500 ml-10rpx">免费</text>
+                     </view>
+                   </view>
+                  <view class="w-36rpx h-36rpx rounded-full border-2 flex items-center justify-center"
+                        :class="delivery.selected ? 'border-#f43f5e bg-#f43f5e' : 'border-gray-300'">
+                    <WdIcon v-if="delivery.selected" name="check" size="24rpx" color="#fff"/>
+                  </view>
+                </view>
+                
+                                 <view class="text-26rpx text-gray-600 mb-10rpx">{{ delivery.description }}</view>
+                <view class="text-24rpx text-gray-500">{{ delivery.detail }}</view>
+                
+                <!-- 特殊说明 -->
+                <view v-if="delivery.priceNote" class="mt-10rpx text-24rpx text-orange-600">
+                  <WdIcon name="alert-circle" size="20rpx" custom-style="color:#f97316" class="mr-5rpx"/>
+                  <text>{{ delivery.priceNote }}</text>
+                </view>
+                
+                <view v-if="delivery.communicationNote" class="mt-10rpx text-24rpx text-blue-600">
+                  <WdIcon name="message-circle" size="20rpx" custom-style="color:#3b82f6" class="mr-5rpx"/>
+                  <text>{{ delivery.communicationNote }}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </scroll-view>
+        
+        <!-- 弹窗底部 -->
+        <view class="px-30rpx py-25rpx border-t border-gray-100 bg-white">
+          <view class="flex">
+            <view class="flex-1 h-80rpx rounded-full border border-gray-300 flex items-center justify-center mr-20rpx" @tap="closeDeliveryModal">
+              <text class="text-28rpx text-gray-700">取消</text>
+            </view>
+            <view class="flex-1 h-80rpx rounded-full bg-gradient-to-r from-#f43f5e to-#ff7676 flex items-center justify-center" @tap="confirmDelivery">
+              <text class="text-28rpx text-white">确定</text>
+            </view>
+          </view>
         </view>
       </view>
     </view>
@@ -419,4 +839,35 @@ onUnload(() => {
 .active-shadow:active {
   box-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.05);
 }
+
+/* 弹窗动画效果 */
+.fixed.inset-0 {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.fixed.inset-0 > view {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* 配送方式选择项悬停效果 */
+.delivery-option:active {
+  transform: scale(0.98);
+  transition: transform 0.2s ease;
+}
+
+/* 门店选择项悬停效果 */
+.store-option:active {
+  transform: scale(0.98);
+  transition: transform 0.2s ease;
+}
 </style>
+

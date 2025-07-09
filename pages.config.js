@@ -261,14 +261,28 @@ export default defineUniPages({
                     }
                 },
                 {
+                    path: 'pages/goods/merchant-payment-setup',
+                    name: 'goods_merchant_payment_setup',
+                    style: {
+                        navigationBarTitleText: '支付设置',
+                    },
+                    meta: {
+                        title: '支付设置',
+                        verify: true,
+                    }
+                },
+                {
                     path: 'pages/goods/addresses',
                     name: 'goods_addresses',
                     style: {
-                        navigationBarTitleText: '地址管理'
+                        navigationBarTitleText: '地址管理',
+                        enablePullDownRefresh: true,
+                        onReachBottomDistance: 100,
                     },
                     meta: {
                         title: '地址管理',
                         verify: true,
+                        pageScroll: true, // 启用页面级滚动
                     }
                 },
                 {
@@ -279,6 +293,17 @@ export default defineUniPages({
                     },
                     meta: {
                         title: '我的收藏',
+                        verify: true,
+                    }
+                },
+                {
+                    path: 'pages/goods/order-list',
+                    name: 'goods_order_list',
+                    style: {
+                        navigationBarTitleText: '我的订单'
+                    },
+                    meta: {
+                        title: '我的订单',
                         verify: true,
                     }
                 },
@@ -296,11 +321,13 @@ export default defineUniPages({
                     path: 'pages/goods/goods-details',
                     name: 'goods_details',
                     style: {
-                        navigationBarTitleText: '商品详情'
+                        navigationBarTitleText: '商品详情',
+                        enablePullDownRefresh: true,
                     },
                     meta: {
                         title: '商品详情',
                         footer: true,
+                        pageScroll: true, // 启用页面级滚动
                     }
                 },
                 {

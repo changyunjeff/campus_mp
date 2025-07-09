@@ -71,6 +71,9 @@ onLoad(async (options) => {
   try {
     loading.value = true
     
+    // 检查商家支付设置
+    await checkMerchantPaymentSetup()
+    
     // 获取传递的参数
     categoryId.value = options.categoryId || ''
     subcategoryId.value = options.subcategoryId || ''
@@ -101,6 +104,53 @@ onLoad(async (options) => {
     loading.value = false
   }
 })
+
+// 检查商家支付设置
+const checkMerchantPaymentSetup = async () => {
+  try {
+    const paymentInfo = await GoodsApi.getMerchantPaymentInfo()
+    
+    if (!paymentInfo || !paymentInfo.is_verified || !paymentInfo.is_enabled) {
+      // 支付设置不完整，显示提醒
+      setTimeout(() => {
+        uni.showModal({
+          title: '支付设置提醒',
+          content: '检测到您尚未完成支付设置或未启用支付功能，完成设置后才能接收买家付款。是否立即前往设置？',
+          confirmText: '立即设置',
+          cancelText: '稍后设置',
+          success: (res) => {
+            if (res.confirm) {
+              router.push({
+                name: 'goods_merchant_payment_setup'
+              })
+            }
+          }
+        })
+      }, 1000)
+    }
+  } catch (error) {
+    // 如果是404错误，表示还没有设置过支付信息
+    if (error.status === 404 || error.message?.includes('404')) {
+      setTimeout(() => {
+        uni.showModal({
+          title: '首次发布提醒',
+          content: '首次发布商品需要先设置支付信息，以便接收买家付款。是否立即前往设置？',
+          confirmText: '立即设置',
+          cancelText: '稍后设置',
+          success: (res) => {
+            if (res.confirm) {
+              router.push({
+                name: 'goods_merchant_payment_setup'
+              })
+            }
+          }
+        })
+      }, 1000)
+    } else {
+      console.error('检查支付设置失败:', error)
+    }
+  }
+}
 
 // 初始化表单数据
 const initFormData = () => {
