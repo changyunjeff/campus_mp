@@ -2,6 +2,9 @@
 import {ref, reactive, computed, onMounted} from 'vue'
 import {formatTime} from '@/utils/time'
 import User from '/static/images/user.png'
+import Anonymous from '/static/images/anonymous.png'
+import AnonymousMale from '/static/images/anonymous_male.png'
+import AnonymousFemale from '/static/images/anonymous_female.png'
 import {onLoad, onShareAppMessage, onShareTimeline} from '@dcloudio/uni-app'
 import events from '@/utils/events'
 import {throttle} from 'lodash'
@@ -16,6 +19,10 @@ import {useToast} from "@/composables/toast"
 import {useMessage} from '@/composables/message'
 import Amap from '@/components/Amap.vue'
 import {useUserStore} from "@/pinia/modules/user";
+// 匿名功能支持
+import { useCommunityStore } from '@/pinia/modules/community'
+import { AnonymousHelper } from '@/utils/anonymousHelper'
+import AuthorInfo from '@/components/AuthorInfo.vue'
 
 // 初始化分享功能
 const {
@@ -40,6 +47,8 @@ const toast = useToast()
 const {sendLikeMessage, sendFavoriteMessage, sendCommentMessage, sendFollowMessage} = useMessage()
 
 const userStore = useUserStore()
+// 匿名功能状态管理
+const communityStore = useCommunityStore()
 
 // 路由
 const router = useRouter()
@@ -89,6 +98,8 @@ const refresherEnabled = ref(true)
 // 评论输入
 const commentInput = ref('')
 const isSubmitting = ref(false)
+// 匿名评论状态
+const isAnonymousComment = ref(false)
 
 // 回复评论相关状态
 const replyingToComment = ref(null) // 当前正在回复的评论
@@ -107,9 +118,18 @@ const isLoadingReplies = ref(false)
 // 地图相关状态
 const showLocationMap = ref(false)
 
+// 获取匿名昵称预览
+const anonymousNickname = computed(() => {
+  return userStore.getAnonymousNickname()
+})
+
 // 初始化分享
 onMounted(() => {
   initShare()
+  // 初始化社区模块
+  communityStore.initCommunity()
+  // 初始化匿名评论状态为用户偏好
+  isAnonymousComment.value = communityStore.anonymousPreferences.defaultAnonymous
 })
 
 // 加载帖子详情
@@ -121,6 +141,15 @@ const loadPostDetail = async () => {
 
     Object.assign(post, {
       id: res.id,
+      author: {
+        id: res.author.id,
+        nickname: res.author.nickname,
+        avatar: res.author.avatar || User,
+        level: res.author.level || 1,
+        gender: res.author.gender || 'unknown',
+        is_anonymous: res.author.is_anonymous || false,
+        isFollowed: res.is_followed || false
+      },
       user: {
         id: res.author.id,
         nickname: res.author.nickname,
@@ -137,7 +166,8 @@ const loadPostDetail = async () => {
       publishTime: res.publish_time, // 转换为毫秒
       stats: res.stats,
       isLiked: res.is_liked,
-      isFavorited: res.is_favorited
+      isFavorited: res.is_favorited,
+      is_anonymous: res.is_anonymous || false
     })
   } catch (err) {
     console.error('加载帖子详情失败:', err)
@@ -157,12 +187,25 @@ const loadComments = async (loadMore = false) => {
       page_size: commentPageSize.value
     })
 
+    // 头像映射逻辑
+    const getAvatarByGender = (author) => {
+      if (author.is_anonymous) {
+        const avatars = {
+          'unknown': Anonymous,
+          'male': AnonymousMale,
+          'female': AnonymousFemale
+        }
+        return avatars[author.gender] || Anonymous
+      }
+      return author.avatar || User
+    }
+
     const newComments = res.comments.map(comment => ({
       id: comment.id,
       user: {
         id: comment.author.id,
         nickname: comment.author.nickname,
-        avatar: comment.author.avatar || User,
+        avatar: getAvatarByGender(comment.author),
         level: comment.author.level || 1,
         gender: comment.author.gender || 'unknown'
       },
@@ -176,7 +219,7 @@ const loadComments = async (loadMore = false) => {
         user: {
           id: reply.author.id,
           nickname: reply.author.nickname,
-          avatar: reply.author.avatar || User,
+          avatar: getAvatarByGender(reply.author),
           level: reply.author.level || 1
         },
         replyTo: reply.reply_to,
@@ -215,12 +258,25 @@ const loadReplies = async (comment, loadMore = false) => {
       page_size: replyPageSize.value
     })
 
+    // 头像映射逻辑
+    const getAvatarByGender = (author) => {
+      if (author.is_anonymous) {
+        const avatars = {
+          'unknown': Anonymous,
+          'male': AnonymousMale,
+          'female': AnonymousFemale
+        }
+        return avatars[author.gender] || Anonymous
+      }
+      return author.avatar || User
+    }
+
     const newReplies = res.replies.map(reply => ({
       id: reply.id,
       user: {
         id: reply.author.id,
         nickname: reply.author.nickname,
-        avatar: reply.author.avatar || User,
+        avatar: getAvatarByGender(reply.author),
         level: reply.author.level || 1
       },
       replyTo: reply.reply_to,
@@ -393,16 +449,30 @@ const handleSend = async (text) => {
       const res = await CommunityApi.createReply({
         comment_id: currentComment.value.id,
         reply_to_id: replyingToReply.value ? replyingToReply.value.id : '', // 如果是回复回复，传入被回复的回复ID
-        content: text
+        content: text,
+        is_anonymous: isAnonymousComment.value
       })
 
       // 添加到回复列表
+      // 头像映射逻辑
+      const getAvatarByGender = (author) => {
+        if (author.is_anonymous) {
+          const avatars = {
+            'unknown': Anonymous,
+            'male': AnonymousMale,
+            'female': AnonymousFemale
+          }
+          return avatars[author.gender] || Anonymous
+        }
+        return author.avatar || User
+      }
+
       const newReply = {
         id: res.id,
         user: {
           id: res.author.id,
           nickname: res.author.nickname,
-          avatar: res.author.avatar || User,
+          avatar: getAvatarByGender(res.author),
           level: res.author.level || 1
         },
         replyTo: res.reply_to,
@@ -414,6 +484,9 @@ const handleSend = async (text) => {
 
       allReplies.value.unshift(newReply)
       currentComment.value.replyCount++
+
+      // 记录回复使用统计
+      AnonymousHelper.recordUsageStats('reply', isAnonymousComment.value)
 
       // 发送评论消息给被回复的用户（如果不是自己）
       const targetUserId = replyingToReply.value ? replyingToReply.value.user.id : currentComment.value.user.id
@@ -441,7 +514,8 @@ const handleSend = async (text) => {
       const res = await CommunityApi.createReply({
         comment_id: replyingToComment.value.id,
         reply_to_id: replyingToReply.value ? replyingToReply.value.id : '', // 如果是回复回复，传入被回复的回复ID
-        content: text
+        content: text,
+        is_anonymous: isAnonymousComment.value
       })
 
       // 更新对应评论的回复数量
@@ -454,12 +528,25 @@ const handleSend = async (text) => {
           targetComment.hotReplies = []
         }
         if (targetComment.hotReplies.length < 2) {
+          // 头像映射逻辑
+          const getAvatarByGender = (author) => {
+            if (author.is_anonymous) {
+              const avatars = {
+                'unknown': Anonymous,
+                'male': AnonymousMale,
+                'female': AnonymousFemale
+              }
+              return avatars[author.gender] || Anonymous
+            }
+            return author.avatar || User
+          }
+
           const newReply = {
             id: res.id,
             user: {
               id: res.author.id,
               nickname: res.author.nickname,
-              avatar: res.author.avatar || User,
+              avatar: getAvatarByGender(res.author),
               level: res.author.level || 1
             },
             replyTo: res.reply_to,
@@ -471,6 +558,9 @@ const handleSend = async (text) => {
           targetComment.hotReplies.unshift(newReply)
         }
       }
+
+      // 记录回复使用统计
+      AnonymousHelper.recordUsageStats('reply', isAnonymousComment.value)
 
       // 发送评论消息给被回复的用户（如果不是自己）
       const targetUserId = replyingToReply.value ? replyingToReply.value.user.id : replyingToComment.value.user.id
@@ -498,16 +588,30 @@ const handleSend = async (text) => {
       // 发送评论
       const res = await CommunityApi.createComment({
         post_id: postId.value,
-        content: text
+        content: text,
+        is_anonymous: isAnonymousComment.value
       })
 
       // 添加到评论列表
+      // 头像映射逻辑
+      const getAvatarByGender = (author) => {
+        if (author.is_anonymous) {
+          const avatars = {
+            'unknown': Anonymous,
+            'male': AnonymousMale,
+            'female': AnonymousFemale
+          }
+          return avatars[author.gender] || Anonymous
+        }
+        return author.avatar || User
+      }
+
       const newComment = {
         id: res.id,
         user: {
           id: res.author.id,
           nickname: res.author.nickname,
-          avatar: res.author.avatar || User,
+          avatar: getAvatarByGender(res.author),
           level: res.author.level || 1,
           gender: res.author.gender || 'unknown'
         },
@@ -521,6 +625,9 @@ const handleSend = async (text) => {
 
       comments.value.unshift(newComment)
       post.stats.comments++
+      
+      // 记录评论使用统计
+      AnonymousHelper.recordUsageStats('comment', isAnonymousComment.value)
       
       // 发送评论消息给帖子作者（如果不是自己）
       if (post.user.id !== userStore.openid) {
@@ -546,6 +653,10 @@ const handleSend = async (text) => {
     commentInput.value = ''
   } catch (err) {
     console.error(err)
+    
+    // 处理匿名相关错误
+    AnonymousHelper.handleAnonymousError(err, '发送评论')
+    
     toast.show('发送失败，请重试')
   } finally {
     isSubmitting.value = false
@@ -796,20 +907,13 @@ const popupReplyActions = throttle((_reply)=>{
       <view class="bg-white rounded-t-20rpx p-30rpx mt-20rpx" @longpress="handleLongPress">
         <!-- 用户信息 -->
         <view class="flex justify-between items-center mb-20rpx">
-          <view class="flex items-center" @tap="viewUserProfile(post.user.id)">
-            <image class="w-80rpx h-80rpx rounded-full border-2rpx border-gray-100" :src="post.user.avatar"
-                   mode="aspectFill"></image>
-            <view class="ml-20rpx">
-              <view class="flex items-center">
-                <text class="text-30rpx font-bold mr-10rpx">{{ post.user.nickname }}</text>
-                <view
-                    class="ml-10rpx bg-gradient-to-r from-blue-400 to-blue-500 text-white text-20rpx px-12rpx py-4rpx rounded-full">
-                  Lv{{ post.user.level }}
-                </view>
-              </view>
-              <text class="text-24rpx text-gray-400">{{ formatTime(post.publishTime) }}</text>
-            </view>
-          </view>
+          <AuthorInfo
+            :author="post.author || post.user"
+            :is-anonymous="post.is_anonymous"
+            :publish-time="post.publishTime"
+            :show-follow-button="false"
+            @click="viewUserProfile(post.user.id)"
+          />
 
           <view
               :class="['px-20rpx py-10rpx rounded-full text-26rpx transition-all duration-300',
@@ -1095,8 +1199,10 @@ const popupReplyActions = throttle((_reply)=>{
 
       <InputSection
           v-model="commentInput"
+          v-model:anonymous="isAnonymousComment"
           :placeholder="inputPlaceholder"
           :show-emoji="true"
+          :show-anonymous="true"
           send-button-text="发送"
           @send="handleSend"
       />
@@ -1112,7 +1218,7 @@ const popupReplyActions = throttle((_reply)=>{
       <!-- 弹窗内容 - 防止点击穿透 -->
       <view
           @tap.stop
-          class="bg-white rounded-t-32rpx max-h-75vh flex flex-col transform transition-all duration-300"
+          class="bg-white rounded-t-32rpx max-h-75vh flex flex-col transform transition-all duration-300 min-h-75vh"
           :class="replyDialogVisible ? 'translate-y-0' : 'translate-y-full'"
       >
         <!-- 弹窗头部 -->
@@ -1199,8 +1305,10 @@ const popupReplyActions = throttle((_reply)=>{
           <view class="p-20rpx">
             <InputSection
                 v-model="commentInput"
+                v-model:anonymous="isAnonymousComment"
                 :placeholder="inputPlaceholder"
                 :show-emoji="true"
+                :show-anonymous="true"
                 send-button-text="回复"
                 @send="handleSend"
             />

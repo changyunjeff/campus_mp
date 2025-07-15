@@ -13,10 +13,17 @@ import {useToast} from "@/composables/toast";
 import Amap from '@/components/Amap.vue'
 // 导入地图API
 import {getCurrentLocation, getRegeo} from '@/api/amap/amap'
+// 匿名功能支持
+import { useCommunityStore } from '@/pinia/modules/community'
+import { useUserStore } from '@/pinia/modules/user'
+import { AnonymousHelper } from '@/utils/anonymousHelper'
 
 const router = useRouter()
 const draftStore = useDraftStore()
 const toast = useToast()
+// 匿名相关状态管理
+const communityStore = useCommunityStore()
+const userStore = useUserStore()
 
 // 图片列表 - 包含媒体信息
 const images = ref([])
@@ -27,6 +34,9 @@ const isUploading = ref(false)
 const content = ref('')
 const textareaFocus = ref(false)
 const cursorPosition = ref(0)
+
+// 匿名发布状态
+const isAnonymous = ref(false)
 
 // 推荐话题
 const topics = ref([])
@@ -184,6 +194,12 @@ const clearTopicSearch = () => {
 
 // 初始化数据
 onMounted(() => {
+  // 初始化社区模块
+  communityStore.initCommunity()
+  
+  // 初始化匿名状态为用户偏好
+  isAnonymous.value = communityStore.anonymousPreferences.defaultAnonymous
+
   // 初始化草稿
   draftStore.initDraft()
 
@@ -196,6 +212,15 @@ onMounted(() => {
 
   // 加载推荐话题
   loadRecommendedTopics()
+  
+  // 检查是否需要显示匿名功能介绍
+  if (AnonymousHelper.shouldShowIntroduction()) {
+    setTimeout(() => {
+      AnonymousHelper.showAnonymousIntroduction(() => {
+        console.log('匿名功能介绍完成')
+      })
+    }, 1000) // 延迟1秒显示，让用户适应页面
+  }
 })
 
 // 加载草稿
@@ -203,6 +228,7 @@ const loadDraft = () => {
   content.value = draftStore.content
   location.value = draftStore.location
   visible.value = draftStore.visibility
+  isAnonymous.value = draftStore.is_anonymous || false
 
   // 处理图片数据
   if (draftStore.images && draftStore.images.length > 0) {
@@ -210,11 +236,13 @@ const loadDraft = () => {
   }
 
   showDraftTip.value = false
+  toast.success('已恢复草稿')
 }
 
 // 忽略草稿
 const ignoreDraft = () => {
   showDraftTip.value = false
+  draftStore.clearDraft()
 }
 
 // 事件处理
@@ -549,7 +577,8 @@ const publish = async () => {
       latitude: locationDetail.value.latitude
     } : null, // 使用完整位置信息
     visibility: visible.value,
-    tags: tags
+    tags: tags,
+    is_anonymous: isAnonymous.value // 添加匿名开关
   }
 
   uni.showLoading({
@@ -559,6 +588,9 @@ const publish = async () => {
   try {
     // 发布帖子（后端会处理媒体记录的创建）
     await CommunityApi.createPost(postData)
+
+    // 记录使用统计
+    AnonymousHelper.recordUsageStats('publish', isAnonymous.value)
 
     uni.hideLoading()
     toast.success('发布成功')
@@ -572,6 +604,10 @@ const publish = async () => {
     }, 1500)
   } catch (error) {
     uni.hideLoading()
+    
+    // 处理匿名相关错误
+    AnonymousHelper.handleAnonymousError(error, '发布帖子')
+    
     toast.error(error.message || '发布失败')
     
     // 发布失败时，清理已上传的OSS文件
@@ -604,7 +640,8 @@ const saveDraft = () => {
     content: content.value,
     images: images.value,
     location: location.value,
-    visibility: visible.value
+    visibility: visible.value,
+    is_anonymous: isAnonymous.value
   })
 
   if (success) {
@@ -612,6 +649,23 @@ const saveDraft = () => {
   } else {
     toast.error('保存失败')
   }
+}
+
+// 匿名开关处理
+const toggleAnonymous = () => {
+  isAnonymous.value = !isAnonymous.value
+  
+  // 提供触觉反馈
+  uni.vibrateShort?.({
+    type: 'light'
+  })
+  
+  // 显示状态提示
+  uni.showToast({
+    title: isAnonymous.value ? '已开启匿名发布' : '已关闭匿名发布',
+    icon: 'none',
+    duration: 1500
+  })
 }
 
 // 预览
@@ -627,6 +681,11 @@ const preview = () => {
 const onTextareaInput = (e) => {
   cursorPosition.value = e.target.cursor || 0
 }
+
+// 获取匿名昵称预览
+const anonymousNickname = computed(() => {
+  return userStore.getAnonymousNickname()
+})
 </script>
 
 <template>
@@ -674,6 +733,46 @@ const onTextareaInput = (e) => {
         <!-- 字数统计 -->
         <view class="flex justify-end mt-10rpx">
           <text class="text-24rpx text-gray-400">{{ content.length }}/2000</text>
+        </view>
+      </view>
+
+      <!-- 匿名发布选项 -->
+      <view class="mb-20rpx bg-white rounded-20rpx shadow-sm p-30rpx">
+        <view class="flex items-center justify-between">
+          <view class="flex items-center">
+            <view class="w-64rpx h-64rpx rounded-full bg-blue-50 flex items-center justify-center mr-20rpx">
+              <WdIcon name="usergroup" size="32rpx" color="#3b82f6"/>
+            </view>
+            <view>
+              <text class="text-28rpx font-medium text-#333 block">匿名发布</text>
+              <text class="text-24rpx text-gray-500 mt-4rpx block">
+                {{ isAnonymous ? `将以"${anonymousNickname}"身份发布` : '使用真实身份发布' }}
+              </text>
+            </view>
+          </view>
+          
+          <!-- 匿名开关 -->
+          <view 
+            class="anonymous-toggle"
+            :class="{ 'active': isAnonymous }"
+            @tap="toggleAnonymous"
+          >
+            <view class="toggle-track">
+              <view class="toggle-thumb"></view>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 匿名说明 -->
+        <view v-if="isAnonymous" class="mt-20rpx p-20rpx bg-blue-50 rounded-12rpx">
+          <view class="flex items-start">
+            <WdIcon name="info-o" size="28rpx" color="#3b82f6" class="mr-12rpx mt-2rpx"/>
+            <view class="flex-1">
+              <text class="text-24rpx text-blue-600 leading-relaxed">
+                开启后其他用户看到的将是"{{ anonymousNickname }}"，而不是您的真实信息。管理员仍可查看真实信息确保内容安全。
+              </text>
+            </view>
+          </view>
         </view>
       </view>
 
@@ -1053,5 +1152,61 @@ const onTextareaInput = (e) => {
   border-top: 1px solid #f0f0f0;
   padding-bottom: calc(20rpx + constant(safe-area-inset-bottom));
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+}
+
+/* 匿名开关样式 */
+.anonymous-toggle {
+  width: 88rpx;
+  height: 48rpx;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.anonymous-toggle:active {
+  transform: scale(0.95);
+}
+
+.toggle-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #e0e0e0, #f0f0f0);
+  border-radius: 24rpx;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: visible;
+  box-shadow: 
+    inset 0 2rpx 4rpx rgba(0, 0, 0, 0.1),
+    0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.toggle-thumb {
+  position: absolute;
+  left: 4rpx;
+  top: 4rpx;
+  width: 40rpx;
+  height: 40rpx;
+  background: linear-gradient(135deg, #fff, #f8f8f8);
+  border-radius: 20rpx;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 2rpx 8rpx rgba(0, 0, 0, 0.15),
+    0 1rpx 4rpx rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+
+/* 激活状态 */
+.anonymous-toggle.active .toggle-track {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  box-shadow: 
+    inset 0 2rpx 4rpx rgba(59, 130, 246, 0.2),
+    0 2rpx 12rpx rgba(59, 130, 246, 0.3);
+}
+
+.anonymous-toggle.active .toggle-thumb {
+  left: 44rpx;
+  background: linear-gradient(135deg, #fff, #f8f8f8);
+  box-shadow: 
+    0 2rpx 12rpx rgba(59, 130, 246, 0.3),
+    0 1rpx 6rpx rgba(0, 0, 0, 0.15);
 }
 </style>

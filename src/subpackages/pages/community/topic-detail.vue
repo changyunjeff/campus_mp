@@ -93,6 +93,15 @@ const loadTopicPosts = async (refresh = false) => {
     // 处理返回的数据
     const newPosts = res.posts.map(post => ({
       id: post.id,
+      author: {
+        id: post.author.id,
+        nickname: post.author.nickname,
+        avatar: post.author.avatar || User,
+        gender: post.author.gender || 'unknown',
+        level: post.author.level || 1,
+        is_anonymous: post.author.is_anonymous || false,
+        isFollowed: post.is_followed
+      },
       user: {
         id: post.author.id,
         nickname: post.author.nickname,
@@ -111,7 +120,8 @@ const loadTopicPosts = async (refresh = false) => {
         favorites: post.stats.favorites
       },
       isLiked: post.is_liked,
-      isFavorited: post.is_favorited
+      isFavorited: post.is_favorited,
+      is_anonymous: post.is_anonymous || false
     }))
     
     if (refresh) {

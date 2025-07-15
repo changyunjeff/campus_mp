@@ -11,6 +11,8 @@ import { CommunityApi } from '@/api/community'
 import { UserApi } from '@/api/user'
 import { useMessage } from '@/composables/message'
 import {useToast} from "@/composables/toast";
+// 引入匿名相关组件
+import AuthorInfo from '@/components/AuthorInfo.vue'
 
 const {show} = useTabbar()
 const {sendLikeMessage, sendFavoriteMessage} = useMessage()
@@ -69,6 +71,15 @@ const loadPosts = async (refresh = false) => {
     // 处理返回的数据
     const newPosts = res.posts.map(post => ({
       id: post.id,
+      author: {
+        id: post.author.id,
+        nickname: post.author.nickname,
+        avatar: post.author.avatar || User,
+        gender: post.author.gender || 'unknown',
+        level: post.author.level || 1,
+        is_anonymous: post.author.is_anonymous || false,
+        isFollowed: post.is_followed
+      },
       user: {
         id: post.author.id,
         nickname: post.author.nickname,
@@ -87,7 +98,8 @@ const loadPosts = async (refresh = false) => {
         favorites: post.stats.favorites
       },
       isLiked: post.is_liked,
-      isFavorited: post.is_favorited
+      isFavorited: post.is_favorited,
+      is_anonymous: post.is_anonymous || false
     }))
     
     if (refresh) {
@@ -348,15 +360,12 @@ onMounted(async () => {
             >
             <!-- 帖子头部 - 用户信息和发布时间 -->
             <view class="flex justify-between items-center mb-20rpx">
-              <view class="flex items-center" @tap.stop="viewUserProfile(post.user.id)">
-                <image class="w-80rpx h-80rpx rounded-full mr-20rpx border-2rpx border-gray-100" :src="post.user.avatar" mode="aspectFill"></image>
-                <view class="flex flex-col">
-                  <view class="flex items-center">
-                    <text class="text-28rpx font-600 text-#333 mr-10rpx">{{ post.user.nickname }}</text>
-                  </view>
-                  <text class="text-24rpx text-gray-400 mt-4rpx">{{ formatTime(post.publishTime) }}</text>
-                </view>
-              </view>
+              <AuthorInfo
+                :author="post.author || post.user"
+                :is-anonymous="post.is_anonymous"
+                :publish-time="post.publishTime || post.publish_time"
+                @click-user="viewUserProfile"
+              />
             </view>
 
             <!-- 帖子内容 -->

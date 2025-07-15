@@ -8,6 +8,8 @@ import User from '/static/images/user.png'
 import events from '@/utils/events'
 import { throttle } from 'lodash'
 import {CommunityApi} from "@/api/community";
+// 引入匿名相关组件
+import AuthorInfo from '@/components/AuthorInfo.vue'
 
 // 路由
 const router = useRouter()
@@ -422,15 +424,12 @@ const handleLongPress = (post) => {
           >
             <!-- 帖子头部 - 用户信息和发布时间 -->
             <view class="flex justify-between items-center mb-20rpx">
-              <view class="flex items-center" @tap.stop="viewUserProfile(post.author.id)">
-                <image class="w-80rpx h-80rpx rounded-full mr-20rpx border-2rpx border-gray-100" :src="post.author.avatar || User" mode="aspectFill"></image>
-                <view class="flex flex-col">
-                  <view class="flex items-center">
-                    <text class="text-28rpx font-600 text-#333 mr-10rpx">{{ post.author.nickname }}</text>
-                  </view>
-                  <text class="text-24rpx text-gray-400 mt-4rpx">{{ formatTime(post.publish_time) }}</text>
-                </view>
-              </view>
+              <AuthorInfo
+                :author="post.author"
+                :is-anonymous="post.is_anonymous"
+                :publish-time="post.publish_time"
+                @click-user="viewUserProfile"
+              />
             </view>
 
             <!-- 帖子内容 -->

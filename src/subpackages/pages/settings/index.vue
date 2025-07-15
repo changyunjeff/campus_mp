@@ -36,7 +36,7 @@ const accountSettings = [
     id: 'auth',
     title: '我的认证',
     desc: '管理身份认证信息',
-    icon: 'certificate',
+    icon: 'user',
     iconColor: '#007AFF',
     action: 'auth'
   },
@@ -44,7 +44,7 @@ const accountSettings = [
     id: 'blocked',
     title: '我的屏蔽',
     desc: '管理被屏蔽的用户',
-    icon: 'block',
+    icon: 'secured',
     iconColor: '#FF3B30',
     action: 'blocked'
   }
@@ -56,7 +56,7 @@ const appSettings = [
     id: 'school',
     title: '切换学校',
     desc: schoolStore.currentSchoolName || '选择您的学校',
-    icon: 'school',
+    icon: 'translate-bold',
     iconColor: '#FF9500',
     action: 'school'
   },
@@ -77,7 +77,7 @@ const helpSettings = [
     id: 'agreement',
     title: '用户协议',
     desc: '查看用户使用协议',
-    icon: 'document',
+    icon: 'evaluation',
     iconColor: '#34C759',
     action: 'agreement'
   },
@@ -85,7 +85,7 @@ const helpSettings = [
     id: 'privacy',
     title: '隐私政策',
     desc: '查看隐私保护政策',
-    icon: 'privacy',
+    icon: 'eye-close',
     iconColor: '#5856D6',
     action: 'privacy'
   },

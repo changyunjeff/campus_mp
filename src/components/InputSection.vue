@@ -16,6 +16,17 @@
       />
     </view>
 
+    <!-- 匿名提示栏 -->
+    <view v-if="showAnonymous && anonymousValue" class="anonymous-tip-bar">
+      <view class="tip-content">
+        <WdIcon name="info-o" size="28rpx" color="#f59e0b" />
+        <text class="tip-text">将以"{{ anonymousNickname }}"的身份发布</text>
+        <view class="help-btn" @tap.stop="showAnonymousHelp">
+          <WdIcon name="help" size="24rpx" color="#999" />
+        </view>
+      </view>
+    </view>
+
     <!-- 输入区域 -->
     <view class="input-area">
       <view class="input-box">
@@ -26,10 +37,11 @@
           v-if="showAnonymous" 
           class="anonymous-switch" 
           @tap.stop="toggleAnonymous"
-          :class="{ 'active': anonymous }"
+          :class="{ 'active': anonymousValue }"
         >
           <view class="switch-track">
             <view class="switch-thumb"></view>
+            <text class="switch-text">{{ anonymousValue ? '匿名' : '实名' }}</text>
           </view>
         </view>
         <input
@@ -72,6 +84,7 @@
 <script setup>
 import { debounce, throttle } from "lodash";
 import Emoji from "@/components/Emoji.vue";
+import { useUserStore } from '@/pinia/modules/user'
 
 const props = defineProps({
   // 输入框的值
@@ -147,9 +160,17 @@ const emit = defineEmits([
   'anonymous-change'
 ])
 
+const userStore = useUserStore()
+
 const inputValue = computed({
   get: () => props.modelValue,
   set: (val) => emit('update:modelValue', val)
+})
+
+// 添加匿名状态的双向绑定
+const anonymousValue = computed({
+  get: () => props.anonymous,
+  set: (val) => emit('update:anonymous', val)
 })
 
 const isEmojiShow = ref(false)
@@ -159,12 +180,39 @@ const canSend = computed(() => {
   return inputValue.value.trim().length > 0 && !props.disabled
 })
 
+// 匿名昵称预览
+const anonymousNickname = computed(() => {
+  return userStore.getAnonymousNickname()
+})
+
 // 匿名开关处理
 const toggleAnonymous = throttle(() => {
-  const newValue = !props.anonymous
-  emit('update:anonymous', newValue)
+  const newValue = !anonymousValue.value
+  anonymousValue.value = newValue // 使用computed setter更新值
   emit('anonymous-change', newValue)
+  
+  // 提供触觉反馈
+  uni.vibrateShort?.({
+    type: 'light'
+  })
+  
+  // 显示状态提示
+  uni.showToast({
+    title: newValue ? '已开启匿名模式' : '已关闭匿名模式',
+    icon: 'none',
+    duration: 1500
+  })
 }, 200)
+
+// 显示匿名功能说明
+const showAnonymousHelp = () => {
+  uni.showModal({
+    title: '匿名发布说明',
+    content: `开启匿名发布后，其他用户看到的将是"${anonymousNickname.value}"这样的信息，而不是您的真实姓名和头像。管理员仍可查看真实信息以确保内容安全。`,
+    showCancel: false,
+    confirmText: '我知道了'
+  })
+}
 
 // Emoji相关处理
 const handleEmojiSelect = throttle((emoji) => {
@@ -235,6 +283,37 @@ defineExpose({
   z-index: 100;
 }
 
+/* 匿名提示栏 */
+.anonymous-tip-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 92rpx; /* 输入区域高度之上 */
+  background: rgba(245, 158, 11, 0.1);
+  border-top: 1rpx solid rgba(245, 158, 11, 0.2);
+  padding: 12rpx 24rpx;
+  z-index: 102;
+
+  .tip-content {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+
+    .tip-text {
+      flex: 1;
+      font-size: 24rpx;
+      color: #92400e;
+    }
+
+    .help-btn {
+      padding: 8rpx;
+      &:active {
+        opacity: 0.6;
+      }
+    }
+  }
+}
+
 /* 遮罩层 */
 .emoji-overlay {
   position: fixed;
@@ -251,7 +330,7 @@ defineExpose({
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 92rpx; /* 输入区域高度(92rpx) + 间距(40rpx) */
+  bottom: 92rpx;
   height: 460rpx;
   background: #fff;
   border-radius: 24rpx 24rpx 0 0;
@@ -288,7 +367,7 @@ defineExpose({
     /* 匿名开关 */
     .anonymous-switch {
       flex-shrink: 0;
-      width: 100rpx;  /* 增加宽度以适应文字 */
+      width: 100rpx;
       height: 56rpx;
       cursor: pointer;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -304,7 +383,7 @@ defineExpose({
         background: linear-gradient(135deg, #e0e0e0, #f0f0f0);
         border-radius: 28rpx;
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow: hidden; /* 改为 visible 确保文字不被裁剪 */
+        overflow: visible;
         box-shadow: 
           inset 0 2rpx 4rpx rgba(0, 0, 0, 0.1),
           0 2rpx 8rpx rgba(0, 0, 0, 0.05);
@@ -333,29 +412,29 @@ defineExpose({
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 24rpx; /* 稍微增大字体 */
+          font-size: 24rpx;
           font-weight: 500;
           color: #666;
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           z-index: 1;
           pointer-events: none;
-          white-space: nowrap; /* 防止文字换行 */
+          white-space: nowrap;
         }
       }
 
       /* 激活状态 */
       &.active {
         .switch-track {
-          background: linear-gradient(135deg, rgb(60, 177, 255), #784ba0);
+          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
           box-shadow: 
-            inset 0 2rpx 4rpx rgba(255, 60, 172, 0.2),
-            0 2rpx 12rpx rgba(255, 60, 172, 0.3);
+            inset 0 2rpx 4rpx rgba(59, 130, 246, 0.2),
+            0 2rpx 12rpx rgba(59, 130, 246, 0.3);
 
           .switch-thumb {
-            left: 48rpx; /* 100rpx - 48rpx - 4rpx */
+            left: 48rpx;
             background: linear-gradient(135deg, #fff, #f8f8f8);
             box-shadow: 
-              0 2rpx 12rpx rgba(60, 177, 255, 0.3),
+              0 2rpx 12rpx rgba(59, 130, 246, 0.3),
               0 1rpx 6rpx rgba(0, 0, 0, 0.15);
           }
 
@@ -363,22 +442,6 @@ defineExpose({
             color: #fff;
             text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.2);
           }
-        }
-      }
-
-      /* 悬停效果 */
-      &:hover {
-        .switch-track {
-          transform: translateY(-1rpx);
-          box-shadow: 
-            inset 0 2rpx 4rpx rgba(0, 0, 0, 0.1),
-            0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-        }
-
-        &.active .switch-track {
-          box-shadow: 
-            inset 0 2rpx 4rpx rgba(255, 60, 172, 0.2),
-            0 4rpx 16rpx rgba(255, 60, 172, 0.4);
         }
       }
     }
@@ -410,7 +473,7 @@ defineExpose({
   .send-btn {
     width: 120rpx;
     height: 72rpx;
-    background: linear-gradient(135deg, rgb(60, 177, 255), #784ba0);
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
     border-radius: 36rpx;
     color: #fff;
     font-size: 28rpx;

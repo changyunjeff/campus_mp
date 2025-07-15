@@ -11,6 +11,8 @@ import {useUserStore} from "@/pinia/modules/user";
 import {useToast} from "@/composables/toast"
 import User from '/static/images/user.png'
 import {useMessage} from '@/composables/message'
+// 引入匿名相关组件
+import AuthorInfo from '@/components/AuthorInfo.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -320,17 +322,13 @@ onLoad(() => {
               >
                 <!-- 帖子头部 - 用户信息和发布时间 -->
                 <view class="flex justify-between items-center mb-20rpx">
-                  <view class="flex items-center" @tap.stop="viewUserProfile(post.author.id)">
-                    <image
-                        class="w-80rpx h-80rpx rounded-full mr-20rpx border-2rpx border-gray-100"
-                        :src="post.author.avatar || User"
-                        mode="aspectFill"
-                    />
-                    <view class="flex flex-col">
-                      <text class="text-30rpx font-bold text-#333">{{ post.author.nickname }}</text>
-                      <text class="text-24rpx text-#999">{{ formatTime(post.publish_time) }}</text>
-                    </view>
-                  </view>
+                  <AuthorInfo
+                    :author="post.author"
+                    :is-anonymous="post.is_anonymous"
+                    :publish-time="post.publish_time"
+                    :show-anonymous-badge="true"
+                    @click-user="viewUserProfile"
+                  />
                 </view>
 
                 <!-- 帖子内容 -->
